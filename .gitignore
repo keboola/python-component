@@ -137,3 +137,5 @@ dmypy.json
 
 sphinx/
 
+test.py
+

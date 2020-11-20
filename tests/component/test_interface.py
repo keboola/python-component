@@ -33,6 +33,9 @@ class TestEnvHandler(unittest.TestCase):
         #
         # self.assertEqual('Missing mandatory config parameters fields: [notbar] ', str(er.exception))
 
+    def test_unknown_config_tables_input_mapping_properties_pass(self):
+        """Unknown properties in storage.intpu.tables will be ignored when getting dataclass"""
+
 
 if __name__ == '__main__':
     unittest.main()

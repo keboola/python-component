@@ -1,1 +1,2 @@
-from .interface import CommonInterface
+from .interface import CommonInterface, Configuration
+
