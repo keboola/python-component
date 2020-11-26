@@ -7,6 +7,8 @@ setuptools.setup(
     name="keboola.component-davidesner",  # TESTING NAME
     version="0.0.1",
     author="Keboola KDS Team",
+    setup_requires=['pytest-runner', 'flake8'],
+    tests_require=['pytest'],
     author_email="data_ca@keboola.com",
     description="General library for Python applications running in Keboola Connection environment",
     long_description=long_description,

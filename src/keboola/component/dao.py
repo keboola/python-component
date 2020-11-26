@@ -2,7 +2,7 @@ import dataclasses
 from dataclasses import dataclass, field
 from enum import Enum
 
-from typing import List
+from typing import List, Union, Dict
 
 
 @dataclass
@@ -69,17 +69,64 @@ class KBCMetadataKeys(Enum):
 
 
 class TableMetadata:
-    def __init__(self):
+    """
+    Abstraction of metadata and table_metadata than can be provided within the manifest file. This is useful for
+    creation
+    of table/column descriptions, assigning column base types etc. without knowing the complexity
+    of the json object and the internal KBC metadata keys.
+
+    Example:
+
+        ```python
+
+        tm = TableMetadata()
+
+        # or alternatively load from existing manifest
+        # tm = TableMetadata(manifest_dict)
+
+        # add column types
+        tm.add_column_types({"column_a":"INTEGER", "column_b":ColumnDataTypes.BOOLEAN.value})
+
+        # add table description
+        tm.add_table_description("desc")
+
+        # add column description
+        tm.add_column_descriptions({"column_a":"Integer columns", "column_b":"my boolean test"})
+
+        # add arbitrary table metadata
+        tm.add_custom_table_metadata("my_arbitrary_key","some value")
+
+        # update manifest
+        manifest = {}
+        manifest['metadata'] = tm.table_metadata
+        manifest['column_metadata'] = tm.column_metadata
+        ```
+
+
+    """
+
+    def __init__(self, manifest: dict = None):
+        """
+
+        Args:
+            manifest (dict): Existing manifest file
+        """
         self._table_metadata_dict = dict()
         self._column_metadata_dict = dict()
         self._custom_table_metadata_nonunique = list()
         self._custom_column_metadata_nonunique = dict()
+        if manifest:
+            self.load_table_metadata_from_manifest(manifest)
 
     @property
     def table_metadata(self) -> List[dict]:
         """
         Returns table metadata list as required by the
         [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables-manifests)
+
+        e.g.
+        tm = TableMetadata()
+        manifest['metadata'] = tm.table_metadata
 
         Returns: List[dict]
 
@@ -97,6 +144,10 @@ class TableMetadata:
                 Returns column metadata dict as required by the
                 [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables
                 -manifests)
+
+                e.g.
+                tm = TableMetadata()
+                manifest['column_metadata'] = tm.column_metadata
 
                 Returns: dict
 
@@ -156,6 +207,19 @@ class TableMetadata:
 
         return self._get_unique_column_metadata_by_key(KBCMetadataKeys.description.value)
 
+    def load_table_metadata_from_manifest(self, manifest: dict):
+        """
+        Load metadta from manifest file.
+
+        Args:
+            manifest:
+
+        Returns:TableMetadata
+
+        """
+        self.add_multiple_custom_column_metadata(manifest.get('column_metadata', {}))
+        self.add_multiple_custom_table_metadata(manifest.get('metadata', []))
+
     def _get_unique_column_metadata_by_key(self, metadata_key):
         """
         Return dictionary of column:metadata_key pairs
@@ -185,8 +249,8 @@ class TableMetadata:
 
     def add_column_types(self, column_types: dict):
         """
-        Add column types metadata. Note that only supported datatypes (<keboola.component.interface.KBCMetadataKeys>)
-        may be provided
+        Add column types metadata. Note that only supported datatypes
+        (<keboola.component.dao.KBCMetadataKeys>) may be provided
 
         Args:
             column_types: dict -> {"colname":"datatype"}
@@ -207,7 +271,10 @@ class TableMetadata:
 
     def add_custom_table_metadata(self, key: str, value: str):
         """
-        Add custom key-value pair to table metadata. NOTE: does not ensure the keys unique metadata keys.
+        Add custom key-value pair to table metadata.
+
+        **NOTE:** Ensures uniqueness of description keys
+
         Args:
             key: str "some_key"
             value: str "some_value"
@@ -242,7 +309,8 @@ class TableMetadata:
     def add_custom_column_metadata(self, column: str, key: str, value: str):
         """
         Add custom key-value pair to column metadata.
-        NOTE: Ensures uniqueness of basetype and description keys
+
+        **NOTE:** Ensures uniqueness of basetype and description keys
         Args:
             column: column name
             key: str "some_key"
@@ -260,16 +328,19 @@ class TableMetadata:
 
     def add_multiple_custom_table_metadata(self, table_metadata: list):
         """
-        Add custom key-value pairs to table metadata. NOTE: does not ensure the keys unique metadata keys.
+        Add custom key-value pairs to table metadata.
+
+        **NOTE:** Ensures uniqueness of description keys
         Args:
             table_metadata: list [{"some_key":"some_value"}]
         """
         self._custom_table_metadata_nonunique.extend(table_metadata)
 
-    def add_multiple_custom_column_metadata(self, column_metadata: dict[str:List[dict]]):
+    def add_multiple_custom_column_metadata(self, column_metadata: Dict[str, List[dict]]):
         """
         Add custom key-value pairs to column metadata.
-        NOTE: Ensures uniqueness of basetype and description keys
+
+        **NOTE:** Ensures uniqueness of basetype and description keys
         Args:
             column_metadata: dict {"column_name":[{"some_key":"some_value"}]}
         """
@@ -290,38 +361,44 @@ class TableMetadata:
         raise ValueError(', '.join(errors) + f'\n Supported base types are: [{ColumnDataTypes.list()}]')
 
 
-def get_table_metadata_from_manifest(manifest: dict) -> TableMetadata:
+class TableDefinition:
     """
-    Helper method for retrieving TableMetadata object from manifest file.
+    Table definition class. It is used as a container for `in/tables/` files.
 
-    Args:
-        manifest:
-
-    Returns:TableMetadata
-
-    """
-    existing_metadata = TableMetadata()
-    existing_metadata.add_multiple_custom_column_metadata(manifest.get('column_metadata'))
-    existing_metadata.add_multiple_custom_table_metadata(manifest.get('metadata'))
-    return existing_metadata
-
-
-class TableDef:
-    """
-    Table definition class.
-
+    Attributes:
+        name: Table / file name.
+        full_path (str): (optional) Full path of the file. May be empty in case it represents only orphaned manifest.
+            May also be a folder path - in this case it is a [sliced tables](
+            https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
+            The full_path is None when dealing with [workspaces](
+            https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
+        is_sliced: True if the full_path points to a folder with sliced tables
+        manifest (dict): Initialized manifest file
     """
 
-    def __init__(self, full_path: str, file_name: str, is_sliced: bool = False,
+    def __init__(self, name: str, full_path: Union[str, None] = None, is_sliced: bool = False,
                  manifest: dict = field(default_factory=dict)):
+        """
+
+        Args:
+            name: Table / file name.
+            full_path (str): (optional) Full path of the file. May be empty in case it represents only orphaned
+            manifest.
+                May also be a folder path - in this case it is a [sliced tables](
+                https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
+                The full_path is None when dealing with [workspaces](
+                https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
+            is_sliced: True if the full_path points to a folder with sliced tables
+            manifest (dict): Initialized manifest file. See also CommonInterface.build_table_manifest()
+        """
         self.full_path = full_path
-        self.file_name = file_name
+        self.name = name
         self.is_sliced = is_sliced
         self.manifest = manifest
 
     def replace_table_metadata_in_manifest(self, table_metadata: TableMetadata):
         """
-        Replace the TableMetadata (metadata, column_metadata) in the manifest file.
+        (inplace) Replace the TableMetadata (metadata, column_metadata) in the manifest file.
         To get the current TableMetadata object call get_table_metadata() function
 
         Args:
@@ -336,14 +413,14 @@ class TableDef:
 
     def get_table_metadata(self) -> TableMetadata:
         """
-        Returns copy of the TableMetadata object from the loaded manifest.
+        Returns **a copy** of the TableMetadata object from the loaded manifest.
 
         NOTE: Write the modified object back to the manifest call the :meth: <replace_table_metadata_in_manifest()>
         method
         Returns:
 
         """
-        return get_table_metadata_from_manifest(self.manifest)
+        return TableMetadata(self.manifest)
 
 
 # ####### CONFIGURATION
@@ -434,6 +511,7 @@ class OauthCredentials(SubscriptableDataclass):
 def build_dataclass_from_dict(data_class, dict_value):
     """
     Convenience method building specified dataclass from a dictionary
+
     Args:
         data_class:
         dict_value:

@@ -1,6 +1,6 @@
 import unittest
 
-from keboola.component.interface_dao import *
+from keboola.component.dao import *
 
 
 
