@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="keboola.component-davidesner",  # TESTING NAME
+    name="keboola.component-kds",  # TESTING NAME
     version="0.0.1",
     author="Keboola KDS Team",
     setup_requires=['pytest-runner', 'flake8'],

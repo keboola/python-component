@@ -361,9 +361,159 @@ class TableMetadata:
         raise ValueError(', '.join(errors) + f'\n Supported base types are: [{ColumnDataTypes.list()}]')
 
 
+class TableManifestDefinition:
+
+    def __init__(self, raw_manifest_json: dict = None):
+        """
+
+        Args:
+            raw_manifest_json (dict): raw manifest dict as provided by Keboola Connection (data folder)
+        """
+        if raw_manifest_json:
+            self._raw_manifest = raw_manifest_json
+        else:
+            self._raw_manifest = {}
+
+        self.table_metadata = TableMetadata(self._raw_manifest)
+
+    @classmethod
+    def build(cls, destination: str = '',
+              primary_key: List[str] = None,
+              columns: List[str] = None,
+              incremental: bool = None,
+              table_metadata: TableMetadata = None,
+              delete_where: str = None):
+        """
+        Factory method for TableManifestDefinition.
+
+        Args:
+            destination: String name of the table in Storage.
+            primary_key: List with names of columns used for primary key.
+            columns: List of columns for headless CSV files
+            incremental: Set to true to enable incremental loading
+            table_metadata: <.dao.TableMetadata> object containing column and table metadata
+            delete_where: Dict with settings for deleting rows
+        """
+        manifest = cls()
+        manifest.destination = destination
+        manifest.primary_key = primary_key
+        manifest.columns = columns
+        manifest.incremental = incremental
+        manifest.table_metadata = table_metadata
+        manifest.set_delete_where_from_dict(delete_where)
+        return manifest
+
+    @property
+    def destination(self) -> str:
+        return self._raw_manifest.get('destination', '')
+
+    @destination.setter
+    def destination(self, val: str):
+        if val:
+            if isinstance(val, str):
+                self._raw_manifest['destination'] = val
+            else:
+                raise TypeError("Destination must be a string")
+
+    @property
+    def columns(self) -> List[str]:
+        return self._raw_manifest.get('columns', [])
+
+    @columns.setter
+    def columns(self, val: List[str]):
+        if val:
+            if isinstance(val, list):
+                self._raw_manifest['columns'] = val
+            else:
+                raise TypeError("Columns must by a list")
+
+    @property
+    def incremental(self) -> bool:
+        return self._raw_manifest.get('incremental', False)
+
+    @incremental.setter
+    def incremental(self, incremental: bool):
+        if incremental:
+            self._raw_manifest['incremental'] = True
+
+    @property
+    def primary_key(self) -> List[str]:
+        return self._raw_manifest.get('primary_key', [])
+
+    @primary_key.setter
+    def primary_key(self, primary_key: List[str]):
+        if primary_key:
+            if isinstance(primary_key, list):
+                self._raw_manifest['primary_key'] = primary_key
+            else:
+                raise TypeError("Primary key must be a list")
+
+    @property
+    def delimiter(self) -> str:
+        return self._raw_manifest.get('delimiter', ',')
+
+    @delimiter.setter
+    def delimiter(self, delimiter):
+        self._raw_manifest['delimiter'] = delimiter
+
+    @property
+    def enclosure(self) -> str:
+        return self._raw_manifest.get('enclosure', '"')
+
+    @enclosure.setter
+    def enclosure(self, enclosure):
+        self._raw_manifest['enclosure'] = enclosure
+
+    @property
+    def table_metadata(self) -> TableMetadata:
+        return self._table_metadata
+
+    @table_metadata.setter
+    def table_metadata(self, table_metadata: TableMetadata):
+        self._table_metadata = table_metadata
+        self._set_table_metadata_to_manifest(table_metadata)
+
+    def set_delete_where_from_dict(self, delete_where):
+        """
+        Process metadata as dictionary and returns modified manifest
+
+        Args:
+            delete_where: Dictionary of where condition specification
+
+        Returns:
+            Manifest dict
+        """
+        if delete_where:
+            if 'column' in delete_where and 'values' in delete_where:
+                if not isinstance(delete_where['column'], str):
+                    raise TypeError("Delete column must be a string")
+                if not isinstance(delete_where['values'], list):
+                    raise TypeError("Delete values must be a list")
+                op = delete_where['operator'] or 'eq'
+                if (not op == 'eq') and (not op == 'ne'):
+                    raise ValueError("Delete operator must be 'eq' or 'ne'")
+                self._raw_manifest['delete_where_values'] = delete_where['values']
+                self._raw_manifest['delete_where_column'] = delete_where['column']
+                self._raw_manifest['delete_where_operator'] = op
+            else:
+                raise ValueError("Delete where specification must contain "
+                                 "keys 'column' and 'values'")
+
+    def _set_table_metadata_to_manifest(self, table_metadata: TableMetadata):
+        self._raw_manifest['metadata'] = table_metadata.table_metadata
+        self._raw_manifest['column_metadata'] = table_metadata.column_metadata
+
+    def to_dict(self) -> dict:
+        # in case the table_metadata is out of sync
+        self._set_table_metadata_to_manifest(self._table_metadata)
+        return self._raw_manifest
+
+
 class TableDefinition:
     """
     Table definition class. It is used as a container for `in/tables/` files.
+
+    Also, it is useful when collecting results and building export configs.
 
     Attributes:
         name: Table / file name.
@@ -373,54 +523,73 @@ class TableDefinition:
             The full_path is None when dealing with [workspaces](
             https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
         is_sliced: True if the full_path points to a folder with sliced tables
-        manifest (dict): Initialized manifest file
+        manifest (TableManifestDefinition): Initialized manifest file
     """
 
     def __init__(self, name: str, full_path: Union[str, None] = None, is_sliced: bool = False,
-                 manifest: dict = field(default_factory=dict)):
+                 manifest: TableManifestDefinition = field(default_factory=TableManifestDefinition)):
         """
 
         Args:
             name: Table / file name.
-            full_path (str): (optional) Full path of the file. May be empty in case it represents only orphaned
-            manifest.
+            full_path (str):
+                (optional) Full path of the file. May be empty in case it represents only orphaned
+                manifest.
                 May also be a folder path - in this case it is a [sliced tables](
                 https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
                 The full_path is None when dealing with [workspaces](
                 https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
             is_sliced: True if the full_path points to a folder with sliced tables
-            manifest (dict): Initialized manifest file. See also CommonInterface.build_table_manifest()
+            manifest (TableManifestDefinition): Initialized manifest file.
         """
         self.full_path = full_path
         self.name = name
         self.is_sliced = is_sliced
-        self.manifest = manifest
+        self.manifest_definition = manifest
 
-    def replace_table_metadata_in_manifest(self, table_metadata: TableMetadata):
+    @classmethod
+    def build(cls, name: str,
+              full_path: Union[str, None] = None,
+              is_sliced: bool = False,
+              destination: str = '',
+              primary_key: List[str] = None,
+              columns: List[str] = None,
+              incremental: bool = None,
+              table_metadata: TableMetadata = None,
+              delete_where: str = None):
         """
-        (inplace) Replace the TableMetadata (metadata, column_metadata) in the manifest file.
-        To get the current TableMetadata object call get_table_metadata() function
+        Factory method for TableDefinition along with the "manifest".
 
         Args:
-            table_metadata:
-
-        Returns:
-
+            name: Table / file name.
+            full_path (str):
+                (optional) Full path of the file. May be empty in case it represents only orphaned
+                manifest.
+                May also be a folder path - in this case it is a [sliced tables](
+                https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
+                The full_path is None when dealing with [workspaces](
+                https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
+            is_sliced: True if the full_path points to a folder with sliced tables
+            destination: String name of the table in Storage.
+            primary_key: List with names of columns used for primary key.
+            columns: List of columns for headless CSV files
+            incremental: Set to true to enable incremental loading
+            table_metadata: <.dao.TableMetadata> object containing column and table metadata
+            delete_where: Dict with settings for deleting rows
         """
 
-        self.manifest['metadata'] = table_metadata.table_metadata
-        self.manifest['column_metadata'] = table_metadata.column_metadata
+        # build manifest definition
+        manifest = TableManifestDefinition()
+        manifest.destination = destination
+        manifest.primary_key = primary_key
+        manifest.columns = columns
+        manifest.incremental = incremental
+        manifest.table_metadata = table_metadata
+        manifest.set_delete_where_from_dict(delete_where)
 
-    def get_table_metadata(self) -> TableMetadata:
-        """
-        Returns **a copy** of the TableMetadata object from the loaded manifest.
-
-        NOTE: Write the modified object back to the manifest call the :meth: <replace_table_metadata_in_manifest()>
-        method
-        Returns:
-
-        """
-        return TableMetadata(self.manifest)
+        table_def = cls(name=name, full_path=full_path,
+                        is_sliced=is_sliced, manifest=manifest)
+        return table_def
 
 
 # ####### CONFIGURATION

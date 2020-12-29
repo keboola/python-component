@@ -48,10 +48,6 @@ class CommonInterface:
         data_folder_path (str):
             Full path to the /data folder
 
-        configuration (Configuration):
-            Configuration object with initialized configuration, handling tasks related to
-            config manipulation.
-
     """
     LOGGING_TYPE_STD = 'std'
     LOGGING_TYPE_GELF = 'gelf'
@@ -87,10 +83,11 @@ class CommonInterface:
         if not data_folder_path:
             data_folder_path = self._get_data_folder_from_context()
 
-        self.data_folder_path = data_folder_path
+        # try to load the configuration
+        # raises ValueError
+        Configuration(data_folder_path)
 
-        # init configuration / load config.json
-        self.configuration = Configuration(data_folder_path)
+        self.data_folder_path = data_folder_path
 
     def _get_data_folder_from_context(self):
         # try to get from argument parameter
@@ -149,7 +146,8 @@ class CommonInterface:
         return logger
 
     @staticmethod
-    def set_gelf_logger(log_level: int = logging.INFO, transport_layer='TCP', stdout=False):  # noqa: E301
+    def set_gelf_logger(log_level: int = logging.INFO, transport_layer='TCP',
+                        stdout=False, include_extra_fields=True, **gelf_kwargs):  # noqa: E301
         """
         Sets gelf console logger. Handler for console output is not included by default,
         for testing in non-gelf environments use stdout=True.
@@ -158,6 +156,10 @@ class CommonInterface:
             log_level: logging level, default: 'logging.INFO'
             transport_layer: 'TCP' or 'UDP', default:'UDP
             stdout: if set to True, Stout handler is also included
+            include_extra_fields:
+                Include extra GELF fields in the log messages.
+                e.g. logging.warning('Some warning',
+                                     extra={"additional_info": "Extra info to be displayed in the detail"}
 
         Returns: Logger object
         """
@@ -168,12 +170,14 @@ class CommonInterface:
             CommonInterface.set_default_logger(log_level)
 
         # gelf handler setup
+        gelf_kwargs['include_extra_fields'] = include_extra_fields
+
         host = os.getenv('KBC_LOGGER_ADDR', 'localhost')
         port = os.getenv('KBC_LOGGER_PORT', 12201)
         if transport_layer == 'TCP':
-            gelf = GelfTcpHandler(host=host, port=port)
+            gelf = GelfTcpHandler(host=host, port=port, **gelf_kwargs)
         elif transport_layer == 'UDP':
-            gelf = GelfUdpHandler(host=host, port=port)
+            gelf = GelfUdpHandler(host=host, port=port, **gelf_kwargs)
         else:
             raise ValueError(F'Unsupported gelf transport layer: {transport_layer}. Choose TCP or UDP')
 
@@ -186,7 +190,7 @@ class CommonInterface:
     def get_state_file(self) -> dict:
         """
 
-        Returns dict representation of state file or nothing if not present
+        Returns dict representation of state file or empty dict if not present
 
         Returns:
             dict:
@@ -275,60 +279,164 @@ class CommonInterface:
                 table_defs.append(TableDefinition(full_path=None, name=p.stem, is_sliced=False, manifest=manifest))
         return table_defs
 
-    @staticmethod
-    def build_manifest(destination: str = '',
-                       primary_key: List[str] = None,
-                       columns: List[str] = None,
-                       incremental: bool = None,
-                       table_metadata: TableMetadata = None,
-                       delete_where: str = None) -> dict:
+    def _create_table_definition(self, name: str,
+                                 storage_stage: str = 'out',
+                                 is_sliced: bool = False,
+                                 destination: str = '',
+                                 primary_key: List[str] = None,
+                                 columns: List[str] = None,
+                                 incremental: bool = None,
+                                 table_metadata: TableMetadata = None,
+                                 delete_where: str = None) -> TableDefinition:
         """
-        Create output table manifest.
+                Helper method for TableDefinition creation along with the "manifest".
+                It initializes path according to the storage_stage type.
 
-        See Also: write_table_manifest()
+                Args:
+                    name: Table / file name. e.g. `'my_table.csv'`.
+                    storage_stage:
+                        default value: 'out'
+                        either `'in'` or `'out'`. Determines the path to result file. E.g. `data/tables/in/my_table.csv`
+                    is_sliced: True if the full_path points to a folder with sliced tables
+                    destination: String name of the table in Storage.
+                    primary_key: List with names of columns used for primary key.
+                    columns: List of columns for headless CSV files
+                    incremental: Set to true to enable incremental loading
+                    table_metadata: <.dao.TableMetadata> object containing column and table metadata
+                    delete_where: Dict with settings for deleting rows
+        """
+        if storage_stage == 'in':
+            full_path = os.path.join(self.tables_in_path, name)
+        elif storage_stage == 'out':
+            full_path = os.path.join(self.tables_out_path, name)
+        else:
+            raise ValueError(f'Invalid storage_stage value "{storage_stage}". Supported values are: "in" or "out"!')
+
+        return TableDefinition.build(name=name,
+                                     full_path=full_path,
+                                     is_sliced=is_sliced,
+                                     destination=destination,
+                                     primary_key=primary_key,
+                                     columns=columns,
+                                     incremental=incremental,
+                                     table_metadata=table_metadata,
+                                     delete_where=delete_where)
+
+    def create_in_table_definition(self, name: str,
+                                   is_sliced: bool = False,
+                                   destination: str = '',
+                                   primary_key: List[str] = None,
+                                   columns: List[str] = None,
+                                   incremental: bool = None,
+                                   table_metadata: TableMetadata = None,
+                                   delete_where: str = None) -> TableDefinition:
+        """
+                       Helper method for input TableDefinition creation along with the "manifest".
+                       It initializes path in data/tables/in/ folder.
+
+                       Args:
+                           name: Table / file name. e.g. `'my_table.csv'`.
+                           is_sliced: True if the full_path points to a folder with sliced tables
+                           destination: String name of the table in Storage.
+                           primary_key: List with names of columns used for primary key.
+                           columns: List of columns for headless CSV files
+                           incremental: Set to true to enable incremental loading
+                           table_metadata: <.dao.TableMetadata> object containing column and table metadata
+                           delete_where: Dict with settings for deleting rows
+        """
+
+        return self._create_table_definition(name=name,
+                                             storage_stage='in',
+                                             is_sliced=is_sliced,
+                                             destination=destination,
+                                             primary_key=primary_key,
+                                             columns=columns,
+                                             incremental=incremental,
+                                             table_metadata=table_metadata,
+                                             delete_where=delete_where)
+
+    def create_out_table_definition(self, name: str,
+                                    is_sliced: bool = False,
+                                    destination: str = '',
+                                    primary_key: List[str] = None,
+                                    columns: List[str] = None,
+                                    incremental: bool = None,
+                                    table_metadata: TableMetadata = None,
+                                    delete_where: str = None) -> TableDefinition:
+        """
+                       Helper method for output TableDefinition creation along with the "manifest".
+                       It initializes path in data/tables/out/ folder.
+
+                       Args:
+                           name: Table / file name. e.g. `'my_table.csv'`.
+                           is_sliced: True if the full_path points to a folder with sliced tables
+                           destination: String name of the table in Storage.
+                           primary_key: List with names of columns used for primary key.
+                           columns: List of columns for headless CSV files
+                           incremental: Set to true to enable incremental loading
+                           table_metadata: <.dao.TableMetadata> object containing column and table metadata
+                           delete_where: Dict with settings for deleting rows
+        """
+
+        return self._create_table_definition(name=name,
+                                             storage_stage='out',
+                                             is_sliced=is_sliced,
+                                             destination=destination,
+                                             primary_key=primary_key,
+                                             columns=columns,
+                                             incremental=incremental,
+                                             table_metadata=table_metadata,
+                                             delete_where=delete_where)
+
+    @staticmethod
+    def write_tabledef_manifest(table_definition: TableDefinition):
+        """
+        Write a table manifest from TableDefinition. Creates the appropriate manifest file in the proper location.
+
+
+        ** Usage:**
+
+        ```python
+        from keboola.component import CommonInterface
+        from keboola.component import dao
+
+        ci = CommonInterface()
+        tm = dao.TableMetadata()
+        tm.add_table_description("My new table")
+
+        # build table definition
+        table_def = ci.create_out_table_definition(name='my_new_table', mytable.csv'
+                                , incremental = True
+                                , table_metadata = tm
+                                ))
+        ci.write_tabledef_manifest(table_def)
+        ```
 
         Args:
-            destination: String name of the table in Storage.
-            primary_key: List with names of columns used for primary key.
-            columns: List of columns for headless CSV files
-            incremental: Set to true to enable incremental loading
-            table_metadata: <.dao.TableMetadata> object containing column and table metadata
-            delete_where: Dict with settings for deleting rows
+            table_definition (TableDefinition): Initialized TableDefinition object containing manifest.
+
+        Returns:
+
         """
-        manifest = {}
-        if destination:
-            if isinstance(destination, str):
-                manifest['destination'] = destination
-            else:
-                raise TypeError("Destination must be a string")
-        if primary_key:
-            if isinstance(primary_key, list):
-                manifest['primary_key'] = primary_key
-            else:
-                raise TypeError("Primary key must be a list")
-        if columns:
-            if isinstance(columns, list):
-                manifest['columns'] = columns
-            else:
-                raise TypeError("Columns must by a list")
-        if incremental:
-            manifest['incremental'] = True
-        manifest['column_metadata'] = table_metadata.column_metadata
-        manifest['metadata'] = table_metadata.table_metadata
-        manifest = CommonInterface._process_delete(manifest, delete_where)
-        return manifest
+        CommonInterface.write_table_manifest(table_definition.full_path, table_definition.manifest_definition)
 
     @staticmethod
-    def write_table_manifest(
-            file_name: str,
-            destination: str = '',
-            primary_key: List[str] = None,
-            columns: List[str] = None,
-            incremental: bool = None,
-            table_metadata: TableMetadata = None,
-            delete_where: str = None):
+    def write_tabledef_manifests(table_definitions: List[TableDefinition]):
         """
-        Write manifest for output table Manifest is used for
+        Process all table definition objects and create appropriate manifest files.
+        Args:
+            table_definitions:
+
+        Returns:
+
+        """
+        for table_def in table_definitions:
+            CommonInterface.write_tabledef_manifest(table_def)
+
+    @staticmethod
+    def write_table_manifest(file_name: str, manifest_definition: TableManifestDefinition):
+        """
+        Write manifest for output table. Manifest is used for
         the table to be stored in KBC Storage.
 
         ** Usage:**
@@ -341,60 +449,25 @@ class CommonInterface:
         tm = dao.TableMetadata()
         tm.add_table_description("My new table")
 
-        ci.write_table_manifest(filename= os.path.join(ci.tables_out_path,'mytable.csv'
+        # using factory method
+        manifest = dao.TableManifestDefinition.build(
                                 , incremental = True
                                 , table_metadata = tm
+                                )
+        ci.write_table_manifest(filename= os.path.join(ci.tables_out_path,
+                                                       'mytable.csv')
+                                , manifest_definition = manifest
                                 )
         ```
 
 
         Args:
-            file_name: Local file path of the file with table data. Or empty string if workspace is used
-            destination: String name of the table in Storage.
-            primary_key: List with names of columns used for primary key.
-            columns: List of columns for headless CSV files
-            incremental: Set to true to enable incremental loading
-            table_metadata: <.dao.TableMetadata> object containing column and table metadata
-            delete_where: Dict with settings for deleting rows
+            file_name: result file path
+            manifest_definition (TableManifestDefinition): TableManifest definition object
         """
-        manifest = CommonInterface.build_manifest(file_name,
-                                                  destination,
-                                                  primary_key,
-                                                  columns,
-                                                  incremental,
-                                                  table_metadata,
-                                                  delete_where)
+        manifest = manifest_definition.to_dict()
         with open(file_name + '.manifest', 'w') as manifest_file:
             json.dump(manifest, manifest_file)
-
-    @staticmethod
-    def _process_delete(manifest, delete_where):
-        """
-        Process metadata as dictionary and returns modified manifest
-
-        Args:
-            manifest: Manifest dict
-            delete_where: Dictionary of where condition specification
-
-        Returns:
-            Manifest dict
-        """
-        if delete_where:
-            if 'column' in delete_where and 'values' in delete_where:
-                if not isinstance(delete_where['column'], str):
-                    raise TypeError("Delete column must be a string")
-                if not isinstance(delete_where['values'], list):
-                    raise TypeError("Delete values must be a list")
-                op = delete_where['operator'] or 'eq'
-                if (not op == 'eq') and (not op == 'ne'):
-                    raise ValueError("Delete operator must be 'eq' or 'ne'")
-                manifest['delete_where_values'] = delete_where['values']
-                manifest['delete_where_column'] = delete_where['column']
-                manifest['delete_where_operator'] = op
-            else:
-                raise ValueError("Delete where specification must contain "
-                                 "keys 'column' and 'values'")
-        return manifest
 
     # TODO: refactor the validate config so it's more userfriendly
     """
@@ -402,167 +475,171 @@ class CommonInterface:
         - 
     """
 
-    # def validate_config(self, mandatory_params=None):
-    #     """
-    #             Validates config parameters based on provided mandatory parameters.
-    #             All provided parameters must be present in config to pass.
-    #             ex1.:
-    #             par1 = 'par1'
-    #             par2 = 'par2'
-    #             mandatory_params = [par1, par2]
-    #             Validation will fail when one of the above parameters is not found
-    #
-    #             Two levels of nesting:
-    #             Parameters can be grouped as arrays par3 = [groupPar1, groupPar2]
-    #             => at least one of the pars has to be present
-    #             ex2.
-    #             par1 = 'par1'
-    #             par2 = 'par2'
-    #             par3 = 'par3'
-    #             groupPar1 = 'groupPar1'
-    #             groupPar2 = 'groupPar2'
-    #             group1 = [groupPar1, groupPar2]
-    #             group3 = [par3, group1]
-    #             mandatory_params = [par1, par2, group1]
-    #
-    #             Folowing logical expression is evaluated:
-    #             Par1 AND Par2 AND (groupPar1 OR groupPar2)
-    #
-    #             ex3
-    #             par1 = 'par1'
-    #             par2 = 'par2'
-    #             par3 = 'par3'
-    #             groupPar1 = 'groupPar1'
-    #             groupPar2 = 'groupPar2'
-    #             group1 = [groupPar1, groupPar2]
-    #             group3 = [par3, group1]
-    #             mandatory_params = [par1, par2, group3]
-    #
-    #             Following logical expression is evaluated:
-    #             par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
-    #             """
-    #     if not mandatory_params:
-    #         mandatory_params = []
-    #     return self.validate_parameters(self.cfg_params, mandatory_params, 'config parameters')
-    #
-    # def validate_image_parameters(self, mandatory_params):
-    #     """
-    #             Validates image parameters based on provided mandatory parameters.
-    #             All provided parameters must be present in config to pass.
-    #             ex1.:
-    #             par1 = 'par1'
-    #             par2 = 'par2'
-    #             mandatory_params = [par1, par2]
-    #             Validation will fail when one of the above parameters is not found
-    #
-    #             Two levels of nesting:
-    #             Parameters can be grouped as arrays par3 = [groupPar1, groupPar2]
-    #             => at least one of the pars has to be present
-    #             ex2.
-    #             par1 = 'par1'
-    #             par2 = 'par2'
-    #             par3 = 'par3'
-    #             groupPar1 = 'groupPar1'
-    #             groupPar2 = 'groupPar2'
-    #             group1 = [groupPar1, groupPar2]
-    #             group3 = [par3, group1]
-    #             mandatory_params = [par1, par2, group1]
-    #
-    #             Folowing logical expression is evaluated:
-    #             Par1 AND Par2 AND (groupPar1 OR groupPar2)
-    #
-    #             ex3
-    #             par1 = 'par1'
-    #             par2 = 'par2'
-    #             par3 = 'par3'
-    #             groupPar1 = 'groupPar1'
-    #             groupPar2 = 'groupPar2'
-    #             group1 = [groupPar1, groupPar2]
-    #             group3 = [par3, group1]
-    #             mandatory_params = [par1, par2, group3]
-    #
-    #             Following logical expression is evaluated:
-    #             par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
-    #             """
-    #     return self.validate_parameters(self.image_params, mandatory_params, 'image/stack parameters')
-    #
-    # def validate_parameters(self, parameters, mandatory_params, _type):
-    #     """
-    #     Validates provided parameters based on provided mandatory parameters.
-    #     All provided parameters must be present in config to pass.
-    #     ex1.:
-    #     par1 = 'par1'
-    #     par2 = 'par2'
-    #     mandatory_params = [par1, par2]
-    #     Validation will fail when one of the above parameters is not found
-    #
-    #     Two levels of nesting:
-    #     Parameters can be grouped as arrays par3 = [groupPar1, groupPar2] => at least one of the pars has to be
-    #     present
-    #     ex2.
-    #     par1 = 'par1'
-    #     par2 = 'par2'
-    #     par3 = 'par3'
-    #     groupPar1 = 'groupPar1'
-    #     groupPar2 = 'groupPar2'
-    #     group1 = [groupPar1, groupPar2]
-    #     group3 = [par3, group1]
-    #     mandatory_params = [par1, par2, group1]
-    #
-    #     Folowing logical expression is evaluated:
-    #     Par1 AND Par2 AND (groupPar1 OR groupPar2)
-    #
-    #     ex3
-    #     par1 = 'par1'
-    #     par2 = 'par2'
-    #     par3 = 'par3'
-    #     groupPar1 = 'groupPar1'
-    #     groupPar2 = 'groupPar2'
-    #     group1 = [groupPar1, groupPar2]
-    #     group3 = [par3, group1]
-    #     mandatory_params = [par1, par2, group3]
-    #
-    #     Following logical expression is evaluated:
-    #     par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
-    #     """
-    #     missing_fields = []
-    #     for par in mandatory_params:
-    #         if isinstance(par, list):
-    #             missing_fields.extend(self._validate_par_group(par, parameters))
-    #         elif not parameters.get(par):
-    #             missing_fields.append(par)
-    #
-    #     if missing_fields:
-    #         raise ValueError(
-    #             'Missing mandatory {} fields: [{}] '.format(_type, ', '.join(missing_fields)))
-    #
-    # def _validate_par_group(self, par_group, parameters):
-    #     missing_fields = []
-    #     is_present = False
-    #     for par in par_group:
-    #         if isinstance(par, list):
-    #             missing_subset = self._get_par_missing_fields(par, parameters)
-    #             missing_fields.extend(missing_subset)
-    #             if not missing_subset:
-    #                 is_present = True
-    #
-    #         elif parameters.get(par):
-    #             is_present = True
-    #         else:
-    #             missing_fields.append(par)
-    #     if not is_present:
-    #         return missing_fields
-    #     else:
-    #         return []
-    #
-    # def _get_par_missing_fields(self, mand_params, parameters):
-    #     missing_fields = []
-    #     for par in mand_params:
-    #         if not parameters.get(par):
-    #             missing_fields.append(par)
-    #     return missing_fields
+    def validate_configuration(self, mandatory_params=None):
+        """
+                Validates config parameters based on provided mandatory parameters.
+                All provided parameters must be present in config to pass.
+                ex1.:
+                par1 = 'par1'
+                par2 = 'par2'
+                mandatory_params = [par1, par2]
+                Validation will fail when one of the above parameters is not found
+
+                Two levels of nesting:
+                Parameters can be grouped as arrays par3 = [groupPar1, groupPar2]
+                => at least one of the pars has to be present
+                ex2.
+                par1 = 'par1'
+                par2 = 'par2'
+                par3 = 'par3'
+                groupPar1 = 'groupPar1'
+                groupPar2 = 'groupPar2'
+                group1 = [groupPar1, groupPar2]
+                group3 = [par3, group1]
+                mandatory_params = [par1, par2, group1]
+
+                Folowing logical expression is evaluated:
+                Par1 AND Par2 AND (groupPar1 OR groupPar2)
+
+                ex3
+                par1 = 'par1'
+                par2 = 'par2'
+                par3 = 'par3'
+                groupPar1 = 'groupPar1'
+                groupPar2 = 'groupPar2'
+                group1 = [groupPar1, groupPar2]
+                group3 = [par3, group1]
+                mandatory_params = [par1, par2, group3]
+
+                Following logical expression is evaluated:
+                par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
+                """
+        if not mandatory_params:
+            mandatory_params = []
+        return self.validate_parameters(self.configuration.parameters, mandatory_params, 'config parameters')
+
+    def validate_image_parameters(self, mandatory_params):
+        """
+                Validates image parameters based on provided mandatory parameters.
+                All provided parameters must be present in config to pass.
+                ex1.:
+                par1 = 'par1'
+                par2 = 'par2'
+                mandatory_params = [par1, par2]
+                Validation will fail when one of the above parameters is not found
+
+                Two levels of nesting:
+                Parameters can be grouped as arrays par3 = [groupPar1, groupPar2]
+                => at least one of the pars has to be present
+                ex2.
+                par1 = 'par1'
+                par2 = 'par2'
+                par3 = 'par3'
+                groupPar1 = 'groupPar1'
+                groupPar2 = 'groupPar2'
+                group1 = [groupPar1, groupPar2]
+                group3 = [par3, group1]
+                mandatory_params = [par1, par2, group1]
+
+                Folowing logical expression is evaluated:
+                Par1 AND Par2 AND (groupPar1 OR groupPar2)
+
+                ex3
+                par1 = 'par1'
+                par2 = 'par2'
+                par3 = 'par3'
+                groupPar1 = 'groupPar1'
+                groupPar2 = 'groupPar2'
+                group1 = [groupPar1, groupPar2]
+                group3 = [par3, group1]
+                mandatory_params = [par1, par2, group3]
+
+                Following logical expression is evaluated:
+                par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
+                """
+        return self.validate_parameters(self.configuration.image_parameters, mandatory_params, 'image/stack parameters')
+
+    def validate_parameters(self, parameters, mandatory_params, _type):
+        """
+        Validates provided parameters based on provided mandatory parameters.
+        All provided parameters must be present in config to pass.
+        ex1.:
+        par1 = 'par1'
+        par2 = 'par2'
+        mandatory_params = [par1, par2]
+        Validation will fail when one of the above parameters is not found
+
+        Two levels of nesting:
+        Parameters can be grouped as arrays par3 = [groupPar1, groupPar2] => at least one of the pars has to be
+        present
+        ex2.
+        par1 = 'par1'
+        par2 = 'par2'
+        par3 = 'par3'
+        groupPar1 = 'groupPar1'
+        groupPar2 = 'groupPar2'
+        group1 = [groupPar1, groupPar2]
+        group3 = [par3, group1]
+        mandatory_params = [par1, par2, group1]
+
+        Folowing logical expression is evaluated:
+        Par1 AND Par2 AND (groupPar1 OR groupPar2)
+
+        ex3
+        par1 = 'par1'
+        par2 = 'par2'
+        par3 = 'par3'
+        groupPar1 = 'groupPar1'
+        groupPar2 = 'groupPar2'
+        group1 = [groupPar1, groupPar2]
+        group3 = [par3, group1]
+        mandatory_params = [par1, par2, group3]
+
+        Following logical expression is evaluated:
+        par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
+        """
+        missing_fields = []
+        for par in mandatory_params:
+            if isinstance(par, list):
+                missing_fields.extend(self._validate_par_group(par, parameters))
+            elif not parameters.get(par):
+                missing_fields.append(par)
+
+        if missing_fields:
+            raise ValueError(
+                'Missing mandatory {} fields: [{}] '.format(_type, ', '.join(missing_fields)))
+
+    def _validate_par_group(self, par_group, parameters):
+        missing_fields = []
+        is_present = False
+        for par in par_group:
+            if isinstance(par, list):
+                missing_subset = self._get_par_missing_fields(par, parameters)
+                missing_fields.extend(missing_subset)
+                if not missing_subset:
+                    is_present = True
+
+            elif parameters.get(par):
+                is_present = True
+            else:
+                missing_fields.append(par)
+        if not is_present:
+            return missing_fields
+        else:
+            return []
+
+    def _get_par_missing_fields(self, mand_params, parameters):
+        missing_fields = []
+        for par in mand_params:
+            if not parameters.get(par):
+                missing_fields.append(par)
+        return missing_fields
 
     # ### PROPERTIES
+    @property
+    def configuration(self):
+        return Configuration(self.data_folder_path)
+
     @property
     def tables_out_path(self):
         return os.path.join(self.data_folder_path, 'out', 'tables')

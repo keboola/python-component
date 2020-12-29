@@ -135,7 +135,6 @@ dmypy.json
 .vscode
 .DS_Store
 
-sphinx/
 
 test.py
 
