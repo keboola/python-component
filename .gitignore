@@ -127,6 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+<<<<<<< HEAD
 
 # kbc data folder
 data/
@@ -136,3 +137,5 @@ data/
 .vscode
 .DS_Store
 
+=======
+>>>>>>> 0d6d54047d08a0abe691d9a8bb72b980f494fe0d
