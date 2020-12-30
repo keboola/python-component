@@ -3,11 +3,11 @@ import unittest
 from keboola.component.dao import *
 
 
-
 class TestTableMetadata(unittest.TestCase):
     def test_column_metadata_is_valid(self):
         tmetadata = TableMetadata()
         pass
+
     # TODO: Test dao.TableMetadata.column_metadata produces valid column metadata structure
     """
     "column_metadata": {

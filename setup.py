@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="keboola.component-kds",  # TESTING NAME
+    name="keboola.component",  # TESTING NAME
     version="0.0.1",
     author="Keboola KDS Team",
     setup_requires=['pytest-runner', 'flake8'],
@@ -15,6 +15,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/keboola/python-component",
     packages=setuptools.find_namespace_packages(include=['keboola.*']),
+    include_package_data=True,
+    zip_safe=False,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

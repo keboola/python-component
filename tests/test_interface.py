@@ -16,7 +16,7 @@ class TestEnvHandler(unittest.TestCase):
         return True
         # # set env
         # interface = CommonInterface(mandatory_params=[])
-        #
+        # `
         # # tests
         # try:
         #     interface.validate_config()
