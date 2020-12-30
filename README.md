@@ -158,7 +158,7 @@ ci.write_state_file({"last_updated": datetime.now().isoformat()})
 
 The component may define output [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files/#dataouttables-manifests) 
 that define options on storing the results back to the Keboola Connection Storage. This library provides methods that simplifies 
-the manifest file creation and allows defining the export options and metadata of the result table using helper objects `TableDefinition`, `TableManifestDefinition` 
+the manifest file creation and allows defining the export options and metadata of the result table using helper objects `TableDefinition` 
 and `TableMetadata`.
 
 
@@ -186,9 +186,9 @@ with open(result_table.full_path, 'w') as result:
     result.write('line')
 
 # add some metadata
-result_table.manifest_definition.table_metadata.add_table_description('My new table description')
+result_table.table_metadata.add_table_description('My new table description')
 # add column datatype
-result_table.manifest_definition.table_metadata.add_column_data_type('id', dao.SupportedDataTypes.INTEGER)
+result_table.table_metadata.add_column_data_type('id', dao.SupportedDataTypes.INTEGER)
 
 # write manifest
 ci.write_tabledef_manifest(result_table)

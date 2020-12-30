@@ -261,12 +261,13 @@ class CommonInterface:
                 logging.warning(f'Folder {t} does not have matching manifest, it will be ignored!')
                 continue
 
-            table_defs.append(TableDefinition(full_path=t, name=p.name, is_sliced=is_sliced, manifest=manifest))
+            table_defs.append(TableDefinition.build_from_manifest(full_path=t, name=p.name, is_sliced=is_sliced,
+                                                                  raw_manifest_json=manifest))
 
         if orphaned_manifests:
             files_w_manifest = [t.full_path for t in table_defs]
             manifest_files = [f for f in glob.glob(self.tables_in_path + "/**.manifest", recursive=False)
-                              if Path(t.full_path).name not in files_w_manifest]
+                              if Path(f).name not in files_w_manifest]
             for t in manifest_files:
                 p = Path(t)
                 manifest = json.load(open(t))
@@ -276,7 +277,8 @@ class CommonInterface:
                     logging.warning(f'Manifest {t} is folder,s skipping!')
                     continue
 
-                table_defs.append(TableDefinition(full_path=None, name=p.stem, is_sliced=False, manifest=manifest))
+                table_defs.append(TableDefinition.build_from_manifest(full_path=None, name=p.stem, is_sliced=False,
+                                                                      raw_manifest_json=manifest))
         return table_defs
 
     def _create_table_definition(self, name: str,
@@ -312,15 +314,15 @@ class CommonInterface:
         else:
             raise ValueError(f'Invalid storage_stage value "{storage_stage}". Supported values are: "in" or "out"!')
 
-        return TableDefinition.build(name=name,
-                                     full_path=full_path,
-                                     is_sliced=is_sliced,
-                                     destination=destination,
-                                     primary_key=primary_key,
-                                     columns=columns,
-                                     incremental=incremental,
-                                     table_metadata=table_metadata,
-                                     delete_where=delete_where)
+        return TableDefinition(name=name,
+                               full_path=full_path,
+                               is_sliced=is_sliced,
+                               destination=destination,
+                               primary_key=primary_key,
+                               columns=columns,
+                               incremental=incremental,
+                               table_metadata=table_metadata,
+                               delete_where=delete_where)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,
@@ -418,7 +420,9 @@ class CommonInterface:
         Returns:
 
         """
-        CommonInterface.write_table_manifest(table_definition.full_path, table_definition.manifest_definition)
+        manifest = table_definition.get_manifest_dictionary()
+        with open(table_definition.full_path + '.manifest', 'w') as manifest_file:
+            json.dump(manifest, manifest_file)
 
     @staticmethod
     def write_tabledef_manifests(table_definitions: List[TableDefinition]):
@@ -432,42 +436,6 @@ class CommonInterface:
         """
         for table_def in table_definitions:
             CommonInterface.write_tabledef_manifest(table_def)
-
-    @staticmethod
-    def write_table_manifest(file_name: str, manifest_definition: TableManifestDefinition):
-        """
-        Write manifest for output table. Manifest is used for
-        the table to be stored in KBC Storage.
-
-        ** Usage:**
-
-        ```python
-        from keboola.component import CommonInterface
-        from keboola.component import dao
-
-        ci = CommonInterface()
-        tm = dao.TableMetadata()
-        tm.add_table_description("My new table")
-
-        # using factory method
-        manifest = dao.TableManifestDefinition.build(
-                                , incremental = True
-                                , table_metadata = tm
-                                )
-        ci.write_table_manifest(filename= os.path.join(ci.tables_out_path,
-                                                       'mytable.csv')
-                                , manifest_definition = manifest
-                                )
-        ```
-
-
-        Args:
-            file_name: result file path
-            manifest_definition (TableManifestDefinition): TableManifest definition object
-        """
-        manifest = manifest_definition.to_dict()
-        with open(file_name + '.manifest', 'w') as manifest_file:
-            json.dump(manifest, manifest_file)
 
     # TODO: refactor the validate config so it's more userfriendly
     """

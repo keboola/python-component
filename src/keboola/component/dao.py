@@ -1,5 +1,5 @@
 import dataclasses
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
 from typing import List, Union, Dict
@@ -336,32 +336,47 @@ class TableMetadata:
         raise ValueError(', '.join(errors) + f'\n Supported base types are: [{SupportedDataTypes.list()}]')
 
 
-class TableManifestDefinition:
+class TableDefinition:
+    """
+    Table definition class. It is used as a container for `in/tables/` files.
 
-    def __init__(self, raw_manifest_json: dict = None):
+    Also, it is useful when collecting results and building export configs.
+
+    Attributes:
+        name: Table / file name.
+        full_path (str): (optional) Full path of the file. May be empty in case it represents only orphaned manifest.
+            May also be a folder path - in this case it is a [sliced tables](
+            https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
+            The full_path is None when dealing with [workspaces](
+            https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
+        is_sliced: True if the full_path points to a folder with sliced tables
+        destination: String name of the table in Storage.
+        primary_key: List with names of columns used for primary key.
+        columns: List of columns for headless CSV files
+        incremental: Set to true to enable incremental loading
+        table_metadata: <.dao.TableMetadata> object containing column and table metadata
+        delete_where: Dict with settings for deleting rows
+    """
+
+    def __init__(self, name: str, full_path: Union[str, None] = None, is_sliced: bool = False,
+                 destination: str = '',
+                 primary_key: List[str] = None,
+                 columns: List[str] = None,
+                 incremental: bool = None,
+                 table_metadata: TableMetadata = None,
+                 delete_where: str = None):
         """
 
         Args:
-            raw_manifest_json (dict): raw manifest dict as provided by Keboola Connection (data folder)
-        """
-        if raw_manifest_json:
-            self._raw_manifest = raw_manifest_json
-        else:
-            self._raw_manifest = {}
-
-        self.table_metadata = TableMetadata(self._raw_manifest)
-
-    @classmethod
-    def build(cls, destination: str = '',
-              primary_key: List[str] = None,
-              columns: List[str] = None,
-              incremental: bool = None,
-              table_metadata: TableMetadata = None,
-              delete_where: str = None):
-        """
-        Factory method for TableManifestDefinition.
-
-        Args:
+            name: Table / file name.
+            full_path (str):
+                (optional) Full path of the file. May be empty in case it represents only orphaned
+                manifest.
+                May also be a folder path - in this case it is a [sliced tables](
+                https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
+                The full_path is None when dealing with [workspaces](
+                https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
+            is_sliced: True if the full_path points to a folder with sliced tables
             destination: String name of the table in Storage.
             primary_key: List with names of columns used for primary key.
             columns: List of columns for headless CSV files
@@ -369,15 +384,46 @@ class TableManifestDefinition:
             table_metadata: <.dao.TableMetadata> object containing column and table metadata
             delete_where: Dict with settings for deleting rows
         """
-        manifest = cls()
-        manifest.destination = destination
-        manifest.primary_key = primary_key
-        manifest.columns = columns
-        manifest.incremental = incremental
-        manifest.table_metadata = table_metadata
-        manifest.set_delete_where_from_dict(delete_where)
-        return manifest
+        self.full_path = full_path
+        self.name = name
+        self.is_sliced = is_sliced
+        self._raw_manifest = dict()
 
+        # initialize manifest properties
+        self.destination = destination
+        self.primary_key = primary_key
+        self.columns = columns
+        self.incremental = incremental
+        self.table_metadata = table_metadata
+        self.set_delete_where_from_dict(delete_where)
+
+    @classmethod
+    def build_from_manifest(cls, name: str,
+                            full_path: Union[str, None] = None,
+                            is_sliced: bool = False,
+                            raw_manifest_json: dict = None):
+        """
+        Factory method for TableDefinition from the raw "manifest".
+
+        Args:
+            name: Table / file name.
+            full_path (str):
+                (optional) Full path of the file. May be empty in case it represents only orphaned
+                manifest.
+                May also be a folder path - in this case it is a [sliced tables](
+                https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
+                The full_path is None when dealing with [workspaces](
+                https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
+            is_sliced: True if the full_path points to a folder with sliced tables
+            raw_manifest_json (dict): raw manifest dict as provided by Keboola Connection (data folder)
+        """
+        table_def = cls(name=name, full_path=full_path,
+                        is_sliced=is_sliced)
+        # build manifest definition
+        table_def._raw_manifest = raw_manifest_json
+        return table_def
+
+    # #### Manifest properties
     @property
     def destination(self) -> str:
         return self._raw_manifest.get('destination', '')
@@ -478,93 +524,10 @@ class TableManifestDefinition:
         self._raw_manifest['metadata'] = table_metadata.get_table_metadata_for_manifest()
         self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
 
-    def to_dict(self) -> dict:
+    def get_manifest_dictionary(self) -> dict:
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
         return self._raw_manifest
-
-
-class TableDefinition:
-    """
-    Table definition class. It is used as a container for `in/tables/` files.
-
-    Also, it is useful when collecting results and building export configs.
-
-    Attributes:
-        name: Table / file name.
-        full_path (str): (optional) Full path of the file. May be empty in case it represents only orphaned manifest.
-            May also be a folder path - in this case it is a [sliced tables](
-            https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
-            The full_path is None when dealing with [workspaces](
-            https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
-        is_sliced: True if the full_path points to a folder with sliced tables
-        manifest (TableManifestDefinition): Initialized manifest file
-    """
-
-    def __init__(self, name: str, full_path: Union[str, None] = None, is_sliced: bool = False,
-                 manifest: TableManifestDefinition = field(default_factory=TableManifestDefinition)):
-        """
-
-        Args:
-            name: Table / file name.
-            full_path (str):
-                (optional) Full path of the file. May be empty in case it represents only orphaned
-                manifest.
-                May also be a folder path - in this case it is a [sliced tables](
-                https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
-                The full_path is None when dealing with [workspaces](
-                https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
-            is_sliced: True if the full_path points to a folder with sliced tables
-            manifest (TableManifestDefinition): Initialized manifest file.
-        """
-        self.full_path = full_path
-        self.name = name
-        self.is_sliced = is_sliced
-        self.manifest_definition = manifest
-
-    @classmethod
-    def build(cls, name: str,
-              full_path: Union[str, None] = None,
-              is_sliced: bool = False,
-              destination: str = '',
-              primary_key: List[str] = None,
-              columns: List[str] = None,
-              incremental: bool = None,
-              table_metadata: TableMetadata = None,
-              delete_where: str = None):
-        """
-        Factory method for TableDefinition along with the "manifest".
-
-        Args:
-            name: Table / file name.
-            full_path (str):
-                (optional) Full path of the file. May be empty in case it represents only orphaned
-                manifest.
-                May also be a folder path - in this case it is a [sliced tables](
-                https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
-                The full_path is None when dealing with [workspaces](
-                https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
-            is_sliced: True if the full_path points to a folder with sliced tables
-            destination: String name of the table in Storage.
-            primary_key: List with names of columns used for primary key.
-            columns: List of columns for headless CSV files
-            incremental: Set to true to enable incremental loading
-            table_metadata: <.dao.TableMetadata> object containing column and table metadata
-            delete_where: Dict with settings for deleting rows
-        """
-
-        # build manifest definition
-        manifest = TableManifestDefinition()
-        manifest.destination = destination
-        manifest.primary_key = primary_key
-        manifest.columns = columns
-        manifest.incremental = incremental
-        manifest.table_metadata = table_metadata
-        manifest.set_delete_where_from_dict(delete_where)
-
-        table_def = cls(name=name, full_path=full_path,
-                        is_sliced=is_sliced, manifest=manifest)
-        return table_def
 
 
 # ####### CONFIGURATION
