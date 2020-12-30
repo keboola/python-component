@@ -154,5 +154,42 @@ ci.write_state_file({"last_updated": datetime.now().isoformat()})
 ```
 
 
-#### Output mappings and processing results
+#### Output manifests and processing results
 
+The component may define output [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files/#dataouttables-manifests) 
+that define options on storing the results back to the Keboola Connection Storage. This library provides methods that simplifies 
+the manifest file creation and allows defining the export options and metadata of the result table using helper objects `TableDefinition`, `TableManifestDefinition` 
+and `TableMetadata`.
+
+
+`TableDefinition` object serves as a result container containing all the information needed to store the Table into the Storage. 
+There are convenience methods for result processing and manifest creation `CommonInterface.write_table_def_manifest`. 
+Also it is possible to create the container for the output table using the `CommonInterface.create_out_table_definition()`.
+
+![TableDefinition dependencies](docs/imgs/TableDefinition_class.png)
+
+
+**Example:**
+
+```python
+from keboola.component import CommonInterface
+from keboola.component import dao
+
+# init the interface
+ci = CommonInterface()
+
+# create container for the result
+result_table = ci.create_out_table_definition('my_new_result_table', primary_key=['id'], incremental=True)
+
+# write some content
+with open(result_table.full_path, 'w') as result:
+    result.write('line')
+
+# add some metadata
+result_table.manifest_definition.table_metadata.add_table_description('My new table description')
+# add column datatype
+result_table.manifest_definition.table_metadata.add_column_data_type('id', dao.SupportedDataTypes.INTEGER)
+
+# write manifest
+ci.write_tabledef_manifest(result_table)
+```

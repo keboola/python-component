@@ -40,7 +40,7 @@ class EnvironmentVariables:
     logger_port: str
 
 
-class ColumnDataTypes(Enum):
+class SupportedDataTypes(Enum):
     """
     Enum of [supported datatypes](https://help.keboola.com/storage/tables/data-types/)
     """
@@ -85,7 +85,7 @@ class TableMetadata:
         # tm = TableMetadata(manifest_dict)
 
         # add column types
-        tm.add_column_types({"column_a":"INTEGER", "column_b":ColumnDataTypes.BOOLEAN.value})
+        tm.add_column_types({"column_a":"INTEGER", "column_b":SupportedDataTypes.BOOLEAN.value})
 
         # add table description
         tm.add_table_description("desc")
@@ -94,12 +94,12 @@ class TableMetadata:
         tm.add_column_descriptions({"column_a":"Integer columns", "column_b":"my boolean test"})
 
         # add arbitrary table metadata
-        tm.add_custom_table_metadata("my_arbitrary_key","some value")
+        tm.add_table_metadata("my_arbitrary_key","some value")
 
         # update manifest
         manifest = {}
-        manifest['metadata'] = tm.table_metadata
-        manifest['column_metadata'] = tm.column_metadata
+        manifest['metadata'] = tm.get_table_metadata_for_manifest()
+        manifest['column_metadata'] = tm.get_column_metadata_for_manifest()
         ```
 
 
@@ -111,15 +111,39 @@ class TableMetadata:
         Args:
             manifest (dict): Existing manifest file
         """
-        self._table_metadata_dict = dict()
-        self._column_metadata_dict = dict()
-        self._custom_table_metadata_nonunique = list()
-        self._custom_column_metadata_nonunique = dict()
+        self.table_metadata = dict()
+        self.column_metadata = dict()
         if manifest:
             self.load_table_metadata_from_manifest(manifest)
 
-    @property
-    def table_metadata(self) -> List[dict]:
+    def load_table_metadata_from_manifest(self, manifest: dict):
+        """
+        Load metadata from manifest file.
+
+        Args:
+            manifest:
+
+        Returns:TableMetadata
+
+        """
+        # column metadata
+        for column, metadata_list in manifest.get('column_metadata', {}):
+            for metadata in metadata_list:
+                if not metadata.get('key') and metadata.get('value'):
+                    continue
+                key = metadata['key']
+                value = metadata['value']
+                self.add_column_metadata(column, key, value)
+
+        # table metadata
+        for metadata in manifest.get('metadata', []):
+            if not metadata.get('key') and metadata.get('value'):
+                continue
+            key = metadata['key']
+            value = metadata['value']
+            self.add_table_metadata(key, value)
+
+    def get_table_metadata_for_manifest(self) -> List[dict]:
         """
         Returns table metadata list as required by the
         [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables-manifests)
@@ -131,15 +155,13 @@ class TableMetadata:
         Returns: List[dict]
 
         """
-        final_metadata_list = list()
-        final_metadata_list.extend(self._custom_table_metadata_nonunique)
-        for key in self._table_metadata_dict:
-            final_metadata_list.append({key: self._table_metadata_dict[key]})
+        final_metadata_list = [{'key': key,
+                                'value': self.table_metadata[key]}
+                               for key in self.table_metadata]
 
         return final_metadata_list
 
-    @property
-    def column_metadata(self) -> dict:
+    def get_column_metadata_for_manifest(self) -> dict:
         """
                 Returns column metadata dict as required by the
                 [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables
@@ -152,24 +174,18 @@ class TableMetadata:
                 Returns: dict
 
         """
-        final_column_metadata = self._custom_column_metadata_nonunique
+        final_column_metadata = dict()
 
         # collect unique metadata keys
-        for column in self._column_metadata_dict:
-            column_metadata_dicts = self._column_metadata_dict[column]
+        for column in self.column_metadata:
+            column_metadata_dicts = self.column_metadata[column]
             if not final_column_metadata.get(column):
                 final_column_metadata[column] = list()
 
-            column_metadata = [{key: column_metadata_dicts[key]} for key in
+            column_metadata = [{'key': key,
+                                'value': column_metadata_dicts[key]} for key in
                                column_metadata_dicts[column]]
             final_column_metadata[column].extend(column_metadata)
-
-        # collect non_unique metadata keys
-        for column in self._custom_column_metadata_nonunique:
-            if not final_column_metadata.get(column):
-                final_column_metadata[column] = list()
-
-            final_column_metadata[column].extend(self._custom_column_metadata_nonunique[column])
 
         return final_column_metadata
 
@@ -181,7 +197,7 @@ class TableMetadata:
         Returns: str
 
         """
-        return self._table_metadata_dict.get(KBCMetadataKeys.description.value)
+        return self.table_metadata.get(KBCMetadataKeys.description.value)
 
     @property
     def column_datatypes(self) -> dict:
@@ -193,7 +209,7 @@ class TableMetadata:
 
         """
 
-        return self._get_unique_column_metadata_by_key(KBCMetadataKeys.base_data_type.value)
+        return self.get_columns_metadata_by_key(KBCMetadataKeys.base_data_type.value)
 
     @property
     def column_descriptions(self) -> dict:
@@ -205,32 +221,18 @@ class TableMetadata:
 
         """
 
-        return self._get_unique_column_metadata_by_key(KBCMetadataKeys.description.value)
+        return self.get_columns_metadata_by_key(KBCMetadataKeys.description.value)
 
-    def load_table_metadata_from_manifest(self, manifest: dict):
+    def get_columns_metadata_by_key(self, metadata_key) -> dict:
         """
-        Load metadta from manifest file.
-
-        Args:
-            manifest:
-
-        Returns:TableMetadata
-
-        """
-        self.add_multiple_custom_column_metadata(manifest.get('column_metadata', {}))
-        self.add_multiple_custom_table_metadata(manifest.get('metadata', []))
-
-    def _get_unique_column_metadata_by_key(self, metadata_key):
-        """
-        Return dictionary of column:metadata_key pairs
+        Returns all columns with specified metadata_key as dictionary of column:metadata_key pairs
         e.g. {"col1name":"value_of_metadata_with_the_key"}
 
         Returns: dict e.g. {"col1name":"value_of_metadata_with_the_key"}
 
         """
         column_types = dict()
-        # we know its in unique
-        for col in self._column_metadata_dict:
+        for col in self.column_metadata:
             if col.get(metadata_key):
                 column_types[col] = col[metadata_key]
 
@@ -245,21 +247,42 @@ class TableMetadata:
 
                 """
         for col in column_descriptions:
-            self.add_unique_column_metadata(col, KBCMetadataKeys.description.value, column_descriptions[col])
+            self.add_column_metadata(col, KBCMetadataKeys.description.value, column_descriptions[col])
 
-    def add_column_types(self, column_types: dict):
+    def add_column_data_types(self, column_types: Dict[str, Union[SupportedDataTypes, str]]):
         """
         Add column types metadata. Note that only supported datatypes
-        (<keboola.component.dao.KBCMetadataKeys>) may be provided
+        (<keboola.component.dao.ColumnDataTypes>) may be provided. The value accepts either instance of ColumnDataTypes
+        or a valid string.
 
         Args:
-            column_types: dict -> {"colname":"datatype"}
+            column_types (Dict[str, Union[SupportedDataTypes, str]]): dict -> {"colname":"datatype"}
 
+        Raises:
+            ValueError when the provided data type value is not recognized
         """
-        self._validate_data_types(column_types)
 
         for col in column_types:
-            self.add_unique_column_metadata(col, KBCMetadataKeys.base_data_type.value, column_types[col])
+            self.add_column_data_type(col, column_types[col])
+
+    def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str]):
+        """
+        Add single column data type
+        Args:
+            column (str): name of the column
+            data_type (Union[SupportedDataTypes, str]): Either instance of ColumnDataTypes enum or a valid string
+
+        Raises:
+            ValueError when the provided data_type is not recognized
+
+        """
+        if isinstance(data_type, SupportedDataTypes):
+            base_type = data_type.value
+        else:
+            self._validate_data_types({column: data_type})
+            base_type = data_type
+
+        self.add_column_metadata(column, KBCMetadataKeys.base_data_type.value, base_type)
 
     def add_table_description(self, description: str):
         """
@@ -267,80 +290,32 @@ class TableMetadata:
         Args:
             description: str
         """
-        self.add_custom_table_metadata({KBCMetadataKeys.description.value: description})
+        self.add_table_metadata(KBCMetadataKeys.description.value, description)
 
-    def add_custom_table_metadata(self, key: str, value: str):
-        """
-        Add custom key-value pair to table metadata.
-
-        **NOTE:** Ensures uniqueness of description keys
-
-        Args:
-            key: str "some_key"
-            value: str "some_value"
-
-        """
-        # process unique types
-        if key == KBCMetadataKeys.description.value:
-            self.add_unique_table_metadata(key, value)
-
-        else:
-            self._custom_table_metadata_nonunique.append({key: value})
-
-    def add_unique_table_metadata(self, key: str, value: str):
+    def add_table_metadata(self, key: str, value: str):
         """
                 Add/Updates table metadata and ensures the Key is unique.
                 Args:
 
         """
-        self._table_metadata_dict = {**self._table_metadata_dict, **{key: value}}
+        self.table_metadata = {**self.table_metadata, **{key: value}}
 
-    def add_unique_column_metadata(self, column: str, key: str, value: str):
+    def add_column_metadata(self, column: str, key: str, value: str):
         """
         Add/Updates column metadata and ensures the Key is unique.
         Args:
 
         """
-        if not self._column_metadata_dict.get(column):
-            self._column_metadata_dict[column] = dict()
+        if not self.column_metadata.get(column):
+            self.column_metadata[column] = dict()
 
-        self._column_metadata_dict[column][key] = value
+        self.column_metadata[column][key] = value
 
-    def add_custom_column_metadata(self, column: str, key: str, value: str):
+    def add_multiple_column_metadata(self, column_metadata: Dict[str, List[dict]]):
         """
-        Add custom key-value pair to column metadata.
+        Add key-value pairs to column metadata.
 
-        **NOTE:** Ensures uniqueness of basetype and description keys
-        Args:
-            column: column name
-            key: str "some_key"
-            value: str "some_value"
-
-        """
-        if not self._custom_column_metadata_nonunique.get(column):
-            self._custom_column_metadata_nonunique[column] = list()
-
-        # ensure uniqueness of unique values
-        if key in [KBCMetadataKeys.base_data_type.value, KBCMetadataKeys.description.value]:
-            self.add_unique_column_metadata(column, key, value)
-
-        self._custom_column_metadata_nonunique[column].append({key: value})
-
-    def add_multiple_custom_table_metadata(self, table_metadata: list):
-        """
-        Add custom key-value pairs to table metadata.
-
-        **NOTE:** Ensures uniqueness of description keys
-        Args:
-            table_metadata: list [{"some_key":"some_value"}]
-        """
-        self._custom_table_metadata_nonunique.extend(table_metadata)
-
-    def add_multiple_custom_column_metadata(self, column_metadata: Dict[str, List[dict]]):
-        """
-        Add custom key-value pairs to column metadata.
-
-        **NOTE:** Ensures uniqueness of basetype and description keys
+        **NOTE:** Ensures uniqueness
         Args:
             column_metadata: dict {"column_name":[{"some_key":"some_value"}]}
         """
@@ -348,17 +323,17 @@ class TableMetadata:
             for metadata in metadata_list:
                 key = metadata.items()[0]
                 value = metadata[key]
-                self.add_custom_column_metadata(column, key, value)
+                self.add_column_metadata(column, key, value)
 
     @staticmethod
-    def _validate_data_types(column_types):
+    def _validate_data_types(column_types: dict):
         errors = []
         for col in column_types:
             dtype = column_types[col]
-            if not ColumnDataTypes.is_valid_type(dtype):
+            if not SupportedDataTypes.is_valid_type(dtype):
                 errors.append(f'Datatype "{dtype}" is not valid KBC Basetype!')
 
-        raise ValueError(', '.join(errors) + f'\n Supported base types are: [{ColumnDataTypes.list()}]')
+        raise ValueError(', '.join(errors) + f'\n Supported base types are: [{SupportedDataTypes.list()}]')
 
 
 class TableManifestDefinition:
@@ -500,11 +475,11 @@ class TableManifestDefinition:
                                  "keys 'column' and 'values'")
 
     def _set_table_metadata_to_manifest(self, table_metadata: TableMetadata):
-        self._raw_manifest['metadata'] = table_metadata.table_metadata
-        self._raw_manifest['column_metadata'] = table_metadata.column_metadata
+        self._raw_manifest['metadata'] = table_metadata.get_table_metadata_for_manifest()
+        self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
 
     def to_dict(self) -> dict:
-        # in case the table_metadata is out of sync
+        # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
         return self._raw_manifest
 
