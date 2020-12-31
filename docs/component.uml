@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>Python</ID>
+  <OriginalElement>#C:/Users/esner/Documents/Prace/KBC/KEBOOLA_PYPI/keboola-component/src/keboola/component</OriginalElement>
+  <nodes>
+    <node x="1173.0" y="1400.0">keboola.component.dao.TableColumnTypes</node>
+    <node x="802.0" y="1058.0">keboola.component.dao.ColumnDataTypes</node>
+    <node x="0.0" y="1400.0">keboola.component.dao.TableDefinition</node>
+    <node x="1175.0" y="1058.0">keboola.component.dao.TableInputMapping</node>
+    <node x="0.0" y="0.0">keboola.component.dao.TableMetadata</node>
+    <node x="0.0" y="1058.0">keboola.component.interface.Configuration</node>
+    <node x="792.0" y="1400.0">keboola.component.dao.OauthCredentials</node>
+    <node x="0.0" y="562.0">keboola.component.interface.CommonInterface</node>
+    <node x="405.0" y="1058.0">keboola.component.dao.TableOutputMapping</node>
+    <node x="1437.0" y="562.0">keboola.component.dao.EnvironmentVariables</node>
+    <node x="762.0" y="1632.0">keboola.component.dao.FileInputMapping</node>
+    <node x="0.0" y="1632.0">keboola.component.dao.FileOutputMapping</node>
+    <node x="389.0" y="1632.0">keboola.component.dao.KBCMetadataKeys</node>
+  </nodes>
+  <notes />
+  <edges />
+  <settings layout="Hierarchic Group" zoom="0.6957399103139013" x="994.7470190138577" y="623.9187882694167" />
+  <SelectedNodes />
+  <Categories>
+    <Category>Methods</Category>
+    <Category>Fields</Category>
+  </Categories>
+</Diagram>
+
