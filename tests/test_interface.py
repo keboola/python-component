@@ -1,3 +1,7 @@
+import json
+
+import tempfile
+
 import os
 import unittest
 
@@ -46,6 +50,41 @@ class TestCommonInterface(unittest.TestCase):
     def test_get_data_dir(self):
         ci = CommonInterface()
         self.assertEqual(os.getenv('KBC_DATADIR', ''), ci.data_folder_path)
+
+
+    def test_create_and_write_table_manifest(self):
+        ci = CommonInterface()
+        # create table def
+        out_table = ci.create_out_table_definition('some-table.csv',
+                                       columns=['foo', 'bar'],
+                                 destination='some-destination',
+                                 primary_key=['foo'],
+                                 incremental=True,
+                                 delete_where={'column': 'lilly',
+                                               'values': ['a', 'b'],
+                                               'operator': 'eq'}
+                                 )
+        out_table.table_metadata.add_table_metadata('bar', 'kochba')
+        out_table.table_metadata.add_column_metadata('bar','foo', 'gogo')
+
+        manifest_filename = out_table.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {
+                'destination': 'some-destination',
+                'columns': ['foo', 'bar'],
+                'primary_key': ['foo'],
+                'incremental': True,
+                'metadata': [{'key': 'bar', 'value': 'kochba'}],
+                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+                'delete_where_column': 'lilly',
+                'delete_where_values': ['a', 'b'],
+                'delete_where_operator': 'eq'
+            },
+            config
+        )
+        os.remove(manifest_filename)
 
 
 class TestConfiguration(unittest.TestCase):
