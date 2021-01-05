@@ -1,7 +1,4 @@
 import json
-
-import tempfile
-
 import os
 import unittest
 
@@ -51,22 +48,23 @@ class TestCommonInterface(unittest.TestCase):
         ci = CommonInterface()
         self.assertEqual(os.getenv('KBC_DATADIR', ''), ci.data_folder_path)
 
-
     def test_create_and_write_table_manifest(self):
         ci = CommonInterface()
         # create table def
         out_table = ci.create_out_table_definition('some-table.csv',
-                                       columns=['foo', 'bar'],
-                                 destination='some-destination',
-                                 primary_key=['foo'],
-                                 incremental=True,
-                                 delete_where={'column': 'lilly',
-                                               'values': ['a', 'b'],
-                                               'operator': 'eq'}
-                                 )
+                                                   columns=['foo', 'bar'],
+                                                   destination='some-destination',
+                                                   primary_key=['foo'],
+                                                   incremental=True,
+                                                   delete_where={'column': 'lilly',
+                                                                 'values': ['a', 'b'],
+                                                                 'operator': 'eq'}
+                                                   )
         out_table.table_metadata.add_table_metadata('bar', 'kochba')
-        out_table.table_metadata.add_column_metadata('bar','foo', 'gogo')
+        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
+        # write
+        ci.write_tabledef_manifest(out_table)
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -85,6 +83,68 @@ class TestCommonInterface(unittest.TestCase):
             config
         )
         os.remove(manifest_filename)
+
+    def test_create_and_write_table_manifest_multi(self):
+        ci = CommonInterface()
+        # create table def
+        out_table = ci.create_out_table_definition('some-table.csv',
+                                                   columns=['foo', 'bar'],
+                                                   destination='some-destination',
+                                                   primary_key=['foo'],
+                                                   incremental=True,
+                                                   delete_where={'column': 'lilly',
+                                                                 'values': ['a', 'b'],
+                                                                 'operator': 'eq'}
+                                                   )
+        out_table.table_metadata.add_table_metadata('bar', 'kochba')
+        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+
+        # write
+        ci.write_tabledef_manifests([out_table])
+        manifest_filename = out_table.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {
+                'destination': 'some-destination',
+                'columns': ['foo', 'bar'],
+                'primary_key': ['foo'],
+                'incremental': True,
+                'metadata': [{'key': 'bar', 'value': 'kochba'}],
+                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+                'delete_where_column': 'lilly',
+                'delete_where_values': ['a', 'b'],
+                'delete_where_operator': 'eq'
+            },
+            config
+        )
+        os.remove(manifest_filename)
+
+    def test_get_input_tables_definition(self):
+        ci = CommonInterface()
+
+        tables = ci.get_input_tables_definitions()
+
+        self.assertEqual(len(tables), 2)
+        for table in tables:
+            if table.name == 'sample.csv':
+                self.assertEqual(table.columns, [
+                    "x",
+                    "Sales",
+                    "CompPrice",
+                    "Income",
+                    "Advertising",
+                    "Population",
+                    "Price",
+                    "ShelveLoc",
+                    "Age",
+                    "Education",
+                    "Urban",
+                    "US",
+                    "High"
+                ])
+            else:
+                self.assertEqual(table.id, 'in.c-main.test2')
 
 
 class TestConfiguration(unittest.TestCase):

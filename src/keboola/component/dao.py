@@ -453,6 +453,18 @@ class TableDefinition:
                 raise TypeError("Destination must be a string")
 
     @property
+    def id(self) -> str:
+        return self._raw_manifest.get('id', '')
+
+    @destination.setter
+    def id(self, val: str):
+        if val:
+            if isinstance(val, str):
+                self._raw_manifest['id'] = val
+            else:
+                raise TypeError("ID must be a string")
+
+    @property
     def columns(self) -> List[str]:
         return self._raw_manifest.get('columns', [])
 

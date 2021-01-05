@@ -289,7 +289,7 @@ class CommonInterface:
                                  columns: List[str] = None,
                                  incremental: bool = None,
                                  table_metadata: TableMetadata = None,
-                                 delete_where: str = None) -> TableDefinition:
+                                 delete_where: dict = None) -> TableDefinition:
         """
                 Helper method for TableDefinition creation along with the "manifest".
                 It initializes path according to the storage_stage type.
@@ -364,7 +364,7 @@ class CommonInterface:
                                     columns: List[str] = None,
                                     incremental: bool = None,
                                     table_metadata: TableMetadata = None,
-                                    delete_where: str = None) -> TableDefinition:
+                                    delete_where: dict = None) -> TableDefinition:
         """
                        Helper method for output TableDefinition creation along with the "manifest".
                        It initializes path in data/tables/out/ folder.
@@ -421,6 +421,8 @@ class CommonInterface:
 
         """
         manifest = table_definition.get_manifest_dictionary()
+        # make dirs if not exist
+        os.makedirs(os.path.dirname(table_definition.full_path), exist_ok=True)
         with open(table_definition.full_path + '.manifest', 'w') as manifest_file:
             json.dump(manifest, manifest_file)
 
