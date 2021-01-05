@@ -63,6 +63,9 @@ class SupportedDataTypes(Enum):
 
 class KBCMetadataKeys(Enum):
     base_data_type = 'KBC.datatype.basetype'
+    data_type_nullable = 'KBC.datatype.nullable'
+    data_type_length = 'KBC.datatype.length'
+    data_type_default = 'KBC.datatype.default'
     description = 'KBC.description'
     created_by_component = 'KBC.createdBy.component.id'
     last_updated_by_component = 'KBC.lastUpdatedBy.component.id'
@@ -127,7 +130,7 @@ class TableMetadata:
 
         """
         # column metadata
-        for column, metadata_list in manifest.get('column_metadata', {}):
+        for column, metadata_list in manifest.get('column_metadata', {}).items():
             for metadata in metadata_list:
                 if not metadata.get('key') and metadata.get('value'):
                     continue
@@ -184,7 +187,7 @@ class TableMetadata:
 
             column_metadata = [{'key': key,
                                 'value': column_metadata_dicts[key]} for key in
-                               column_metadata_dicts[column]]
+                               column_metadata_dicts]
             final_column_metadata[column].extend(column_metadata)
 
         return final_column_metadata
@@ -265,12 +268,16 @@ class TableMetadata:
         for col in column_types:
             self.add_column_data_type(col, column_types[col])
 
-    def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str]):
+    def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str], nullable: bool = False,
+                             length: str = None, default=None):
         """
         Add single column data type
         Args:
             column (str): name of the column
             data_type (Union[SupportedDataTypes, str]): Either instance of ColumnDataTypes enum or a valid string
+            nullable (bool): Is column nullable? KBC input mapping converts empty values to NULL
+            length (str): Column length when applicable e.g. 39,8; 4000
+            default: Default value
 
         Raises:
             ValueError when the provided data_type is not recognized
@@ -283,6 +290,11 @@ class TableMetadata:
             base_type = data_type
 
         self.add_column_metadata(column, KBCMetadataKeys.base_data_type.value, base_type)
+        self.add_column_metadata(column, KBCMetadataKeys.data_type_nullable.value, nullable)
+        if length is not None:
+            self.add_column_metadata(column, KBCMetadataKeys.data_type_length.value, length)
+        if default is not None:
+            self.add_column_metadata(column, KBCMetadataKeys.data_type_default.value, default)
 
     def add_table_description(self, description: str):
         """
@@ -300,7 +312,7 @@ class TableMetadata:
         """
         self.table_metadata = {**self.table_metadata, **{key: value}}
 
-    def add_column_metadata(self, column: str, key: str, value: str):
+    def add_column_metadata(self, column: str, key: str, value: Union[str, bool, int]):
         """
         Add/Updates column metadata and ensures the Key is unique.
         Args:
@@ -332,8 +344,8 @@ class TableMetadata:
             dtype = column_types[col]
             if not SupportedDataTypes.is_valid_type(dtype):
                 errors.append(f'Datatype "{dtype}" is not valid KBC Basetype!')
-
-        raise ValueError(', '.join(errors) + f'\n Supported base types are: [{SupportedDataTypes.list()}]')
+        if errors:
+            raise ValueError(', '.join(errors) + f'\n Supported base types are: [{SupportedDataTypes.list()}]')
 
 
 class TableDefinition:
@@ -364,7 +376,7 @@ class TableDefinition:
                  columns: List[str] = None,
                  incremental: bool = None,
                  table_metadata: TableMetadata = None,
-                 delete_where: str = None):
+                 delete_where: dict = None):
         """
 
         Args:
@@ -382,7 +394,7 @@ class TableDefinition:
             columns: List of columns for headless CSV files
             incremental: Set to true to enable incremental loading
             table_metadata: <.dao.TableMetadata> object containing column and table metadata
-            delete_where: Dict with settings for deleting rows
+            delete_where (dict): Dict with settings for deleting rows
         """
         self.full_path = full_path
         self.name = name
@@ -394,6 +406,9 @@ class TableDefinition:
         self.primary_key = primary_key
         self.columns = columns
         self.incremental = incremental
+
+        if not table_metadata:
+            table_metadata = TableMetadata()
         self.table_metadata = table_metadata
         self.set_delete_where_from_dict(delete_where)
 
@@ -418,9 +433,10 @@ class TableDefinition:
             raw_manifest_json (dict): raw manifest dict as provided by Keboola Connection (data folder)
         """
         table_def = cls(name=name, full_path=full_path,
-                        is_sliced=is_sliced)
+                        is_sliced=is_sliced, table_metadata=TableMetadata(raw_manifest_json))
         # build manifest definition
         table_def._raw_manifest = raw_manifest_json
+
         return table_def
 
     # #### Manifest properties
