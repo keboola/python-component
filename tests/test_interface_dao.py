@@ -199,3 +199,30 @@ class TestTableDefinition(unittest.TestCase):
 
         self.assertEqual(table_def.table_metadata.column_metadata, expected_tmetadata.column_metadata)
         self.assertEqual(table_def.table_metadata.table_metadata, expected_tmetadata.table_metadata)
+
+    def test_table_manifest_error_destination(self):
+        with self.assertRaises(TypeError):
+            TableDefinition("testDef", "somepath", is_sliced=False, destination=['foo', 'bar'])
+
+    def test_table_manifest_error_primary_key(self):
+        with self.assertRaises(TypeError):
+            TableDefinition("testDef", "somepath", is_sliced=False, primary_key="column")
+
+    def test_table_manifest_error_columns(self):
+        with self.assertRaises(TypeError):
+            TableDefinition("testDef", "somepath", is_sliced=False, columns="column")
+
+    def test_table_manifest_error_column_delete_1(self):
+        with self.assertRaises(ValueError):
+            TableDefinition("testDef", "somepath", is_sliced=False, delete_where={"a": "b"})
+
+    def test_table_manifest_error_column_delete_2(self):
+        with self.assertRaises(TypeError):
+            TableDefinition("testDef", "somepath", is_sliced=False, delete_where={"column": "a",
+                                                                                  "values": "b"})
+
+    def test_table_manifest_error_column_delete_3(self):
+        with self.assertRaises(TypeError):
+            TableDefinition("testDef", "somepath", is_sliced=False, delete_where={"column": "a",
+                                                                                  "values": "b",
+                                                                                  "operator": "c"})
