@@ -130,7 +130,7 @@ class TableMetadata:
 
         """
         # column metadata
-        for column, metadata_list in manifest.get('column_metadata', {}):
+        for column, metadata_list in manifest.get('column_metadata', {}).items():
             for metadata in metadata_list:
                 if not metadata.get('key') and metadata.get('value'):
                     continue
@@ -376,7 +376,7 @@ class TableDefinition:
                  columns: List[str] = None,
                  incremental: bool = None,
                  table_metadata: TableMetadata = None,
-                 delete_where: str = None):
+                 delete_where: dict = None):
         """
 
         Args:
@@ -394,7 +394,7 @@ class TableDefinition:
             columns: List of columns for headless CSV files
             incremental: Set to true to enable incremental loading
             table_metadata: <.dao.TableMetadata> object containing column and table metadata
-            delete_where: Dict with settings for deleting rows
+            delete_where (dict): Dict with settings for deleting rows
         """
         self.full_path = full_path
         self.name = name
@@ -406,6 +406,9 @@ class TableDefinition:
         self.primary_key = primary_key
         self.columns = columns
         self.incremental = incremental
+
+        if not table_metadata:
+            table_metadata = TableMetadata()
         self.table_metadata = table_metadata
         self.set_delete_where_from_dict(delete_where)
 
@@ -430,9 +433,10 @@ class TableDefinition:
             raw_manifest_json (dict): raw manifest dict as provided by Keboola Connection (data folder)
         """
         table_def = cls(name=name, full_path=full_path,
-                        is_sliced=is_sliced)
+                        is_sliced=is_sliced, table_metadata=TableMetadata(raw_manifest_json))
         # build manifest definition
         table_def._raw_manifest = raw_manifest_json
+
         return table_def
 
     # #### Manifest properties

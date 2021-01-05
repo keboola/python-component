@@ -106,3 +106,96 @@ class TestTableMetadata(unittest.TestCase):
         tmetadata.add_table_description("Description of table")
         tmetadata.add_table_metadata("custom_key", "custom_value")
         self.assertEqual(tmetadata.get_table_metadata_for_manifest(), table_metadata)
+
+    def test_build_from_manifest_valid(self):
+        raw_manifest = {
+            'destination': 'some-destination',
+            'columns': ['foo', 'bar'],
+            'primary_key': ['foo'],
+            'incremental': True,
+            'metadata': [{'key': 'bar', 'value': 'kochba'}],
+            'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+            'delete_where_column': 'lilly',
+            'delete_where_values': ['a', 'b'],
+            'delete_where_operator': 'eq'
+        }
+
+        table_metadata = TableMetadata(raw_manifest)
+
+        expected_tmetadata = TableMetadata()
+
+        expected_tmetadata.add_table_metadata("bar", "kochba")
+        expected_tmetadata.add_column_metadata("bar", "foo", "gogo")
+
+        self.assertEqual(table_metadata.column_metadata, expected_tmetadata.column_metadata)
+        self.assertEqual(table_metadata.table_metadata, expected_tmetadata.table_metadata)
+
+
+class TestTableDefinition(unittest.TestCase):
+
+    def test_table_manifest_minimal(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    primary_key=['foo', 'bar']
+                                    )
+
+        self.assertEqual(
+            {
+                'primary_key': ['foo', 'bar'],
+                'column_metadata': {},
+                'metadata': []
+            },
+            table_def.get_manifest_dictionary()
+        )
+
+    def test_table_manifest_full(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    columns=['foo', 'bar'],
+                                    destination='some-destination',
+                                    primary_key=['foo'],
+                                    incremental=True,
+                                    delete_where={'column': 'lilly',
+                                                  'values': ['a', 'b'],
+                                                  'operator': 'eq'}
+                                    )
+        # add metadata
+        table_def.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        table_def.table_metadata.add_table_metadata('bar', 'kochba')
+
+        self.assertDictEqual(
+            {
+                'destination': 'some-destination',
+                'columns': ['foo', 'bar'],
+                'primary_key': ['foo'],
+                'incremental': True,
+                'metadata': [{'key': 'bar', 'value': 'kochba'}],
+                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+                'delete_where_column': 'lilly',
+                'delete_where_values': ['a', 'b'],
+                'delete_where_operator': 'eq'
+            },
+            table_def.get_manifest_dictionary()
+        )
+
+    def test_build_from_table_manifest_metadata_equals(self):
+        raw_manifest = {
+            'destination': 'some-destination',
+            'columns': ['foo', 'bar'],
+            'primary_key': ['foo'],
+            'incremental': True,
+            'metadata': [{'key': 'bar', 'value': 'kochba'}],
+            'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+            'delete_where_column': 'lilly',
+            'delete_where_values': ['a', 'b'],
+            'delete_where_operator': 'eq'
+        }
+
+        table_def = TableDefinition.build_from_manifest("testDef", "somepath", is_sliced=False,
+                                                        raw_manifest_json=raw_manifest)
+
+        expected_tmetadata = TableMetadata()
+
+        expected_tmetadata.add_table_metadata("bar", "kochba")
+        expected_tmetadata.add_column_metadata("bar", "foo", "gogo")
+
+        self.assertEqual(table_def.table_metadata.column_metadata, expected_tmetadata.column_metadata)
+        self.assertEqual(table_def.table_metadata.table_metadata, expected_tmetadata.table_metadata)
