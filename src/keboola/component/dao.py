@@ -187,7 +187,7 @@ class TableMetadata:
 
             column_metadata = [{'key': key,
                                 'value': column_metadata_dicts[key]} for key in
-                               column_metadata_dicts[column]]
+                               column_metadata_dicts]
             final_column_metadata[column].extend(column_metadata)
 
         return final_column_metadata
@@ -291,9 +291,9 @@ class TableMetadata:
 
         self.add_column_metadata(column, KBCMetadataKeys.base_data_type.value, base_type)
         self.add_column_metadata(column, KBCMetadataKeys.data_type_nullable.value, nullable)
-        if length:
+        if length is not None:
             self.add_column_metadata(column, KBCMetadataKeys.data_type_length.value, length)
-        if default:
+        if default is not None:
             self.add_column_metadata(column, KBCMetadataKeys.data_type_default.value, default)
 
     def add_table_description(self, description: str):
@@ -344,8 +344,8 @@ class TableMetadata:
             dtype = column_types[col]
             if not SupportedDataTypes.is_valid_type(dtype):
                 errors.append(f'Datatype "{dtype}" is not valid KBC Basetype!')
-
-        raise ValueError(', '.join(errors) + f'\n Supported base types are: [{SupportedDataTypes.list()}]')
+        if errors:
+            raise ValueError(', '.join(errors) + f'\n Supported base types are: [{SupportedDataTypes.list()}]')
 
 
 class TableDefinition:
