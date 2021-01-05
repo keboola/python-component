@@ -276,7 +276,7 @@ class TableMetadata:
             column (str): name of the column
             data_type (Union[SupportedDataTypes, str]): Either instance of ColumnDataTypes enum or a valid string
             nullable (bool): Is column nullable? KBC input mapping converts empty values to NULL
-            length (str): Column length when applicable e.g. 39,8, 4000
+            length (str): Column length when applicable e.g. 39,8; 4000
             default: Default value
 
         Raises:
