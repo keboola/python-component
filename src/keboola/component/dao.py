@@ -63,6 +63,8 @@ class SupportedDataTypes(Enum):
 
 class KBCMetadataKeys(Enum):
     base_data_type = 'KBC.datatype.basetype'
+    data_type_nullable = 'KBC.datatype.nullable'
+    data_type_length = 'KBC.datatype.length'
     description = 'KBC.description'
     created_by_component = 'KBC.createdBy.component.id'
     last_updated_by_component = 'KBC.lastUpdatedBy.component.id'
@@ -265,12 +267,15 @@ class TableMetadata:
         for col in column_types:
             self.add_column_data_type(col, column_types[col])
 
-    def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str]):
+    def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str], nullable: bool = False,
+                             length: str = None):
         """
         Add single column data type
         Args:
             column (str): name of the column
             data_type (Union[SupportedDataTypes, str]): Either instance of ColumnDataTypes enum or a valid string
+            nullable (bool): Is column nullable?
+            length (str): Column length when applicable e.g. 39,8, 4000
 
         Raises:
             ValueError when the provided data_type is not recognized
@@ -283,6 +288,9 @@ class TableMetadata:
             base_type = data_type
 
         self.add_column_metadata(column, KBCMetadataKeys.base_data_type.value, base_type)
+        self.add_column_metadata(column, KBCMetadataKeys.data_type_nullable.value, nullable)
+        if length:
+            self.add_column_metadata(column, KBCMetadataKeys.data_type_length.value, length)
 
     def add_table_description(self, description: str):
         """
@@ -300,7 +308,7 @@ class TableMetadata:
         """
         self.table_metadata = {**self.table_metadata, **{key: value}}
 
-    def add_column_metadata(self, column: str, key: str, value: str):
+    def add_column_metadata(self, column: str, key: str, value: Union[str, bool, int]):
         """
         Add/Updates column metadata and ensures the Key is unique.
         Args:
