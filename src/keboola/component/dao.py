@@ -65,6 +65,7 @@ class KBCMetadataKeys(Enum):
     base_data_type = 'KBC.datatype.basetype'
     data_type_nullable = 'KBC.datatype.nullable'
     data_type_length = 'KBC.datatype.length'
+    data_type_default = 'KBC.datatype.default'
     description = 'KBC.description'
     created_by_component = 'KBC.createdBy.component.id'
     last_updated_by_component = 'KBC.lastUpdatedBy.component.id'
@@ -268,7 +269,7 @@ class TableMetadata:
             self.add_column_data_type(col, column_types[col])
 
     def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str], nullable: bool = False,
-                             length: str = None):
+                             length: str = None, default=None):
         """
         Add single column data type
         Args:
@@ -276,6 +277,7 @@ class TableMetadata:
             data_type (Union[SupportedDataTypes, str]): Either instance of ColumnDataTypes enum or a valid string
             nullable (bool): Is column nullable?
             length (str): Column length when applicable e.g. 39,8, 4000
+            default: Default value
 
         Raises:
             ValueError when the provided data_type is not recognized
@@ -291,6 +293,8 @@ class TableMetadata:
         self.add_column_metadata(column, KBCMetadataKeys.data_type_nullable.value, nullable)
         if length:
             self.add_column_metadata(column, KBCMetadataKeys.data_type_length.value, length)
+        if default:
+            self.add_column_metadata(column, KBCMetadataKeys.data_type_default.value, default)
 
     def add_table_description(self, description: str):
         """
