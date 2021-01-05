@@ -553,11 +553,11 @@ class TableInputMapping(SubscriptableDataclass):
     Abstraction of [input mapping definition](
     https://developers.keboola.com/extend/common-interface/config-file/#tables) in the config file
     """
-    source: str
-    destination: str
-    limit: int
-    columns: List[str]
-    where_values: List[str]
+    source: str = ''
+    destination: str = None
+    limit: int = None
+    columns: List[str] = dataclasses.field(default_factory=lambda: [])
+    where_values: List[str] = None
     full_path: str = None
     where_operator: str = ''
     days: int = 0
@@ -609,7 +609,7 @@ class FileOutputMapping(SubscriptableDataclass):
 class OauthCredentials(SubscriptableDataclass):
     id: str
     created: str
-    data: str
+    data: dict
     oauthVersion: str
     appKey: str
     appSecret: str

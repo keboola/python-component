@@ -657,7 +657,7 @@ class Configuration:
 
         self.parameters = self.config_data.get('parameters', {})
         self.image_parameters = self.config_data.get('image_parameters', {})
-        self.action = self.config_data.get('action', {})
+        self.action = self.config_data.get('action', '')
         self.workspace_credentials = self.config_data.get('authorization', {}).get('workspace', {})
 
     # ################ PROPERTIES
@@ -669,16 +669,16 @@ class Configuration:
         Returns: OauthCredentials
 
         """
-        auth = self.config_data.get('authorization', {})
+        oauth_credentials = self.config_data.get('authorization', {}).get('oauth_api', {}).get('credentials', {})
         credentials = None
-        if auth:
+        if oauth_credentials:
             credentials = OauthCredentials(
-                id=auth.get("id", ''),
-                created=auth.get("created", ''),
-                data=auth.get("#data", ''),
-                oauthVersion=auth.get("oauthVersion", ''),
-                appKey=auth.get("appKey", ''),
-                appSecret=auth.get("#appSecret", '')
+                id=oauth_credentials.get("id", ''),
+                created=oauth_credentials.get("created", ''),
+                data=json.loads(oauth_credentials.get("#data", '{}')),
+                oauthVersion=oauth_credentials.get("oauthVersion", ''),
+                appKey=oauth_credentials.get("appKey", ''),
+                appSecret=oauth_credentials.get("#appSecret", '')
             )
         return credentials
 
