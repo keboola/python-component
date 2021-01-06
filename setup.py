@@ -5,18 +5,23 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="keboola.component",  # TESTING NAME
-    version="0.0.1",
+    version="0.0.3",
     author="Keboola KDS Team",
     setup_requires=['pytest-runner', 'flake8'],
     tests_require=['pytest'],
+    install_requires=[
+        'pygelf'
+    ],
     author_email="data_ca@keboola.com",
     description="General library for Python applications running in Keboola Connection environment",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/keboola/python-component",
-    packages=setuptools.find_namespace_packages(include=['keboola.*']),
+    package_dir={'': 'src'},
+    packages=['keboola.component'],
     include_package_data=True,
     zip_safe=False,
+    test_suite='tests',
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
