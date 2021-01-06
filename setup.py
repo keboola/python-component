@@ -28,5 +28,5 @@ setuptools.setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Development Status :: 4 - Beta"
     ],
-    python_requires='>=3.6'
+    python_requires='>=3.7'
 )
