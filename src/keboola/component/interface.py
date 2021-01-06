@@ -223,7 +223,7 @@ class CommonInterface:
         with open(os.path.join(self.configuration.data_dir, 'out', 'state.json'), 'w+') as state_file:
             json.dump(state_dict, state_file)
 
-    def get_input_tables_definitions(self, orphaned_manifests=False) -> List[dao.dao.TableDefinition]:
+    def get_input_tables_definitions(self, orphaned_manifests=False) -> List[dao.TableDefinition]:
         """
         Return dao.TableDefinition objects by scanning the `data/in/tables` folder.
 
