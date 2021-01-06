@@ -12,6 +12,36 @@ class TestCommonInterface(unittest.TestCase):
                             'data_examples', 'data1')
         os.environ["KBC_DATADIR"] = path
 
+    def test_all_env_variables_initialized(self):
+        # set all variables
+        os.environ['KBC_RUNID'] = 'KBC_RUNID'
+        os.environ['KBC_PROJECTID'] = 'KBC_PROJECTID'
+        os.environ['KBC_STACKID'] = 'KBC_STACKID'
+        os.environ['KBC_CONFIGID'] = 'KBC_CONFIGID'
+        os.environ['KBC_COMPONENTID'] = 'KBC_COMPONENTID'
+        os.environ['KBC_PROJECTNAME'] = 'KBC_PROJECTNAME'
+        os.environ['KBC_TOKENID'] = 'KBC_TOKENID'
+        os.environ['KBC_TOKENDESC'] = 'KBC_TOKENDESC'
+        os.environ['KBC_TOKEN'] = 'KBC_TOKEN'
+        os.environ['KBC_URL'] = 'KBC_URL'
+        os.environ['KBC_LOGGER_ADDR'] = 'KBC_LOGGER_ADDR'
+        os.environ['KBC_LOGGER_PORT'] = 'KBC_LOGGER_PORT'
+
+        ci = CommonInterface()
+        self.assertEqual(ci.environment_variables.data_dir, os.environ["KBC_DATADIR"])
+        self.assertEqual(ci.environment_variables.run_id, 'KBC_RUNID')
+        self.assertEqual(ci.environment_variables.project_id, 'KBC_PROJECTID')
+        self.assertEqual(ci.environment_variables.stack_id, 'KBC_STACKID')
+        self.assertEqual(ci.environment_variables.config_id, 'KBC_CONFIGID')
+        self.assertEqual(ci.environment_variables.component_id, 'KBC_COMPONENTID')
+        self.assertEqual(ci.environment_variables.project_name, 'KBC_PROJECTNAME')
+        self.assertEqual(ci.environment_variables.token_id, 'KBC_TOKENID')
+        self.assertEqual(ci.environment_variables.token_desc, 'KBC_TOKENDESC')
+        self.assertEqual(ci.environment_variables.token, 'KBC_TOKEN')
+        self.assertEqual(ci.environment_variables.url, 'KBC_URL')
+        self.assertEqual(ci.environment_variables.logger_addr, 'KBC_LOGGER_ADDR')
+        self.assertEqual(ci.environment_variables.logger_port, 'KBC_LOGGER_PORT')
+
     def test_empty_required_params_pass(self):
         c = CommonInterface
         return True
@@ -44,9 +74,31 @@ class TestCommonInterface(unittest.TestCase):
                 "Configuration file config.json not found"):
             CommonInterface()
 
+    # ########## PROPERTIES
+
     def test_get_data_dir(self):
         ci = CommonInterface()
         self.assertEqual(os.getenv('KBC_DATADIR', ''), ci.data_folder_path)
+
+    def test_get_tables_out_dir(self):
+        ci = CommonInterface()
+        tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'out', 'tables')
+        self.assertEqual(tables_out, ci.tables_out_path)
+
+    def test_get_tables_in_dir(self):
+        ci = CommonInterface()
+        tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'in', 'files')
+        self.assertEqual(tables_out, ci.files_in_path)
+
+    def test_get_files_out_dir(self):
+        ci = CommonInterface()
+        tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'out', 'files')
+        self.assertEqual(tables_out, ci.files_out_path)
+
+    def test_get_files_in_dir(self):
+        ci = CommonInterface()
+        tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'in', 'tables')
+        self.assertEqual(tables_out, ci.tables_in_path)
 
     def test_create_and_write_table_manifest(self):
         ci = CommonInterface()
@@ -84,6 +136,7 @@ class TestCommonInterface(unittest.TestCase):
         )
         os.remove(manifest_filename)
 
+    # #### DATA FOLDER MANIPULATION
     def test_create_and_write_table_manifest_multi(self):
         ci = CommonInterface()
         # create table def
@@ -143,8 +196,35 @@ class TestCommonInterface(unittest.TestCase):
                     "US",
                     "High"
                 ])
+                self.assertEqual(table.rows_count, 400)
+                self.assertEqual(table.data_size_bytes, 81920)
             else:
                 self.assertEqual(table.id, 'in.c-main.test2')
+                self.assertEqual(table.full_path, os.path.join(ci.tables_in_path, 'fooBar'))
+                self.assertEqual(table.name, 'fooBar')
+
+    def test_state_file_initialized(self):
+        ci = CommonInterface()
+        state = ci.get_state_file()
+        self.assertEqual(state['test_state'], 1234)
+
+    def test_state_file_created(self):
+        ci = CommonInterface()
+        # write
+        ci.write_state_file({"some_state": 1234})
+
+        # load
+        state_filename = os.path.join(ci.data_folder_path, 'out', 'state.json')
+        with open(state_filename) as state_file:
+            state = json.load(state_file)
+
+        self.assertEqual(
+            {"some_state": 1234},
+            state
+        )
+
+        # cleanup
+        os.remove(state_filename)
 
 
 class TestConfiguration(unittest.TestCase):

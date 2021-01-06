@@ -454,15 +454,51 @@ class TableDefinition:
 
     @property
     def id(self) -> str:
+        """
+        str: id property used in input manifest. Contains Keboola Storage ID, e.g. in.c-bucket.table
+
+        """
         return self._raw_manifest.get('id', '')
 
-    @destination.setter
+    @id.setter
     def id(self, val: str):
         if val:
             if isinstance(val, str):
                 self._raw_manifest['id'] = val
             else:
                 raise TypeError("ID must be a string")
+
+    @property
+    def rows_count(self) -> int:
+        """
+                int: rows_count property used in input manifest.
+
+        """
+        return self._raw_manifest.get('rows_count', '')
+
+    @rows_count.setter
+    def rows_count(self, val: int):
+        if val:
+            if isinstance(val, int):
+                self._raw_manifest['rows_count'] = val
+            else:
+                raise TypeError("ID must be a int")
+
+    @property
+    def data_size_bytes(self) -> int:
+        """
+                int: data_size_bytes property used in input manifest.
+
+        """
+        return self._raw_manifest.get('data_size_bytes', '')
+
+    @data_size_bytes.setter
+    def data_size_bytes(self, val: int):
+        if val:
+            if isinstance(val, int):
+                self._raw_manifest['data_size_bytes'] = val
+            else:
+                raise TypeError("data_size_bytes must be a int")
 
     @property
     def columns(self) -> List[str]:

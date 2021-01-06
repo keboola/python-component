@@ -252,7 +252,8 @@ class CommonInterface:
             manifest = dict()
             p = Path(t)
             if Path(t + '.manifest').exists():
-                manifest = json.load(open(t + '.manifest'))
+                with open(t + '.manifest') as in_file:
+                    manifest = json.load(in_file)
 
             if p.is_dir() and manifest:
                 is_sliced = True
