@@ -3,6 +3,8 @@ name: BUild & Upload Python Package to PYPI production
 on:
   release:
     types: [ created ]
+    branches:
+      - main
 
 jobs:
   deploy:
