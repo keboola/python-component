@@ -149,7 +149,8 @@ class TableMetadata:
     def get_table_metadata_for_manifest(self) -> List[dict]:
         """
         Returns table metadata list as required by the
-        [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables-manifests)
+        [manifest format]
+        (https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables-manifests)
 
         e.g.
         tm = TableMetadata()
