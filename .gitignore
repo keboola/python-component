@@ -137,7 +137,4 @@ dmypy.json
 .DS_Store
 
 
-test.py
-
-=======
->>>>>>> 0d6d54047d08a0abe691d9a8bb72b980f494fe0d
+src/test.py

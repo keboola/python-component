@@ -2,11 +2,20 @@ import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+    # remove header
+    header_lines = 10
+    long_description = long_description.split("\n", header_lines)[header_lines]
+
+project_urls = {
+    'Documentation': 'https://developers.keboola.com/extend/component/python-component-library',
+    'Component Template project': 'https://bitbucket.org/kds_consulting_team/workspace/projects/COMP'
+}
 
 setuptools.setup(
     name="keboola.component",  # TESTING NAME
-    version="0.0.3",
+    version="0.0.5",
     author="Keboola KDS Team",
+    project_urls=project_urls,
     setup_requires=['pytest-runner', 'flake8'],
     tests_require=['pytest'],
     install_requires=[

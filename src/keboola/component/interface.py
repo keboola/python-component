@@ -250,21 +250,15 @@ class CommonInterface:
         table_defs = list()
         for t in table_files:
             is_sliced = False
-            manifest = dict()
             p = Path(t)
-            if Path(t + '.manifest').exists():
-                with open(t + '.manifest') as in_file:
-                    manifest = json.load(in_file)
+            manifest_path = t + '.manifest'
 
-            if p.is_dir() and manifest:
-                is_sliced = True
-            elif p.is_dir() and not manifest:
+            if p.is_dir() and not Path(manifest_path).exists():
                 # skip folders that do not have matching manifest
                 logging.warning(f'Folder {t} does not have matching manifest, it will be ignored!')
                 continue
 
-            table_defs.append(dao.TableDefinition.build_from_manifest(full_path=t, name=p.name, is_sliced=is_sliced,
-                                                                      raw_manifest_json=manifest))
+            table_defs.append(dao.TableDefinition.build_from_manifest(manifest_path))
 
         if orphaned_manifests:
             files_w_manifest = [t.full_path for t in table_defs]
@@ -272,15 +266,13 @@ class CommonInterface:
                               if Path(f).name not in files_w_manifest]
             for t in manifest_files:
                 p = Path(t)
-                manifest = json.load(open(t))
 
                 if p.is_dir():
                     # skip folders that do not have matching manifest
                     logging.warning(f'Manifest {t} is folder,s skipping!')
                     continue
 
-                table_defs.append(dao.TableDefinition.build_from_manifest(full_path=None, name=p.stem, is_sliced=False,
-                                                                          raw_manifest_json=manifest))
+                table_defs.append(dao.TableDefinition.build_from_manifest(t))
         return table_defs
 
     def _create_table_definition(self, name: str,
