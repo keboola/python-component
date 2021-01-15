@@ -2,6 +2,8 @@ import dataclasses
 from dataclasses import dataclass
 from enum import Enum
 
+import json
+from pathlib import Path
 from typing import List, Union, Dict
 
 
@@ -352,8 +354,25 @@ class TableMetadata:
 class TableDefinition:
     """
     Table definition class. It is used as a container for `in/tables/` files.
+    It is a representation of input/output manifest objects with additional attributes containing information
+    about related file full path and whether it is a sliced table.
 
     Also, it is useful when collecting results and building export configs.
+
+    To create the TableDefinition directly from the manifest there is a factory build method:
+
+    ```python
+    from keboola.component import CommonInterface
+    from keboola.component import dao
+
+    table_def = dao.TableDefinition.build_from_manifest(manifest_dict,
+                                            'table name',
+                                            full_path='optional full path',
+                                            is_sliced=False)
+
+
+    ```
+
 
     Attributes:
         name: Table / file name.
@@ -370,6 +389,36 @@ class TableDefinition:
         table_metadata: <.dao.TableMetadata> object containing column and table metadata
         delete_where: Dict with settings for deleting rows
     """
+
+    INPUT_MANIFEST_ATTRIBUTES = [
+        "id",
+        "uri",
+        "name",
+        "primary_key",
+        "created",
+        "last_change_date",
+        "last_import_date",
+        "columns",
+        "metadata",
+        "column_metadata"
+    ]
+
+    OUTPUT_MANIFEST_ATTRIBUTES = [
+        "destination",
+        "columns",
+        "incremental",
+        "primary_key",
+        "delimiter",
+        "enclosure",
+        "metadata",
+        "column_metadata",
+        "delete_where_column",
+        "delete_where_values",
+        "delete_where_operator"
+    ]
+
+    MANIFEST_ATTRIBUTES = {'in': INPUT_MANIFEST_ATTRIBUTES,
+                           'out': OUTPUT_MANIFEST_ATTRIBUTES}
 
     def __init__(self, name: str, full_path: Union[str, None] = None, is_sliced: bool = False,
                  destination: str = '',
@@ -414,29 +463,55 @@ class TableDefinition:
         self.set_delete_where_from_dict(delete_where)
 
     @classmethod
-    def build_from_manifest(cls, name: str,
-                            full_path: Union[str, None] = None,
-                            is_sliced: bool = False,
-                            raw_manifest_json: dict = None):
+    def build_from_manifest(cls,
+                            manifest_file_path: str
+                            ):
         """
-        Factory method for TableDefinition from the raw "manifest".
+        Factory method for TableDefinition from the raw "manifest" path.
+
+        The TableDefinition then validates presence of the manifest counterpart.
+        E.g. table.csv if `table.csv.manifest` is provided.
+
+        The manifest file does not need to exist, in such case a ValueError is raised
+        if the counterpart table is not found.
+
+        The counterpart table file does not need to exist, in such case, the manifest represents an orphaned manifest.
 
         Args:
-            name: Table / file name.
-            full_path (str):
-                (optional) Full path of the file. May be empty in case it represents only orphaned
-                manifest.
-                May also be a folder path - in this case it is a [sliced tables](
-                https://developers.keboola.com/extend/common-interface/folders/#sliced-tables) folder.
-                The full_path is None when dealing with [workspaces](
-                https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
-            is_sliced: True if the full_path points to a folder with sliced tables
-            raw_manifest_json (dict): raw manifest dict as provided by Keboola Connection (data folder)
+            manifest_file_path (str):
+                (optional) Full path of the manifest file. May be empty in case it represents only expected
+                 table with no input manifest.
+
+
         """
+        is_sliced = False
+        full_path = None
+        manifest = dict()
+        if Path(manifest_file_path).exists():
+            with open(manifest_file_path) as in_file:
+                manifest = json.load(in_file)
+
+        file_path = Path(manifest_file_path.replace('.manifest', ''))
+
+        if file_path.is_dir() and manifest:
+            is_sliced = True
+        elif file_path.is_dir() and not manifest:
+            # skip folders that do not have matching manifest
+            raise ValueError(f'The manifest {manifest_file_path} does not exist '
+                             f'and it'f's matching file {file_path} is folder!')
+        elif not file_path.exists() and not manifest:
+            raise ValueError(f'Nor the manifest file or the corresponding file {file_path} exist!')
+
+        if file_path.exists():
+            full_path = str(file_path)
+            name = file_path.name
+        else:
+            name = Path(manifest_file_path).stem
+
         table_def = cls(name=name, full_path=full_path,
-                        is_sliced=is_sliced, table_metadata=TableMetadata(raw_manifest_json))
+                        is_sliced=is_sliced, table_metadata=TableMetadata(manifest))
         # build manifest definition
-        table_def._raw_manifest = raw_manifest_json
+        table_def._raw_manifest = manifest
 
         return table_def
 
@@ -590,9 +665,37 @@ class TableDefinition:
         self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
 
     def get_manifest_dictionary(self) -> dict:
+        """
+
+        Args:
+            manifest_type (str): either 'in' or 'out'. This option keeps only values that are applicable for
+             the selected type of the Manifest file. Because although input and output manifests share most of
+             the attributes, some are not shared.
+
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Returns:
+            dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+        """
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
+
         return self._raw_manifest
+
+    def _filter_attributes_by_manifest_type(self, manifest_type):
+        """
+        Not used for now. As unrecognized manifest attributes are ignored.
+        Args:
+            manifest_type:
+
+        Returns:
+
+        """
+        for attr in TableDefinition.MANIFEST_ATTRIBUTES[manifest_type]:
+            if attr not in self._raw_manifest:
+                self._raw_manifest.pop(attr, None)
 
 
 # ####### CONFIGURATION
