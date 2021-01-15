@@ -271,7 +271,6 @@ class CommonInterface:
                        not f.endswith('.manifest')]
         table_defs = list()
         for t in table_files:
-            is_sliced = False
             p = Path(t)
             manifest_path = t + '.manifest'
 
