@@ -178,7 +178,7 @@ class TestCommonInterface(unittest.TestCase):
 
         tables = ci.get_input_tables_definitions()
 
-        self.assertEqual(len(tables), 2)
+        self.assertEqual(len(tables), 4)
         for table in tables:
             if table.name == 'sample.csv':
                 self.assertEqual(table.columns, [
@@ -198,7 +198,7 @@ class TestCommonInterface(unittest.TestCase):
                 ])
                 self.assertEqual(table.rows_count, 400)
                 self.assertEqual(table.data_size_bytes, 81920)
-            else:
+            elif table.name == 'fooBar':
                 self.assertEqual(table.id, 'in.c-main.test2')
                 self.assertEqual(table.full_path, os.path.join(ci.tables_in_path, 'fooBar'))
                 self.assertEqual(table.name, 'fooBar')
@@ -225,6 +225,18 @@ class TestCommonInterface(unittest.TestCase):
 
         # cleanup
         os.remove(state_filename)
+
+    def test_get_input_table_by_name_fails_on_nonexistent(self):
+        ci = CommonInterface()
+        with self.assertRaises(ValueError):
+            ci.get_input_table_definition_by_name('nonexistent.csv')
+
+    def test_get_input_table_by_name_existing_passes(self):
+        ci = CommonInterface()
+        in_table = ci.get_input_table_definition_by_name('fooBar')
+        self.assertEqual(in_table.id, 'in.c-main.test2')
+        self.assertEqual(in_table.full_path, os.path.join(ci.tables_in_path, 'fooBar'))
+        self.assertEqual(in_table.name, 'fooBar')
 
 
 class TestConfiguration(unittest.TestCase):

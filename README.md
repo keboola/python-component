@@ -197,6 +197,53 @@ result_table.table_metadata.add_column_data_type('id', dao.SupportedDataTypes.IN
 ci.write_tabledef_manifest(result_table)
 ```
 
-### Manifest files processing
+##### Get input table by name
 
-The manifest files are represented by the `dao.TableDefinition` object. 
+```python
+from keboola.component import CommonInterface
+
+
+# init the interface
+ci = CommonInterface()
+table_def = ci.get_input_table_definition_by_name('input.csv')
+
+```
+
+#### Manifest files processing
+
+The [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files/#dataouttables-manifests)
+ are represented by the `dao.TableDefinition` object. 
+
+This object represents both Input and Output manifests. All output manifest attributes are exposed in the class.
+
+##### Initializing TableDefinition object from the manifest file
+
+```python
+from keboola.component import dao
+
+table_def = dao.TableDefinition.build_from_manifest('data/in/tables/table.csv.manifest')
+
+# print table.csv full-path if present:
+
+print(table_def.full_path)
+
+# rows count
+
+print(table_def.rows_count)
+```
+
+##### Retrieve raw manifest file definition (CommonInterface compatible)
+
+To retrieve the manifest file representation that is compliant with Keboola Connection Common Interface 
+use the `table_def.get_manifest_dictionary()` method. 
+
+
+```python
+from keboola.component import dao
+
+table_def = dao.TableDefinition.build_from_manifest('data/in/tables/table.csv.manifest')
+
+# get the  manifest file representation
+manifest_dict = table_def.get_manifest_dictionary()
+
+```

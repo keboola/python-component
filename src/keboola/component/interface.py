@@ -223,6 +223,28 @@ class CommonInterface:
         with open(os.path.join(self.configuration.data_dir, 'out', 'state.json'), 'w+') as state_file:
             json.dump(state_dict, state_file)
 
+    def get_input_table_definition_by_name(self, table_name: str) -> dao.TableDefinition:
+        """
+        Return dao.TableDefinition object by table name.
+
+        If nor the table itself or it's manifest exists, a ValueError is thrown.
+
+        The dao.TableDefinition will contain full path of the source file, it's name and manifest (if present). It also
+        provides methods for updating the manifest metadata.
+
+        Args:
+            table_name: Destination table name (name of .csv file). e.g. input.csv
+
+        Returns:
+            dao.TableDefinition
+        """
+        manifest_path = os.path.join(
+            self.tables_in_path,
+            table_name + '.manifest'
+        )
+
+        return dao.TableDefinition.build_from_manifest(manifest_path)
+
     def get_input_tables_definitions(self, orphaned_manifests=False) -> List[dao.TableDefinition]:
         """
         Return dao.TableDefinition objects by scanning the `data/in/tables` folder.

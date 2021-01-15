@@ -390,6 +390,36 @@ class TableDefinition:
         delete_where: Dict with settings for deleting rows
     """
 
+    INPUT_MANIFEST_ATTRIBUTES = [
+        "id",
+        "uri",
+        "name",
+        "primary_key",
+        "created",
+        "last_change_date",
+        "last_import_date",
+        "columns",
+        "metadata",
+        "column_metadata"
+    ]
+
+    OUTPUT_MANIFEST_ATTRIBUTES = [
+        "destination",
+        "columns",
+        "incremental",
+        "primary_key",
+        "delimiter",
+        "enclosure",
+        "metadata",
+        "column_metadata",
+        "delete_where_column",
+        "delete_where_values",
+        "delete_where_operator"
+    ]
+
+    MANIFEST_ATTRIBUTES = {'in': INPUT_MANIFEST_ATTRIBUTES,
+                           'out': OUTPUT_MANIFEST_ATTRIBUTES}
+
     def __init__(self, name: str, full_path: Union[str, None] = None, is_sliced: bool = False,
                  destination: str = '',
                  primary_key: List[str] = None,
@@ -470,7 +500,7 @@ class TableDefinition:
             raise ValueError(f'The manifest {manifest_file_path} does not exist '
                              f'and it'f's matching file {file_path} is folder!')
         elif not file_path.exists() and not manifest:
-            raise ValueError(f'The manifest file nor the corresponding file {manifest_file_path} exist!')
+            raise ValueError(f'Nor the manifest file or the corresponding file {file_path} exist!')
 
         if file_path.exists():
             full_path = str(file_path)
@@ -635,9 +665,37 @@ class TableDefinition:
         self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
 
     def get_manifest_dictionary(self) -> dict:
+        """
+
+        Args:
+            manifest_type (str): either 'in' or 'out'. This option keeps only values that are applicable for
+             the selected type of the Manifest file. Because although input and output manifests share most of
+             the attributes, some are not shared.
+
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Returns:
+            dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+        """
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
+
         return self._raw_manifest
+
+    def _filter_attributes_by_manifest_type(self, manifest_type):
+        """
+        Not used for now. As unrecognized manifest attributes are ignored.
+        Args:
+            manifest_type:
+
+        Returns:
+
+        """
+        for attr in TableDefinition.MANIFEST_ATTRIBUTES[manifest_type]:
+            if attr not in self._raw_manifest:
+                self._raw_manifest.pop(attr, None)
 
 
 # ####### CONFIGURATION
