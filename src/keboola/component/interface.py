@@ -7,32 +7,33 @@ import os
 import sys
 from pathlib import Path
 from pygelf import GelfUdpHandler, GelfTcpHandler
+from typing import List
 
-from .dao import *
+from . import dao
 
 
-def init_environment_variables() -> EnvironmentVariables:
+def init_environment_variables() -> dao.EnvironmentVariables:
     """
     Initializes environment variables available in the docker environment
         https://developers.keboola.com/extend/common-interface/environment/#environment-variables
 
     Returns:
-        EnvironmentVariables:
+        dao.EnvironmentVariables:
     """
-    return EnvironmentVariables(data_dir=os.environ.get('KBC_DATADIR', None),
-                                run_id=os.environ.get('KBC_RUNID', None),
-                                project_id=os.environ.get('KBC_PROJECTID', None),
-                                stack_id=os.environ.get('KBC_STACKID', None),
-                                config_id=os.environ.get('KBC_CONFIGID', None),
-                                component_id=os.environ.get('KBC_COMPONENTID', None),
-                                project_name=os.environ.get('KBC_PROJECTNAME', None),
-                                token_id=os.environ.get('KBC_TOKENID', None),
-                                token_desc=os.environ.get('KBC_TOKENDESC', None),
-                                token=os.environ.get('KBC_TOKEN', None),
-                                url=os.environ.get('KBC_URL', None),
-                                logger_addr=os.environ.get('KBC_LOGGER_ADDR', None),
-                                logger_port=os.environ.get('KBC_LOGGER_PORT', None)
-                                )
+    return dao.EnvironmentVariables(data_dir=os.environ.get('KBC_DATADIR', None),
+                                    run_id=os.environ.get('KBC_RUNID', None),
+                                    project_id=os.environ.get('KBC_PROJECTID', None),
+                                    stack_id=os.environ.get('KBC_STACKID', None),
+                                    config_id=os.environ.get('KBC_CONFIGID', None),
+                                    component_id=os.environ.get('KBC_COMPONENTID', None),
+                                    project_name=os.environ.get('KBC_PROJECTNAME', None),
+                                    token_id=os.environ.get('KBC_TOKENID', None),
+                                    token_desc=os.environ.get('KBC_TOKENDESC', None),
+                                    token=os.environ.get('KBC_TOKEN', None),
+                                    url=os.environ.get('KBC_URL', None),
+                                    logger_addr=os.environ.get('KBC_LOGGER_ADDR', None),
+                                    logger_port=os.environ.get('KBC_LOGGER_PORT', None)
+                                    )
 
 
 class CommonInterface:
@@ -222,17 +223,39 @@ class CommonInterface:
         with open(os.path.join(self.configuration.data_dir, 'out', 'state.json'), 'w+') as state_file:
             json.dump(state_dict, state_file)
 
-    def get_input_tables_definitions(self, orphaned_manifests=False) -> List[TableDefinition]:
+    def get_input_table_definition_by_name(self, table_name: str) -> dao.TableDefinition:
         """
-        Return TableDefinition objects by scanning the `data/in/tables` folder.
+        Return dao.TableDefinition object by table name.
 
-        The TableDefinition will contain full path of the source file, it's name and manifest (if present). It also
+        If nor the table itself or it's manifest exists, a ValueError is thrown.
+
+        The dao.TableDefinition will contain full path of the source file, it's name and manifest (if present). It also
+        provides methods for updating the manifest metadata.
+
+        Args:
+            table_name: Destination table name (name of .csv file). e.g. input.csv
+
+        Returns:
+            dao.TableDefinition
+        """
+        manifest_path = os.path.join(
+            self.tables_in_path,
+            table_name + '.manifest'
+        )
+
+        return dao.TableDefinition.build_from_manifest(manifest_path)
+
+    def get_input_tables_definitions(self, orphaned_manifests=False) -> List[dao.TableDefinition]:
+        """
+        Return dao.TableDefinition objects by scanning the `data/in/tables` folder.
+
+        The dao.TableDefinition will contain full path of the source file, it's name and manifest (if present). It also
         provides methods for updating the manifest metadata.
 
         By default, orphaned manifests are skipped.
 
 
-        See Also: keboola.component.dao.TableDefinition
+        See Also: keboola.component.dao.dao.TableDefinition
 
         Args:
             orphaned_manifests (bool): If True, manifests without corresponding files are fetched. This is useful in
@@ -240,7 +263,7 @@ class CommonInterface:
             https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace) is used
             e.g. when only manifest files are present in the `data/in/tables` folder.
 
-        Returns: List[TableDefinition]
+        Returns: List[dao.TableDefinition]
 
         """
 
@@ -248,21 +271,15 @@ class CommonInterface:
                        not f.endswith('.manifest')]
         table_defs = list()
         for t in table_files:
-            is_sliced = False
-            manifest = dict()
             p = Path(t)
-            if Path(t + '.manifest').exists():
-                manifest = json.load(open(t + '.manifest'))
+            manifest_path = t + '.manifest'
 
-            if p.is_dir() and manifest:
-                is_sliced = True
-            elif p.is_dir() and not manifest:
+            if p.is_dir() and not Path(manifest_path).exists():
                 # skip folders that do not have matching manifest
                 logging.warning(f'Folder {t} does not have matching manifest, it will be ignored!')
                 continue
 
-            table_defs.append(TableDefinition.build_from_manifest(full_path=t, name=p.name, is_sliced=is_sliced,
-                                                                  raw_manifest_json=manifest))
+            table_defs.append(dao.TableDefinition.build_from_manifest(manifest_path))
 
         if orphaned_manifests:
             files_w_manifest = [t.full_path for t in table_defs]
@@ -270,15 +287,13 @@ class CommonInterface:
                               if Path(f).name not in files_w_manifest]
             for t in manifest_files:
                 p = Path(t)
-                manifest = json.load(open(t))
 
                 if p.is_dir():
                     # skip folders that do not have matching manifest
                     logging.warning(f'Manifest {t} is folder,s skipping!')
                     continue
 
-                table_defs.append(TableDefinition.build_from_manifest(full_path=None, name=p.stem, is_sliced=False,
-                                                                      raw_manifest_json=manifest))
+                table_defs.append(dao.TableDefinition.build_from_manifest(t))
         return table_defs
 
     def _create_table_definition(self, name: str,
@@ -288,17 +303,18 @@ class CommonInterface:
                                  primary_key: List[str] = None,
                                  columns: List[str] = None,
                                  incremental: bool = None,
-                                 table_metadata: TableMetadata = None,
-                                 delete_where: str = None) -> TableDefinition:
+                                 table_metadata: dao.TableMetadata = None,
+                                 delete_where: dict = None) -> dao.TableDefinition:
         """
-                Helper method for TableDefinition creation along with the "manifest".
+                Helper method for dao.TableDefinition creation along with the "manifest".
                 It initializes path according to the storage_stage type.
 
                 Args:
                     name: Table / file name. e.g. `'my_table.csv'`.
                     storage_stage:
                         default value: 'out'
-                        either `'in'` or `'out'`. Determines the path to result file. E.g. `data/tables/in/my_table.csv`
+                        either `'in'` or `'out'`. Determines the path to result file.
+                        E.g. `data/tables/in/my_table.csv`
                     is_sliced: True if the full_path points to a folder with sliced tables
                     destination: String name of the table in Storage.
                     primary_key: List with names of columns used for primary key.
@@ -314,15 +330,15 @@ class CommonInterface:
         else:
             raise ValueError(f'Invalid storage_stage value "{storage_stage}". Supported values are: "in" or "out"!')
 
-        return TableDefinition(name=name,
-                               full_path=full_path,
-                               is_sliced=is_sliced,
-                               destination=destination,
-                               primary_key=primary_key,
-                               columns=columns,
-                               incremental=incremental,
-                               table_metadata=table_metadata,
-                               delete_where=delete_where)
+        return dao.TableDefinition(name=name,
+                                   full_path=full_path,
+                                   is_sliced=is_sliced,
+                                   destination=destination,
+                                   primary_key=primary_key,
+                                   columns=columns,
+                                   incremental=incremental,
+                                   table_metadata=table_metadata,
+                                   delete_where=delete_where)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,
@@ -330,10 +346,10 @@ class CommonInterface:
                                    primary_key: List[str] = None,
                                    columns: List[str] = None,
                                    incremental: bool = None,
-                                   table_metadata: TableMetadata = None,
-                                   delete_where: str = None) -> TableDefinition:
+                                   table_metadata: dao.TableMetadata = None,
+                                   delete_where: str = None) -> dao.TableDefinition:
         """
-                       Helper method for input TableDefinition creation along with the "manifest".
+                       Helper method for input dao.TableDefinition creation along with the "manifest".
                        It initializes path in data/tables/in/ folder.
 
                        Args:
@@ -363,10 +379,10 @@ class CommonInterface:
                                     primary_key: List[str] = None,
                                     columns: List[str] = None,
                                     incremental: bool = None,
-                                    table_metadata: TableMetadata = None,
-                                    delete_where: str = None) -> TableDefinition:
+                                    table_metadata: dao.TableMetadata = None,
+                                    delete_where: dict = None) -> dao.TableDefinition:
         """
-                       Helper method for output TableDefinition creation along with the "manifest".
+                       Helper method for output dao.TableDefinition creation along with the "manifest".
                        It initializes path in data/tables/out/ folder.
 
                        Args:
@@ -391,9 +407,9 @@ class CommonInterface:
                                              delete_where=delete_where)
 
     @staticmethod
-    def write_tabledef_manifest(table_definition: TableDefinition):
+    def write_tabledef_manifest(table_definition: dao.TableDefinition):
         """
-        Write a table manifest from TableDefinition. Creates the appropriate manifest file in the proper location.
+        Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.
 
 
         ** Usage:**
@@ -415,17 +431,19 @@ class CommonInterface:
         ```
 
         Args:
-            table_definition (TableDefinition): Initialized TableDefinition object containing manifest.
+            table_definition (dao.TableDefinition): Initialized dao.TableDefinition object containing manifest.
 
         Returns:
 
         """
         manifest = table_definition.get_manifest_dictionary()
+        # make dirs if not exist
+        os.makedirs(os.path.dirname(table_definition.full_path), exist_ok=True)
         with open(table_definition.full_path + '.manifest', 'w') as manifest_file:
             json.dump(manifest, manifest_file)
 
     @staticmethod
-    def write_tabledef_manifests(table_definitions: List[TableDefinition]):
+    def write_tabledef_manifests(table_definitions: List[dao.TableDefinition]):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -440,7 +458,6 @@ class CommonInterface:
     # TODO: refactor the validate config so it's more userfriendly
     """
         - Support for nested params?
-        - 
     """
 
     def validate_configuration(self, mandatory_params=None):
@@ -525,7 +542,8 @@ class CommonInterface:
                 Following logical expression is evaluated:
                 par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
                 """
-        return self.validate_parameters(self.configuration.image_parameters, mandatory_params, 'image/stack parameters')
+        return self.validate_parameters(self.configuration.image_parameters,
+                                        mandatory_params, 'image/stack parameters')
 
     def validate_parameters(self, parameters, mandatory_params, _type):
         """
@@ -650,40 +668,39 @@ class Configuration:
                 self.config_data = json.load(config_file)
         except (OSError, IOError):
             raise ValueError(
-                "Configuration file config.json not found, " +
-                "verify that the data directory is correct." +
-                "Dir: " + self.data_dir
+                f"Configuration file config.json not found, verify that the data directory is correct. Dir: "
+                f"{self.data_dir}"
             )
 
         self.parameters = self.config_data.get('parameters', {})
         self.image_parameters = self.config_data.get('image_parameters', {})
-        self.action = self.config_data.get('action', {})
+        self.action = self.config_data.get('action', '')
         self.workspace_credentials = self.config_data.get('authorization', {}).get('workspace', {})
 
     # ################ PROPERTIES
     @property
-    def oauth_credentials(self) -> OauthCredentials:
+    def oauth_credentials(self) -> dao.OauthCredentials:
         """
         Returns subscriptable class OauthCredentials
 
         Returns: OauthCredentials
 
         """
-        auth = self.config_data.get('authorization', {})
+        oauth_credentials = self.config_data.get('authorization', {}).get('oauth_api', {}).get('credentials', {})
         credentials = None
-        if auth:
-            credentials = OauthCredentials(
-                id=auth.get("id", ''),
-                created=auth.get("created", ''),
-                data=auth.get("#data", ''),
-                oauthVersion=auth.get("oauthVersion", ''),
-                appKey=auth.get("appKey", ''),
-                appSecret=auth.get("#appSecret", '')
+        if oauth_credentials:
+            credentials = dao.OauthCredentials(
+                id=oauth_credentials.get("id", ''),
+                created=oauth_credentials.get("created", ''),
+                data=json.loads(oauth_credentials.get("#data", '{}')),
+                oauthVersion=oauth_credentials.get("oauthVersion", ''),
+                appKey=oauth_credentials.get("appKey", ''),
+                appSecret=oauth_credentials.get("#appSecret", '')
             )
         return credentials
 
     @property
-    def tables_input_mapping(self) -> List[TableInputMapping]:
+    def tables_input_mapping(self) -> List[dao.TableInputMapping]:
         """
         List of table [input mappings](https://developers.keboola.com/extend/common-interface/config-file/#tables)
 
@@ -698,9 +715,9 @@ class Configuration:
         for table in tables_defs:
             if 'column_types' in table:
                 # nested dataclass
-                table['column_types'] = build_dataclass_from_dict(TableColumnTypes, table['column_types'])
+                table['column_types'] = dao.build_dataclass_from_dict(dao.TableColumnTypes, table['column_types'])
 
-            im = build_dataclass_from_dict(TableInputMapping, table)
+            im = dao.build_dataclass_from_dict(dao.TableInputMapping, table)
             im.full_path = os.path.normpath(
                 os.path.join(
                     self.data_dir,
@@ -713,7 +730,7 @@ class Configuration:
         return tables
 
     @property
-    def tables_output_mapping(self) -> List[TableOutputMapping]:
+    def tables_output_mapping(self) -> List[dao.TableOutputMapping]:
         """
         List of table [output mappings](https://developers.keboola.com/extend/common-interface/config-file/#tables)
 
@@ -725,12 +742,12 @@ class Configuration:
         tables_defs = self.config_data.get('storage', {}).get('output', {}).get('tables', [])
         tables = []
         for table in tables_defs:
-            om = build_dataclass_from_dict(TableOutputMapping, table)
+            om = dao.build_dataclass_from_dict(dao.TableOutputMapping, table)
             tables.append(om)
         return tables
 
     @property
-    def files_input_mapping(self) -> List[FileInputMapping]:
+    def files_input_mapping(self) -> List[dao.FileInputMapping]:
         """
         List of file [input mappings](https://developers.keboola.com/extend/common-interface/config-file/#files)
 
@@ -742,12 +759,12 @@ class Configuration:
         defs = self.config_data.get('storage', {}).get('output', {}).get('files', [])
         files = []
         for file in defs:
-            om = build_dataclass_from_dict(FileInputMapping, file)
+            om = dao.build_dataclass_from_dict(dao.FileInputMapping, file)
             files.append(om)
         return files
 
     @property
-    def files_output_mapping(self) -> List[FileOutputMapping]:
+    def files_output_mapping(self) -> List[dao.FileOutputMapping]:
         """
         List of file [output mappings](https://developers.keboola.com/extend/common-interface/config-file/#files)
 
@@ -759,6 +776,6 @@ class Configuration:
         defs = self.config_data.get('storage', {}).get('output', {}).get('files', [])
         files = []
         for file in defs:
-            om = build_dataclass_from_dict(FileOutputMapping, file)
+            om = dao.build_dataclass_from_dict(dao.FileOutputMapping, file)
             files.append(om)
         return files

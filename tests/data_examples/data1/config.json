@@ -1,0 +1,94 @@
+{
+    "storage": {
+        "input": {
+            "files": [
+                {
+                    "tags": [
+                        "dilbert"
+                    ],
+                    "processed_tags": []
+                },
+                {
+                    "tags": [
+                        "xkcd"
+                    ],
+                    "processed_tags": []
+                }
+            ],
+            "tables": [
+                {
+                    "source": "in.c-main.test",
+                    "destination": "sample.csv",
+                    "columns": [],
+                    "where_values": [],
+                    "where_operator": "eq"
+                },
+                {
+                    "source": "in.c-main.test2",
+                    "destination": "fooBar",
+                    "columns": [],
+                    "where_values": [],
+                    "where_operator": "eq"
+                }
+            ]
+        },
+        "output": {
+            "tables": [
+                {
+                    "source": "results.csv",
+                    "destination": "out.c-main.test",
+                    "incremental": false,
+                    "primary_key": [],
+                    "delete_where_values": [],
+                    "delete_where_operator": "eq"
+                },
+                {
+                    "source": "results-new.csv",
+                    "destination": "out.c-main.test2",
+                    "incremental": false,
+                    "primary_key": [],
+                    "delete_where_values": [],
+                    "delete_where_operator": "eq"
+                }
+            ],
+            "files": [
+                {
+                    "source": "processed.png",
+                    "tags": [
+                        "processed-file"
+                    ],
+                    "is_public": false,
+                    "is_permanent": false,
+                    "is_encrypted": true,
+                    "notify": false
+                }
+            ]
+        }
+    },
+    "parameters": {
+        "fooBar": {
+            "foo": 42,
+            "bar": 24
+        },
+        "baz": "bazBar"
+    },
+    "action": "test",
+    "authorization": {
+        "oauth_api": {
+            "id": "123456",
+            "credentials": {
+                "id": "main",
+                "authorizedFor": "Myself",
+                "creator": {
+                    "id": "1234",
+                    "description": "me@keboola.com"
+                },
+                "created": "2016-01-31 00:13:30",
+                "oauthVersion": "2.0",
+                "appKey": "myappkey",
+                "#data": "{\"mykey\":\"myval\"}",
+                "#appSecret": "myappsecret"
+            }
+        }
+    }    
+}

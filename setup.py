@@ -2,21 +2,35 @@ import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+    # remove header
+    header_lines = 10
+    long_description = long_description.split("\n", header_lines)[header_lines]
+
+project_urls = {
+    'Documentation': 'https://developers.keboola.com/extend/component/python-component-library',
+    'Component Template project': 'https://bitbucket.org/kds_consulting_team/workspace/projects/COMP'
+}
 
 setuptools.setup(
     name="keboola.component",  # TESTING NAME
-    version="0.0.1",
+    version="0.0.5",
     author="Keboola KDS Team",
+    project_urls=project_urls,
     setup_requires=['pytest-runner', 'flake8'],
     tests_require=['pytest'],
+    install_requires=[
+        'pygelf'
+    ],
     author_email="data_ca@keboola.com",
     description="General library for Python applications running in Keboola Connection environment",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/keboola/python-component",
-    packages=setuptools.find_namespace_packages(include=['keboola.*']),
+    package_dir={'': 'src'},
+    packages=['keboola.component'],
     include_package_data=True,
     zip_safe=False,
+    test_suite='tests',
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
@@ -28,5 +42,5 @@ setuptools.setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Development Status :: 4 - Beta"
     ],
-    python_requires='>=3.6'
+    python_requires='>=3.7'
 )
