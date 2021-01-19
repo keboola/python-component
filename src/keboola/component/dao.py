@@ -64,13 +64,20 @@ class SupportedDataTypes(Enum):
 
 
 class KBCMetadataKeys(Enum):
-    base_data_type = 'KBC.datatype.basetype'
+    base_data_type = 'KBC.datatype.basetype'  # base type of a column as defined in php-datatypes
+    source_data_type = 'KBC.datatype.type'  # data type of a column - extracted value from the source
     data_type_nullable = 'KBC.datatype.nullable'
-    data_type_length = 'KBC.datatype.length'
+    data_type_length = 'KBC.datatype.length'  # data type length (e.g., VARCHAR(255) - this is the 255
     data_type_default = 'KBC.datatype.default'
     description = 'KBC.description'
     created_by_component = 'KBC.createdBy.component.id'
     last_updated_by_component = 'KBC.lastUpdatedBy.component.id'
+    createdBy_configuration_id = 'KBC.createdBy.configuration.id'
+    createdBy_branch_id = 'KBC.createdBy.branch.id'  # ID of the branch whose job created the table/bucket
+    lastUpdatedBy_configuration_id = 'KBC.lastUpdatedBy.configuration.id'
+    lastUpdatedBy_branch_id = 'KBC.lastUpdatedBy.branch.id'  # ID of the branch whose job last touched the bucket/table
+    shared_description = 'KBC.sharedDescription'  # description of the bucket;
+    # it will be used when the bucket is shared
 
 
 class TableMetadata:
@@ -271,13 +278,23 @@ class TableMetadata:
         for col in column_types:
             self.add_column_data_type(col, column_types[col])
 
-    def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str], nullable: bool = False,
+    def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str],
+                             source_data_type: str = None,
+                             nullable: bool = False,
                              length: str = None, default=None):
         """
         Add single column data type
         Args:
             column (str): name of the column
-            data_type (Union[SupportedDataTypes, str]): Either instance of ColumnDataTypes enum or a valid string
+            data_type (Union[SupportedDataTypes, str]):
+                Either instance of ColumnDataTypes enum or a valid string. Basetype supported by KBC.
+                base type of a column as defined in
+                [php-datatypes](https://github.com/keboola/php-datatypes#base-types);
+                see getBaseType implementations (e.g., [mysql](https://github.com/keboola/
+                php-datatypes/blob/325fe4eff3e3dfae986ebbdb769eaefd18be6086/src/Definition/MySQL.php#L225))
+                for mapping between KBC.datatype.type and KBC.datatype.basetype
+            source_data_type (str):
+                Optional. Data type of a column - extracted value from the source.
             nullable (bool): Is column nullable? KBC input mapping converts empty values to NULL
             length (str): Column length when applicable e.g. 39,8; 4000
             default: Default value
@@ -294,6 +311,10 @@ class TableMetadata:
 
         self.add_column_metadata(column, KBCMetadataKeys.base_data_type.value, base_type)
         self.add_column_metadata(column, KBCMetadataKeys.data_type_nullable.value, nullable)
+
+        if source_data_type is not None:
+            self.add_column_metadata(column, KBCMetadataKeys.source_data_type.value, source_data_type)
+
         if length is not None:
             self.add_column_metadata(column, KBCMetadataKeys.data_type_length.value, length)
         if default is not None:

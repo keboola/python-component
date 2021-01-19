@@ -15,7 +15,9 @@ This library provides a Python wrapper over the
  Such tasks are config manipulation, validation, component state, I/O handling, I/O metadata and manifest files, logging, etc.
  
  It is being developed by the Keboola Data Services team and officially supported by Keboola. It aims to simplify the Keboola Component creation process,
- by removing the necessity of writing boilerplate code to manipulate with the Common Interface.
+ by removing the necessity of writing boilerplate code to manipulate with the Common Interface. 
+ 
+ Another useful use-case is within the Keboola [Python Transformations](https://help.keboola.com/transformations/python/) to simplify the I/O handling.
  
  ### Links
  
@@ -191,7 +193,10 @@ with open(result_table.full_path, 'w') as result:
 # add some metadata
 result_table.table_metadata.add_table_description('My new table description')
 # add column datatype
-result_table.table_metadata.add_column_data_type('id', dao.SupportedDataTypes.INTEGER)
+result_table.table_metadata.add_column_data_type('id', dao.SupportedDataTypes.STRING, 
+                                                 source_data_type='VARCHAR(100)', 
+                                                 nullable=True,
+                                                 length=100)
 
 # write manifest
 ci.write_tabledef_manifest(result_table)
