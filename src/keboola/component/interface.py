@@ -495,8 +495,8 @@ class CommonInterface:
         file_definitions = self.get_input_files_definitions(orphaned_manifests, only_latest_files, tags)
         return self.__group_files_by_name(file_definitions)
 
-    def __group_file_defs_by_tag_group(self, file_definitions: List[dao.FileDefinition]) -> Dict[
-        str, List[dao.FileDefinition]]:
+    def __group_file_defs_by_tag_group(self, file_definitions: List[dao.FileDefinition]) \
+            -> Dict[str, List[dao.FileDefinition]]:
 
         files_per_tag = {}
         for f in file_definitions:
