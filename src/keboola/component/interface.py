@@ -5,9 +5,11 @@ import json
 import logging
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 from pygelf import GelfUdpHandler, GelfTcpHandler
-from typing import List
+from pytz import utc
+from typing import List, Dict
 
 from . import dao
 
@@ -454,6 +456,262 @@ class CommonInterface:
         """
         for table_def in table_definitions:
             CommonInterface.write_tabledef_manifest(table_def)
+
+    # # File processing
+
+    def get_input_file_definitions_grouped_by_tag_group(self, orphaned_manifests=False, only_latest_files=True,
+                                                        tags: List[str] = None) -> Dict[str, List[dao.FileDefinition]]:
+        """
+        Convenience method returning lists of files in dictionary grouped by tag group.
+
+        (tag group is string built from ordered and concatenated tags, e.g. 'tag1, tag2'
+
+        Args:
+            orphaned_manifests (bool): If True, manifests without corresponding files are fetched. Otherwise
+                    a ValueError is raised.
+            only_latest_files (bool): If True, only latest versions of each files are included.
+            tags (List[str]): optional list of tags. If specified only files with matching tag group will be fetched.
+
+        Returns:
+
+        """
+        file_definitions = self.get_input_files_definitions(orphaned_manifests, only_latest_files, tags)
+        return self.__group_file_defs_by_tag_group(file_definitions)
+
+    def get_input_file_definitions_grouped_by_name(self, orphaned_manifests=False, only_latest_files=True,
+                                                   tags: List[str] = None) -> Dict[str, List[dao.FileDefinition]]:
+        """
+        Convenience method returning lists of files in dictionary grouped by file name.
+
+        Args:
+            orphaned_manifests (bool): If True, manifests without corresponding files are fetched. Otherwise
+                    a ValueError is raised.
+            only_latest_files (bool): If True, only latest versions of each files are included.
+            tags (List[str]): optional list of tags. If specified only files with matching tag group will be fetched.
+
+        Returns:
+
+        """
+        file_definitions = self.get_input_files_definitions(orphaned_manifests, only_latest_files, tags)
+        return self.__group_files_by_name(file_definitions)
+
+    def __group_file_defs_by_tag_group(self, file_definitions: List[dao.FileDefinition]) -> Dict[
+        str, List[dao.FileDefinition]]:
+
+        files_per_tag = {}
+        for f in file_definitions:
+
+            tag_group_v1 = f.tags
+            tag_group_v1.sort()
+            tag_group_key = ','.join(tag_group_v1)
+            if not files_per_tag.get(tag_group_key):
+                files_per_tag[tag_group_key] = []
+            files_per_tag[tag_group_key].append(f)
+        return files_per_tag
+
+    def _filter_files(self, file_definitions: List[dao.FileDefinition], tags: List[str] = None,
+                      only_latest: bool = True):
+
+        filtered_files = []
+
+        if only_latest:
+            filtered_files = self.__filter_filedefs_by_latest(file_definitions)
+
+        if tags:
+            files_per_tag = self.__group_file_defs_by_tag_group(filtered_files)
+            tags.sort()
+            filter_key = ','.join(tags)
+
+            filtered_files = files_per_tag[filter_key]
+
+        if not only_latest and tags is None:
+            filtered_files = file_definitions
+
+        return filtered_files
+
+    def __group_files_by_name(self, file_definitions: List[dao.FileDefinition]):
+        files_per_name = {}
+        for f in file_definitions:
+            if not files_per_name.get(f.name):
+                files_per_name[f.name] = []
+            files_per_name[f.name].append(f)
+        return files_per_name
+
+    def __filter_filedefs_by_latest(self, file_definitions: List[dao.FileDefinition]):
+        filtered_files = list()
+        files_per_name = self.__group_files_by_name(file_definitions)
+        for group in files_per_name:
+            max_file = None
+            max_timestamp = utc.localize(datetime(1900, 5, 17))
+            for f in files_per_name[group]:
+                creation_date = f.created
+                if creation_date > max_timestamp:
+                    max_timestamp = creation_date
+                    max_file = f
+            filtered_files.append(max_file)
+        return filtered_files
+
+    def get_input_files_definitions(self, orphaned_manifests=False,
+                                    only_latest_files=True, tags: List[str] = None) -> List[dao.FileDefinition]:
+        """
+        Return dao.FileDefinition objects by scanning the `data/in/files` folder.
+
+        The dao.FileDefinition will contain full path of the source file, it's name and manifest.
+
+        By default only latest versions of each file are included.
+
+        By default, orphaned manifests are skipped, otherwise fails with ValueError.
+
+        A filter may be specified to match only some tags.
+
+
+        See Also: keboola.component.dao.FileDefinition
+
+        Args:
+            orphaned_manifests (bool): If True, manifests without corresponding files are fetched. Otherwise
+            a ValueError is raised.
+            only_latest_files (bool): If True, only latest versions of each files are included.
+            tags (List[str]): optional list of tags. If specified only files with matching tag group will be fetched.
+
+        Returns: List[dao.TableDefinition]
+
+        """
+
+        in_files = [f for f in glob.glob(self.files_in_path + "/**", recursive=False) if
+                    not f.endswith('.manifest')]
+        file_defs = list()
+        for t in in_files:
+            manifest_path = t + '.manifest'
+
+            file_defs.append(dao.FileDefinition.build_from_manifest(manifest_path))
+
+        if orphaned_manifests:
+            files_w_manifest = [t.full_path for t in file_defs]
+            manifest_files = [f for f in glob.glob(self.tables_in_path + "/**.manifest", recursive=False)
+                              if Path(f).name not in files_w_manifest]
+            for t in manifest_files:
+                p = Path(t)
+
+                if p.is_dir():
+                    # skip folders that do not have matching manifest
+                    logging.warning(f'Manifest {t} is folder,s skipping!')
+                    continue
+
+                file_defs.append(dao.FileDefinition.build_from_manifest(t))
+
+        return self._filter_files(file_defs, tags, only_latest_files)
+
+    def _create_file_definition(self,
+                                name: str,
+                                storage_stage: str = 'out',
+                                tags: List[str] = None,
+                                is_public: bool = False,
+                                is_permanent: bool = False,
+                                is_encrypted: bool = False,
+                                notify: bool = False) -> dao.FileDefinition:
+        """
+                Helper method for dao.FileDefinition creation along with the "manifest".
+                It initializes path according to the storage_stage type.
+
+                Args:
+                                name (str): Name of the file, e.g. file.jpg.
+                                tags (list):
+                                    List of tags that are assigned to this file
+                                is_public: When true, the file URL will be permanent and publicly accessible.
+                                is_permanent: Keeps a file forever. If false, the file will be deleted after default
+                                period of time (e.g.
+                                15 days)
+                                is_encrypted: If true, the file content will be encrypted in the storage.
+                                notify: Notifies project administrators that a file was uploaded.
+        """
+        if storage_stage == 'in':
+            full_path = os.path.join(self.files_in_path, name)
+        elif storage_stage == 'out':
+            full_path = os.path.join(self.files_out_path, name)
+        else:
+            raise ValueError(f'Invalid storage_stage value "{storage_stage}". Supported values are: "in" or "out"!')
+
+        return dao.FileDefinition(
+            full_path=full_path,
+            tags=tags,
+            is_public=is_public,
+            is_permanent=is_permanent,
+            is_encrypted=is_encrypted,
+            notify=notify)
+
+    def create_out_file_definition(self, name: str,
+                                   tags: List[str] = None,
+                                   is_public: bool = False,
+                                   is_permanent: bool = False,
+                                   is_encrypted: bool = False,
+                                   notify: bool = False) -> dao.FileDefinition:
+        """
+                       Helper method for input dao.FileDefinition creation along with the "manifest".
+                       It initializes path in data/files/out/ folder.
+
+                       Args:
+                                name (str): Name of the file, e.g. file.jpg.
+                                tags (list):
+                                    List of tags that are assigned to this file
+                                is_public: When true, the file URL will be permanent and publicly accessible.
+                                is_permanent: Keeps a file forever. If false, the file will be deleted after default
+                                period of time (e.g.
+                                15 days)
+                                is_encrypted: If true, the file content will be encrypted in the storage.
+                                notify: Notifies project administrators that a file was uploaded.
+        """
+
+        return self._create_file_definition(name=name,
+                                            storage_stage='out',
+                                            tags=tags,
+                                            is_public=is_public,
+                                            is_permanent=is_permanent,
+                                            is_encrypted=is_encrypted,
+                                            notify=notify)
+
+    @staticmethod
+    def write_filedef_manifest(file_definition: dao.FileDefinition):
+        """
+        Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.
+
+
+        ** Usage:**
+
+        ```python
+        from keboola.component import CommonInterface
+        from keboola.component import dao
+
+        ci = CommonInterface()
+
+        # build table definition
+        file_def = ci.create_out_file_definition(name='my_file.xml', tags=['tag', 'tag2'])
+        ci.write_filedef_manifest(file_def)
+        ```
+
+        Args:
+            file_definition (dao.FileDefinition): Initialized dao.FileDefinition object containing manifest.
+
+        Returns:
+
+        """
+        manifest = file_definition.get_manifest_dictionary()
+        # make dirs if not exist
+        os.makedirs(os.path.dirname(file_definition.full_path), exist_ok=True)
+        with open(file_definition.full_path + '.manifest', 'w') as manifest_file:
+            json.dump(manifest, manifest_file)
+
+    @staticmethod
+    def write_filedef_manifests(file_definitions: List[dao.FileDefinition]):
+        """
+        Process all table definition objects and create appropriate manifest files.
+        Args:
+            file_definitions:
+
+        Returns:
+
+        """
+        for file_def in file_definitions:
+            CommonInterface.write_filedef_manifest(file_def)
 
     # TODO: refactor the validate config so it's more userfriendly
     """

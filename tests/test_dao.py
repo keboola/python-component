@@ -2,6 +2,7 @@ import os
 import tempfile
 import unittest
 
+from keboola.component import dao
 from keboola.component.dao import *
 
 
@@ -294,3 +295,69 @@ class TestTableDefinition(unittest.TestCase):
             TableDefinition("testDef", "somepath", is_sliced=False, delete_where={"column": "a",
                                                                                   "values": "b",
                                                                                   "operator": "c"})
+
+
+class TestFileDefinition(unittest.TestCase):
+
+    def setUp(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'data_examples', 'data1')
+        os.environ["KBC_DATADIR"] = path
+
+    def test_file_manifest_minimal(self):
+        file_path = os.path.join(os.environ["KBC_DATADIR"], '151971405_21702.strip.print.gif')
+        file_def = FileDefinition(file_path)
+
+        self.assertDictEqual(
+            {'id': '151971405',  # unrecognized attributes are ignored on output manifest
+             'tags': [],
+             'is_public': False,
+             'is_permanent': False,
+             'is_encrypted': False,
+             'notify': False},
+            file_def.get_manifest_dictionary()
+        )
+
+    def test_file_manifest_full(self):
+        file_def = FileDefinition("123_testDef", is_permanent=True,
+                                  is_encrypted=True,
+                                  is_public=True,
+                                  tags=['foo', 'bar'],
+                                  notify=True
+                                  )
+
+        self.assertDictEqual(
+            {'id': '123',
+             'tags': ['foo', 'bar'],
+             'is_public': True,
+             'is_permanent': True,
+             'is_encrypted': True,
+             'notify': True},
+            file_def.get_manifest_dictionary()
+        )
+        self.assertEqual(file_def.name, 'testDef')
+        self.assertEqual(file_def.id, '123')
+
+    def test_build_from_manifest_matching_file_valid_attributes(self):
+        sample_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
+        manifest_path = sample_path + '.manifest'
+        file_def = FileDefinition.build_from_manifest(
+            manifest_path)
+
+        expected_manifest = json.load(open(manifest_path))
+
+        self.assertEqual(sample_path, file_def.full_path)
+        self.assertEqual(expected_manifest['name'], file_def.name)
+        self.assertEqual(datetime.strptime(expected_manifest['created'], dao.KBC_DEFAULT_TIME_FORMAT), file_def.created)
+        self.assertEqual(expected_manifest['is_public'], file_def.is_public)
+        self.assertEqual(expected_manifest['is_encrypted'], file_def.is_encrypted)
+        self.assertEqual(expected_manifest['tags'], file_def.tags)
+        self.assertEqual(expected_manifest['max_age_days'], file_def.max_age_days)
+        self.assertEqual(expected_manifest['size_bytes'], file_def.size_bytes)
+
+    def test_build_from_manifest_nonexistentfile_fails(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data1', 'in', 'files')
+
+        with self.assertRaises(ValueError):
+            FileDefinition.build_from_manifest(os.path.join(sample_path, 'orphaned.csv.manifest'))
