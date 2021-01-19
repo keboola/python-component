@@ -3,8 +3,11 @@ from dataclasses import dataclass
 from enum import Enum
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import List, Union, Dict
+
+KBC_DEFAULT_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
 
 @dataclass
@@ -717,6 +720,256 @@ class TableDefinition:
         for attr in TableDefinition.MANIFEST_ATTRIBUTES[manifest_type]:
             if attr not in self._raw_manifest:
                 self._raw_manifest.pop(attr, None)
+
+
+class FileDefinition:
+    """
+    File definition class. It is used as a container for `{in/out}/files/` files.
+    It is a representation of input/output [manifest objects](
+    https://developers.keboola.com/extend/common-interface/manifest-files/#files).
+
+    Also, it is useful when collecting results and building export configs.
+
+
+
+    To create the FileDefinition directly from the manifest there is a factory build method:
+
+    ```python
+    from keboola.component import CommonInterface
+    from keboola.component import dao
+
+    table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
+
+
+    ```
+
+
+    Attributes:
+        name: Table / file name.
+        full_path (str): (optional) Full path of the file.
+        tags (list):
+                List of tags that are assigned to this file
+        is_public: When true, the file URL will be permanent and publicly accessible.
+        is_permanent: Keeps a file forever. If false, the file will be deleted after default period of time (e.g.
+            15 days)
+        is_encrypted: If true, the file content will be encrypted in the storage.
+        notify: Notifies project administrators that a file was uploaded.
+
+    """
+
+    def __init__(self, full_path: str,
+                 tags: List[str] = None,
+                 is_public: bool = False,
+                 is_permanent: bool = False,
+                 is_encrypted: bool = False,
+                 notify: bool = False):
+        """
+
+        Args:
+            full_path (str): (optional) Full path of the file.
+            tags (list):
+                List of tags that are assigned to this file
+            is_public: When true, the file URL will be permanent and publicly accessible.
+            is_permanent: Keeps a file forever. If false, the file will be deleted after default period of time (e.g.
+            15 days)
+            is_encrypted: If true, the file content will be encrypted in the storage.
+            notify: Notifies project administrators that a file was uploaded.
+        """
+        self._raw_manifest = dict()
+        self.full_path = full_path
+        # separate id from name
+        name = Path(full_path).name
+        fsplit = name.split('_', 2)
+        if len(fsplit) > 1:
+            self._raw_manifest['id'] = fsplit[0]
+            self.name = fsplit[1]
+        else:
+            self.name = name
+
+        self.tags = tags
+        self.is_public = is_public
+        self.is_permanent = is_permanent
+        self.is_encrypted = is_encrypted
+        self.notify = notify
+
+    @classmethod
+    def build_from_manifest(cls,
+                            manifest_file_path: str
+                            ):
+        """
+        Factory method for FileDefinition from the raw "manifest" path.
+
+        The FileDefinition then validates presence of the manifest counterpart.
+        E.g. file.jpg if `file.jpg.manifest` is provided.
+
+        If the counterpart file does not exist a ValueError is raised.
+
+
+        Args:
+            manifest_file_path (str):
+                (optional) Full path of the file [manifest](
+                https://developers.keboola.com/extend/common-interface/manifest-files/#files)
+
+
+        """
+        manifest = dict()
+        if Path(manifest_file_path).exists():
+            with open(manifest_file_path) as in_file:
+                manifest = json.load(in_file)
+
+        file_path = Path(manifest_file_path.replace('.manifest', ''))
+
+        if not file_path.exists():
+            raise ValueError(f'The corresponding file {file_path} does not exist!')
+
+        full_path = str(file_path)
+
+        file_def = cls(full_path=full_path)
+        # build manifest definition
+        file_def._raw_manifest = manifest
+
+        return file_def
+
+    def get_manifest_dictionary(self) -> dict:
+        """
+
+        Args:
+            manifest_type (str): either 'in' or 'out'. This option keeps only values that are applicable for
+             the selected type of the Manifest file. Because although input and output manifests share most of
+             the attributes, some are not shared.
+
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Returns:
+            dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+        """
+
+        return self._raw_manifest
+
+    # ########### Output manifest properties - R/W
+
+    @property
+    def tags(self) -> List[str]:
+        return self._raw_manifest.get('tags', [])
+
+    @tags.setter
+    def tags(self, tags: List[str]):
+        if tags is None:
+            tags = list()
+        self._raw_manifest['tags'] = tags
+
+    @property
+    def is_public(self) -> bool:
+        return self._raw_manifest.get('is_public', False)
+
+    @is_public.setter
+    def is_public(self, is_public: bool):
+        self._raw_manifest['is_public'] = is_public
+
+    @property
+    def is_permanent(self) -> bool:
+        return self._raw_manifest.get('is_permanent', False)
+
+    @is_permanent.setter
+    def is_permanent(self, is_permanent: bool):
+        self._raw_manifest['is_permanent'] = is_permanent
+
+    @property
+    def is_encrypted(self) -> bool:
+        return self._raw_manifest.get('is_encrypted', False)
+
+    @is_encrypted.setter
+    def is_encrypted(self, is_encrypted: bool):
+        self._raw_manifest['is_encrypted'] = is_encrypted
+
+    @property
+    def notify(self) -> bool:
+        return self._raw_manifest.get('notify', False)
+
+    @notify.setter
+    def notify(self, notify: bool):
+        self._raw_manifest['notify'] = notify
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
+    @name.setter
+    def name(self, val: str):
+        self.__name = val
+
+    # ########### Input manifest properties - Read ONLY
+    @property
+    def id(self) -> str:  # File ID in the KBC Storage (read only input attribute)
+        return self._raw_manifest.get('id', None)
+
+    @property
+    def created(self) -> Union[datetime, None]:  # Created timestamp  in the KBC Storage (read only input attribute)
+        if self._raw_manifest.get('created'):
+            return datetime.strptime(self._raw_manifest['created'], KBC_DEFAULT_TIME_FORMAT)
+        else:
+            return None
+
+    @property
+    def size_bytes(self) -> int:  # File size in the KBC Storage (read only input attribute)
+        return self._raw_manifest.get('size_bytes', 0)
+
+    @property
+    def max_age_days(self) -> int:  # File max age (read only input attribute)
+        return self._raw_manifest.get('max_age_days', 0)
+
+    # ############ Staging parameters
+
+    @dataclass
+    class S3Staging:
+        issSliced: bool
+        region: str
+        bucket: str
+        key: str
+        credentials_access_key_id: str
+        credentials_secret_access_key: str
+        credentials_session_token: str
+
+    @dataclass
+    class ABSStaging:
+        is_sliced: bool
+        region: str
+        container: str
+        name: str
+        credentials_sas_connection_string: str
+        credentials_expiration: str
+
+    @property
+    def s3_staging(self) -> Union[S3Staging, None]:
+        s3 = self._raw_manifest.get('s3')
+        if s3:
+            return FileDefinition.S3Staging(isSliced=s3['is_sliced'],
+                                            region=s3['region'],
+                                            bucket=s3['bucket'],
+                                            key=s3['key'],
+                                            credentials_access_key_id=s3['credentials']['access_key_id'],
+                                            credentials_secret_access_key=s3['credentials']['secret_access_key'],
+                                            credentials_session_token=s3['credentials']['session_token']
+                                            )
+        else:
+            return None
+
+    @property
+    def abs_staging(self) -> Union[ABSStaging, None]:
+        _abs = self._raw_manifest.get('abs')
+        if _abs:
+            return FileDefinition.ABSStaging(is_sliced=_abs['is_sliced'],
+                                             region=_abs['region'],
+                                             container=_abs['container'],
+                                             name=_abs['name'],
+                                             credentials_sas_connection_string=_abs['credentials'][
+                                                 'sas_connection_string'],
+                                             credentials_expiration=_abs['credentials']['expiration']
+                                             )
+        else:
+            return None
 
 
 # ####### CONFIGURATION
