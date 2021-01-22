@@ -238,6 +238,76 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(in_table.full_path, os.path.join(ci.tables_in_path, 'fooBar'))
         self.assertEqual(in_table.name, 'fooBar')
 
+    # Files
+
+    def test_create_and_write_file_manifest(self):
+        ci = CommonInterface()
+        # create table def
+        out_file = ci.create_out_file_definition('some-file.jpg',
+                                                 is_permanent=True,
+                                                 is_encrypted=True,
+                                                 is_public=True,
+                                                 tags=['foo', 'bar'],
+                                                 notify=True
+                                                 )
+
+        # write
+        ci.write_filedef_manifest(out_file)
+        manifest_filename = out_file.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {'tags': ['foo', 'bar'],
+             'is_public': True,
+             'is_permanent': True,
+             'is_encrypted': True,
+             'notify': True},
+            config
+        )
+        os.remove(manifest_filename)
+
+    def test_get_input_files_definition_latest(self):
+        ci = CommonInterface()
+
+        files = ci.get_input_files_definitions()
+
+        self.assertEqual(len(files), 5)
+        for file in files:
+            if file.name == '21702.strip.print.gif':
+                self.assertEqual(file.tags, [
+                    "dilbert"
+                ])
+                self.assertEqual(file.max_age_days, 180)
+                self.assertEqual(file.size_bytes, 4931)
+
+    def test_get_input_files_definition_by_tag(self):
+        ci = CommonInterface()
+
+        files = ci.get_input_files_definitions(tags=['dilbert'])
+
+        self.assertEqual(len(files), 3)
+        for file in files:
+            if file.name == '21702.strip.print.gif':
+                self.assertEqual(file.tags, [
+                    "dilbert"
+                ])
+                self.assertEqual(file.max_age_days, 180)
+                self.assertEqual(file.size_bytes, 4931)
+
+    def test_get_input_files_definition_nofilter(self):
+        ci = CommonInterface()
+
+        files = ci.get_input_files_definitions(only_latest_files=False)
+
+        self.assertEqual(len(files), 6)
+        for file in files:
+            if file.name == 'duty_calls':
+                self.assertEqual(file.tags, [
+                    "xkcd"
+                ])
+                self.assertEqual(file.max_age_days, 180)
+                self.assertEqual(file.size_bytes, 30027)
+
 
 class TestConfiguration(unittest.TestCase):
 

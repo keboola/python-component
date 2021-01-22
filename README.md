@@ -134,6 +134,7 @@ logging.info(f'The first table has following columns defined in the manifest {fi
 
 ```
 
+
 #### Processing state files
 
 [State files](https://developers.keboola.com/extend/common-interface/config-file/#state-file) can be easily written and loaded 
@@ -157,7 +158,7 @@ ci.write_state_file({"last_updated": datetime.now().isoformat()})
 ```
 
 
-#### Output manifests and processing results
+#### I/O table manifests and processing results
 
 The component may define output [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files/#dataouttables-manifests) 
 that define options on storing the results back to the Keboola Connection Storage. This library provides methods that simplifies 
@@ -167,6 +168,9 @@ and `TableMetadata`.
 
 `TableDefinition` object serves as a result container containing all the information needed to store the Table into the Storage. 
 It contains the manifest file representation and initializes all attributes available in the manifest.
+
+
+This object represents both Input and Output manifests. All output manifest attributes are exposed in the class.
 
 There are convenience methods for result processing and manifest creation `CommonInterface.write_table_def_manifest`. 
 Also it is possible to create the container for the output table using the `CommonInterface.create_out_table_definition()`.
@@ -214,13 +218,6 @@ table_def = ci.get_input_table_definition_by_name('input.csv')
 
 ```
 
-#### Manifest files processing
-
-The [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files/#dataouttables-manifests)
- are represented by the `dao.TableDefinition` object. 
-
-This object represents both Input and Output manifests. All output manifest attributes are exposed in the class.
-
 ##### Initializing TableDefinition object from the manifest file
 
 ```python
@@ -250,5 +247,61 @@ table_def = dao.TableDefinition.build_from_manifest('data/in/tables/table.csv.ma
 
 # get the  manifest file representation
 manifest_dict = table_def.get_manifest_dictionary()
+
+```
+
+
+
+
+#### Processing input files
+
+Similarly as tables, files and their manifest files are represented by the `keboola.component.dao.FileDefinition` object and may be loaded 
+using the convenience method `get_input_files_definitions()`. The result object contains all metadata about the file,
+such as manifest file representations, system path and name.
+
+The `get_input_files_definitions()` supports filter parameters to filter only files with a specific tag or retrieve only the latest file of each. 
+This is especially useful because the KBC input mapping will by default include all versions of files matching specific tag. By default, the method 
+returns only the latest file of each.
+
+```python
+from keboola.component import CommonInterface
+import logging
+
+# init the interface
+ci = CommonInterface()
+
+input_files = ci.get_input_files_definitions(tags= ['my_tag'], only_latest_files=True)
+
+# print path of the first file (random order) matching the criteria
+first_file = input_files[0]
+logging.info(f'The first file named: "{input_files.name}" is at path: {input_files.full_path}')
+
+
+```
+
+
+When working with files it may be useful to retrieve them in a dictionary structure grouped either by name or a tag group. 
+For this there are convenience methods `get_input_file_definitions_grouped_by_tag_group()` and `get_input_file_definitions_grouped_by_name()`
+
+
+```python
+from keboola.component import CommonInterface
+import logging
+
+# init the interface
+ci = CommonInterface()
+
+# group by tag
+input_files_by_tag = ci.get_input_file_definitions_grouped_by_tag_group(only_latest_files=True)
+
+# print list of files matching specific tag
+logging.info(input_files_by_tag['my_tag']) 
+
+
+# group by name
+input_files_by_name = ci.get_input_file_definitions_grouped_by_name(only_latest_files=True)
+
+# print list of files matching specific name
+logging.info(input_files_by_name['image.jpg'])
 
 ```
