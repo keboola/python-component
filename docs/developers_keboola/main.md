@@ -1,5 +1,12 @@
 # Keboola Python Component library
 
+---
+permalink: /extend/component/implementation/python-component-library/
+---
+
+* TOC
+{:toc}
+
 ## Introduction
 
 This library provides a Python wrapper over the
@@ -14,13 +21,14 @@ This library provides a Python wrapper over the
  
  ### Links
  
- - API Documentation: [API docs](https://github.com/keboola/python-component/tree/main/docs/api-html/component/interface.html)
+ - API Documentation: [API docs]()
  - Source code: [https://github.com/keboola/python-component](https://github.com/keboola/python-component)
  - PYPI project code: [https://test.pypi.org/project/keboola.component-kds/](https://test.pypi.org/project/keboola.component-kds/)
  - Documentation: [https://developers.keboola.com/extend/component/python-component-library](https://developers.keboola.com/extend/component/)
  - Python Component template project: [https://bitbucket.org/kds_consulting_team/kbc-python-template/src/master/](https://bitbucket.org/kds_consulting_team/kbc-python-template/src/master/)
-
-
+ - KDS Team Bitbucket repository with example Component applications: [https://bitbucket.org/kds_consulting_team/workspace/projects/COMP](https://bitbucket.org/kds_consulting_team/workspace/projects/COMP)
+  
+ 
  ## Quick start
  
  ### Installation 

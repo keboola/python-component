@@ -308,6 +308,18 @@ class TestCommonInterface(unittest.TestCase):
                 self.assertEqual(file.max_age_days, 180)
                 self.assertEqual(file.size_bytes, 30027)
 
+    def test_get_input_files_definition_no_manifest_passes(self):
+        ci = CommonInterface(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                          'data_examples', 'data2'))
+
+        files = ci.get_input_files_definitions(only_latest_files=True)
+
+        self.assertEqual(len(files), 1)
+        for file in files:
+            self.assertEqual(file.max_age_days, 0)
+            self.assertEqual(file.size_bytes, 0)
+            self.assertEqual(file.created, None)
+
 
 class TestConfiguration(unittest.TestCase):
 
