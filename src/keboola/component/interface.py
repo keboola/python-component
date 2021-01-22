@@ -545,7 +545,8 @@ class CommonInterface:
             max_timestamp = utc.localize(datetime(1900, 5, 17))
             for f in files_per_name[group]:
                 creation_date = f.created
-                if creation_date > max_timestamp:
+                # if date not present ignore and add anyway
+                if creation_date is None or creation_date > max_timestamp:
                     max_timestamp = creation_date
                     max_file = f
             filtered_files.append(max_file)
