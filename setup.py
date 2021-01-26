@@ -7,13 +7,13 @@ with open("README.md", "r") as fh:
     long_description = long_description.split("\n", header_lines)[header_lines]
 
 project_urls = {
-    'Documentation': 'https://github.com/keboola/python-component/tree/main/docs/api-html/component/interface.html',
+    'Documentation': 'https://htmlpreview.github.io/?https://raw.githubusercontent.com/keboola/python-component/main/docs/api-html/component/interface.html',
     'Component Template project': 'https://bitbucket.org/kds_consulting_team/workspace/projects/COMP'
 }
 
 setuptools.setup(
     name="keboola.component",  # TESTING NAME
-    version="1.0.0",
+    version="1.0.1",
     author="Keboola KDS Team",
     project_urls=project_urls,
     setup_requires=['pytest-runner', 'flake8'],
