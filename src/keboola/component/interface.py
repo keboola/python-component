@@ -1,4 +1,5 @@
 import argparse
+import csv
 import glob
 import json
 import logging
@@ -12,6 +13,14 @@ from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
 
 from . import dao
+
+
+def register_csv_dialect():
+    """
+    Register the KBC CSV dialect
+    """
+    csv.register_dialect('kbc', lineterminator='\n', delimiter=',',
+                         quotechar='"')
 
 
 def init_environment_variables() -> dao.EnvironmentVariables:
@@ -70,6 +79,7 @@ class CommonInterface:
             logging_type (str): optional 'std' or 'gelf', if left empty determined automatically
         """
         self.environment_variables = init_environment_variables()
+        register_csv_dialect()
 
         # init logging
         logging_type_inf = CommonInterface.LOGGING_TYPE_GELF if os.getenv('KBC_LOGGER_ADDR',
