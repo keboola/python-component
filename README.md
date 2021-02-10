@@ -64,11 +64,26 @@ created. e.g.
 - config.json is loaded
 - All Environment variables are loaded
 
+The optional parameter `data_folder_path` of the constructor is the path to the data directory.
+If not provided, [`KBC_DATADIR` environment variable](/extend/common-interface/environment/#environment-variables) will be used.
+
 The class can be either extended or just instantiated and manipulated like object. 
 The `CommonInterface` class is exposed in the `keboola.component` namespace:
 
 ```python
 from keboola.component import CommonInterface
+# init the interface
+# A ValueError error is raised if the KBC_DATADIR does not exist or contains non-existent path.
+ci = CommonInterface()
+```
+
+To specify the data folder path manually use this code:
+
+```python
+from keboola.component import CommonInterface
+# init the interface
+# A ValueError error is raised if the data folder path does not exist.
+ci = CommonInterface(data_folder_path='/data')
 ```
 
 #### Loading configuration parameters:
@@ -76,6 +91,10 @@ from keboola.component import CommonInterface
 The below example loads initializes the common interface class and automatically loading config.json from the 
 [data folder](https://developers.keboola.com/extend/common-interface/folders/) which is defined by an environment variable `KBC_DATADIR`,
  if the variable is not present, and error is raised. To override the data folder location provide the `data_folder_path` parameter into constructor. 
+ 
+ **NOTE:** The `configuration` object is initialized upon access and a ValueError is thrown if the `config.json` does not exist 
+ in the data folder. e.g. `cfg = ci.configuration` may throw a ValueError even though the data folder exists and ci (CommonInterface) 
+ is properly initialized.
 
 ```python
 from keboola.component import CommonInterface
@@ -89,6 +108,8 @@ REQUIRED_PARAMETERS = [SOME_PARAMETER]
 # A ValueError error is raised if the KBC_DATADIR does not exist or contains non-existent path.
 ci = CommonInterface()
 
+
+# A ValueError error is raised if the config.json file does not exists in the data dir.
 # Checks for required parameters and throws ValueError if any is missing.
 ci.validate_configuration(REQUIRED_PARAMETERS)
 
