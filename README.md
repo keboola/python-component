@@ -2,6 +2,10 @@
 
 ## Introduction
 
+![Build & Test](https://github.com/keboola/python-component/workflows/Build%20&%20Test/badge.svg?branch=main)
+[![Code Climate](https://codeclimate.com/github/keboola/python-component/badges/gpa.svg)](https://codeclimate.com/github/keboola/python-docker-application)
+
+
 This library provides a Python wrapper over the
 [Keboola Common Interface](https://developers.keboola.com/extend/common-interface/). It simplifies all tasks related
  to the communication of the [Docker component](https://developers.keboola.com/extend/component/) with the Keboola Connection that is defined by the Common Interface. 
