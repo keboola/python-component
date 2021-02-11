@@ -21,9 +21,9 @@ This library provides a Python wrapper over the
  - Python Component template project: [https://bitbucket.org/kds_consulting_team/kbc-python-template/src/master/](https://bitbucket.org/kds_consulting_team/kbc-python-template/src/master/)
 
 
- ## Quick start
+# Quick start
  
- ### Installation 
+## Installation 
  
  The package may be installed via PIP:
  
@@ -32,7 +32,7 @@ pip install keboola.component
 ```
 
 
-### Core structure & functionality 
+## Core structure & functionality 
 
 The package contains two core modules:
 
@@ -40,7 +40,7 @@ The package contains two core modules:
 - `keboola.component.dao` - Data classes and containers for objects defined by the Common Interface such as manifest files, metadata, environment variables, etc.
 
 
-### CommonInterface
+## CommonInterface
 
 Core class that serves to initialize the docker environment. It handles the following tasks:
 
@@ -55,7 +55,7 @@ Core class that serves to initialize the docker environment. It handles the foll
     - Metadata manipulation
     - [OAuth](https://developers.keboola.com/extend/common-interface/oauth/) configuration handling.
 
-#### Initialization
+## Initialization
 
 The core class is `keboola.component.interface.CommonInterface`, upon it's initialization the environment is 
 created. e.g.
@@ -64,18 +64,37 @@ created. e.g.
 - config.json is loaded
 - All Environment variables are loaded
 
+The optional parameter `data_folder_path` of the constructor is the path to the data directory.
+If not provided, [`KBC_DATADIR` environment variable](/extend/common-interface/environment/#environment-variables) will be used.
+
 The class can be either extended or just instantiated and manipulated like object. 
 The `CommonInterface` class is exposed in the `keboola.component` namespace:
 
 ```python
 from keboola.component import CommonInterface
+# init the interface
+# A ValueError error is raised if the KBC_DATADIR does not exist or contains non-existent path.
+ci = CommonInterface()
 ```
 
-#### Loading configuration parameters:
+To specify the data folder path manually use this code:
+
+```python
+from keboola.component import CommonInterface
+# init the interface
+# A ValueError error is raised if the data folder path does not exist.
+ci = CommonInterface(data_folder_path='/data')
+```
+
+## Loading configuration parameters:
 
 The below example loads initializes the common interface class and automatically loading config.json from the 
 [data folder](https://developers.keboola.com/extend/common-interface/folders/) which is defined by an environment variable `KBC_DATADIR`,
  if the variable is not present, and error is raised. To override the data folder location provide the `data_folder_path` parameter into constructor. 
+ 
+ **NOTE:** The `configuration` object is initialized upon access and a ValueError is thrown if the `config.json` does not exist 
+ in the data folder. e.g. `cfg = ci.configuration` may throw a ValueError even though the data folder exists and ci (CommonInterface) 
+ is properly initialized.
 
 ```python
 from keboola.component import CommonInterface
@@ -89,6 +108,8 @@ REQUIRED_PARAMETERS = [SOME_PARAMETER]
 # A ValueError error is raised if the KBC_DATADIR does not exist or contains non-existent path.
 ci = CommonInterface()
 
+
+# A ValueError error is raised if the config.json file does not exists in the data dir.
 # Checks for required parameters and throws ValueError if any is missing.
 ci.validate_configuration(REQUIRED_PARAMETERS)
 
@@ -100,11 +121,17 @@ logging.info(ci.configuration.parameters[SOME_PARAMETER])
 ```
 
 
-#### Processing input tables
+## Processing input tables - Manifest vs I/O mapping
+
+Input and output tables specified by user are listed in the [configuration file](/extend/common-interface/config-file/). 
+Apart from that, all input tables provided by user also include manifest file with additional metadata.
 
 Tables and their manifest files are represented by the `keboola.component.dao.TableDefinition` object and may be loaded 
 using the convenience method `get_input_tables_definitions()`. The result object contains all metadata about the table,
 such as manifest file representations, system path and name.
+
+
+### Manifest & input folder content
 
 ```python
 from keboola.component import CommonInterface
@@ -126,31 +153,33 @@ logging.info(f'The first table has following columns defined in the manifest {fi
 
 ```
 
+### Using I/O mapping
 
-#### Processing state files
-
-[State files](https://developers.keboola.com/extend/common-interface/config-file/#state-file) can be easily written and loaded 
-using the `get_state_file()` and `write_state_file()` methods:
- 
 ```python
+import csv
 from keboola.component import CommonInterface
-from datetime import datetime
-import logging
 
-# init the interface
+# initialize the library
 ci = CommonInterface()
 
-last_state = ci.get_state_file()
+# get list of input tables from the input mapping ()
+tables = ci.configuration.tables_input_mapping
+j = 0
+for table in tables:
+    # get csv file name
+    inName = table.destination
+    
+    # read input table manifest and get it's physical representation
+    table_def = ci.get_input_table_definition_by_name(table.destination)
 
-# print last_updated if exists
-logging.info(f'Previous job stored following last_updated value: {last_state.get("last_updated","")})')
+    # get csv file name with full path from output mapping
+    outName = ci.configuration.tables_output_mapping[j].full_path
 
-# store new state file
-ci.write_state_file({"last_updated": datetime.now().isoformat()})
+    # get file name from output mapping
+    outDestination = ci.configuration.tables_output_mapping[j]['destination']
 ```
 
-
-#### I/O table manifests and processing results
+## I/O table manifests and processing results
 
 The component may define output [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files/#dataouttables-manifests) 
 that define options on storing the results back to the Keboola Connection Storage. This library provides methods that simplifies 
@@ -198,7 +227,7 @@ result_table.table_metadata.add_column_data_type('id', dao.SupportedDataTypes.ST
 ci.write_tabledef_manifest(result_table)
 ```
 
-##### Get input table by name
+### Get input table by name
 
 ```python
 from keboola.component import CommonInterface
@@ -210,7 +239,7 @@ table_def = ci.get_input_table_definition_by_name('input.csv')
 
 ```
 
-##### Initializing TableDefinition object from the manifest file
+### Initializing TableDefinition object from the manifest file
 
 ```python
 from keboola.component import dao
@@ -226,7 +255,7 @@ print(table_def.full_path)
 print(table_def.rows_count)
 ```
 
-##### Retrieve raw manifest file definition (CommonInterface compatible)
+### Retrieve raw manifest file definition (CommonInterface compatible)
 
 To retrieve the manifest file representation that is compliant with Keboola Connection Common Interface 
 use the `table_def.get_manifest_dictionary()` method. 
@@ -245,7 +274,7 @@ manifest_dict = table_def.get_manifest_dictionary()
 
 
 
-#### Processing input files
+## Processing input files
 
 Similarly as tables, files and their manifest files are represented by the `keboola.component.dao.FileDefinition` object and may be loaded 
 using the convenience method `get_input_files_definitions()`. The result object contains all metadata about the file,
@@ -297,3 +326,63 @@ input_files_by_name = ci.get_input_file_definitions_grouped_by_name(only_latest_
 logging.info(input_files_by_name['image.jpg'])
 
 ```
+
+## Processing state files
+
+[State files](https://developers.keboola.com/extend/common-interface/config-file/#state-file) can be easily written and loaded 
+using the `get_state_file()` and `write_state_file()` methods:
+ 
+```python
+from keboola.component import CommonInterface
+from datetime import datetime
+import logging
+
+# init the interface
+ci = CommonInterface()
+
+last_state = ci.get_state_file()
+
+# print last_updated if exists
+logging.info(f'Previous job stored following last_updated value: {last_state.get("last_updated","")})')
+
+# store new state file
+ci.write_state_file({"last_updated": datetime.now().isoformat()})
+```
+
+
+## Logging
+
+The library automatically initializes STDOUT or GELF logger based on the presence of the `KBC_LOGGER_PORT/HOST` environment variable 
+upon the `CommonInterface` initialization. To use the GELF logger just enable the logger for your appplication in the Developer Portal. 
+More info in the [dedicated article](/extend/common-interface/logging/#examples).
+
+Once it is enabled, you may just log your messages using the logging library:
+
+```python
+from keboola.component import CommonInterface
+from datetime import datetime
+import logging
+
+# init the interface
+ci = CommonInterface()
+
+logging.info("Info message")
+```
+
+You may also choose to override the settings by enabling the GELF or STDOUT explicitly and specifying the host/port parameters:
+
+```python
+from keboola.component import CommonInterface
+import os
+import logging
+
+# init the interface
+ci = CommonInterface()
+os.environ['KBC_LOGGER_ADDR'] = 'localhost'
+os.environ['KBC_LOGGER_PORT'] = 12201
+ci.set_gelf_logger(log_level=logging.INFO, transport_layer='UDP')
+
+logging.info("Info message")
+```
+
+ 

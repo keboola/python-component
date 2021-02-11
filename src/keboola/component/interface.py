@@ -1,17 +1,26 @@
-import glob
-
 import argparse
+import csv
+import glob
 import json
 import logging
 import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from pygelf import GelfUdpHandler, GelfTcpHandler
-from pytz import utc
 from typing import List, Dict
 
+from pygelf import GelfUdpHandler, GelfTcpHandler
+from pytz import utc
+
 from . import dao
+
+
+def register_csv_dialect():
+    """
+    Register the KBC CSV dialect
+    """
+    csv.register_dialect('kbc', lineterminator='\n', delimiter=',',
+                         quotechar='"')
 
 
 def init_environment_variables() -> dao.EnvironmentVariables:
@@ -70,6 +79,7 @@ class CommonInterface:
             logging_type (str): optional 'std' or 'gelf', if left empty determined automatically
         """
         self.environment_variables = init_environment_variables()
+        register_csv_dialect()
 
         # init logging
         logging_type_inf = CommonInterface.LOGGING_TYPE_GELF if os.getenv('KBC_LOGGER_ADDR',
@@ -86,9 +96,12 @@ class CommonInterface:
         if not data_folder_path:
             data_folder_path = self._get_data_folder_from_context()
 
-        # try to load the configuration
-        # raises ValueError
-        Configuration(data_folder_path)
+        # validate
+        if not os.path.exists(data_folder_path) and not os.path.isdir(data_folder_path):
+            raise ValueError(
+                f"The data directory does not exist, verify that the data directory is correct. Dir: "
+                f"{data_folder_path}"
+            )
 
         self.data_folder_path = data_folder_path
 
@@ -883,6 +896,9 @@ class CommonInterface:
     # ### PROPERTIES
     @property
     def configuration(self):
+        # try to load the configuration
+        # raises ValueError
+
         return Configuration(self.data_folder_path)
 
     @property
@@ -918,7 +934,7 @@ class Configuration:
         Args:
             data_folder_path (object):
         """
-        self.config_data = []
+        self.config_data = {}
         self.data_dir = data_folder_path
 
         try:
@@ -927,7 +943,8 @@ class Configuration:
                 self.config_data = json.load(config_file)
         except (OSError, IOError):
             raise ValueError(
-                f"Configuration file config.json not found, verify that the data directory is correct. Dir: "
+                f"Configuration file config.json not found, verify that the data directory is correct and that the "
+                f"config file is present. Dir: "
                 f"{self.data_dir}"
             )
 

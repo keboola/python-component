@@ -68,13 +68,22 @@ class TestCommonInterface(unittest.TestCase):
         """Unknown properties in storage.intpu.tables will be ignored when getting dataclass"""
 
     def test_missing_dir(self):
-        os.environ["KBC_DATADIR"] = ""
+        os.environ["KBC_DATADIR"] = "asdf"
         with self.assertRaisesRegex(
                 ValueError,
-                "Configuration file config.json not found"):
+                "The data directory does not exist"):
             CommonInterface()
 
     # ########## PROPERTIES
+
+    def test_missing_config(self):
+        os.environ["KBC_DATADIR"] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                 'data_examples')
+        with self.assertRaisesRegex(
+                ValueError,
+                "Configuration file config.json not found"):
+            ci = CommonInterface()
+            c = ci.configuration
 
     def test_get_data_dir(self):
         ci = CommonInterface()
