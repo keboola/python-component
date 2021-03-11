@@ -377,17 +377,18 @@ class TestConfiguration(unittest.TestCase):
                             'data_examples', 'data4')
         cfg = Configuration(path)
         tables = cfg.tables_input_mapping
-        source = tables[0]['column_types'][0]["source"]
+        coltypes = tables[0].column_types[0]
+        source = coltypes.source
         self.assertEqual(source, "Sales")
-        column_type = tables[0]['column_types'][0]["type"]
+        column_type = coltypes.type
         self.assertEqual(column_type, "VARCHAR")
-        destination = tables[0]['column_types'][0]["destination"]
+        destination = coltypes.destination
         self.assertEqual(destination, "id")
-        length = tables[0]['column_types'][0]["length"]
+        length = coltypes.length
         self.assertEqual(length, "255")
-        nullable = tables[0]['column_types'][0]["nullable"]
+        nullable = coltypes.nullable
         self.assertEqual(nullable, False)
-        convert_empty_values_to_null = tables[0]['column_types'][0]["convert_empty_values_to_null"]
+        convert_empty_values_to_null = coltypes.convert_empty_values_to_null
         self.assertEqual(convert_empty_values_to_null, False)
 
     def test_get_output_mapping(self):

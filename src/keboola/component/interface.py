@@ -991,8 +991,10 @@ class Configuration:
         for table in tables_defs:
             if table.get('column_types'):
                 # nested dataclass
-                for i, column_type in enumerate(table['column_types']):
-                    table['column_types'][i] = dao.build_dataclass_from_dict(dao.TableColumnTypes, column_type)
+                table['column_types'] = [dao.build_dataclass_from_dict(dao.TableColumnTypes, coltype) for coltype in
+                                         table['column_types']]
+                # for i, column_type in enumerate(table['column_types']):
+                #     table['column_types'][i] = dao.build_dataclass_from_dict(dao.TableColumnTypes, column_type)
 
             im = dao.build_dataclass_from_dict(dao.TableInputMapping, table)
             im.full_path = os.path.normpath(
@@ -1003,7 +1005,7 @@ class Configuration:
                     table['destination']
                 )
             )
-            tables.append(table)
+            tables.append(im)
         return tables
 
     @property
