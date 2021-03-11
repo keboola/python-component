@@ -989,9 +989,10 @@ class Configuration:
         tables_defs = self.config_data.get('storage', {}).get('input', {}).get('tables', [])
         tables = []
         for table in tables_defs:
-            if 'column_types' in table:
+            if table.get('column_types'):
                 # nested dataclass
-                table['column_types'] = dao.build_dataclass_from_dict(dao.TableColumnTypes, table['column_types'])
+                for i, column_type in enumerate(table['column_types']):
+                    table['column_types'][i] = dao.build_dataclass_from_dict(dao.TableColumnTypes, column_type)
 
             im = dao.build_dataclass_from_dict(dao.TableInputMapping, table)
             im.full_path = os.path.normpath(

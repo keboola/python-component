@@ -372,6 +372,24 @@ class TestConfiguration(unittest.TestCase):
             else:
                 self.assertEqual('in.c-main.test2', table['source'])
 
+    def test_get_input_mappings_with_column_types(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'data_examples', 'data4')
+        cfg = Configuration(path)
+        tables = cfg.tables_input_mapping
+        source = tables[0]['column_types'][0]["source"]
+        self.assertEqual(source, "Sales")
+        column_type = tables[0]['column_types'][0]["type"]
+        self.assertEqual(column_type, "VARCHAR")
+        destination = tables[0]['column_types'][0]["destination"]
+        self.assertEqual(destination, "id")
+        length = tables[0]['column_types'][0]["length"]
+        self.assertEqual(length, "255")
+        nullable = tables[0]['column_types'][0]["nullable"]
+        self.assertEqual(nullable, False)
+        convert_empty_values_to_null = tables[0]['column_types'][0]["convert_empty_values_to_null"]
+        self.assertEqual(convert_empty_values_to_null, False)
+
     def test_get_output_mapping(self):
         cfg = Configuration(os.environ["KBC_DATADIR"])
         tables = cfg.tables_output_mapping
