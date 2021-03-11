@@ -1,0 +1,31 @@
+{
+    "storage": {
+        "input": {
+            "files": [],
+            "tables": [
+                {
+                    "source": "in.c-main.test",
+                    "destination": "sample.csv",
+                    "columns": [],
+                    "where_values": [],
+                    "where_operator": "eq",
+                    "column_types": [
+                        {
+                            "source": "Sales",
+                            "type": "VARCHAR",
+                            "destination": "id",
+                            "length": "255",
+                            "nullable": false,
+                            "convert_empty_values_to_null": false
+                        }
+                    ]
+                }
+            ]
+        }       
+
+    },
+    "parameters": {
+
+    }
+   
+}
