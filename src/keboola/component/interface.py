@@ -4,11 +4,11 @@ import glob
 import json
 import logging
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict
 
+import sys
 from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
 
@@ -989,9 +989,9 @@ class Configuration:
         tables_defs = self.config_data.get('storage', {}).get('input', {}).get('tables', [])
         tables = []
         for table in tables_defs:
-            if 'column_types' in table:
-                # nested dataclass
-                table['column_types'] = dao.build_dataclass_from_dict(dao.TableColumnTypes, table['column_types'])
+            # nested dataclass
+            table['column_types'] = [dao.build_dataclass_from_dict(dao.TableColumnTypes, coltype) for coltype in
+                                     table.get('column_types', [])]
 
             im = dao.build_dataclass_from_dict(dao.TableInputMapping, table)
             im.full_path = os.path.normpath(
@@ -1002,7 +1002,7 @@ class Configuration:
                     table['destination']
                 )
             )
-            tables.append(table)
+            tables.append(im)
         return tables
 
     @property
