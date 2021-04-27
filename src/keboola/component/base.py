@@ -9,18 +9,29 @@ from .interface import CommonInterface
 KEY_DEBUG = 'debug'
 
 
+class UserException(Exception):
+    pass
+
+
 class ComponentBase(ABC, CommonInterface):
     def __init__(self, required_parameters: Optional[List[str]] = None,
                  required_image_parameters: Optional[List[str]] = None,
                  data_path_override: Optional[str] = None):
         """
         Base class for general Python components. Initializes the CommonInterface and performs configuration validation.
+
+        For easier debugging the data folder is picked up by default from `../data` path, relative to working directory.
+
+        If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
+
         Args:
             required_parameters: List of required configuration/parameters
-            required_image_parameters: List of required configuration paremeters
-            data_path:
-                optional path to data folder that overrides the default behaviour (KBC_DATADIR).
+            required_image_parameters: List of required configuration parameters
+            data_path_override:
+                optional path to data folder that overrides the default behaviour (`KBC_DATADIR` environment variable).
                 May be also specified by '-d' or '--data' commandline argument
+        Raises:
+            UserException - on config validation errors.
         """
 
         # for easier local project setup
@@ -35,8 +46,7 @@ class ComponentBase(ABC, CommonInterface):
             self.validate_configuration(required_parameters)
             self.validate_image_parameters(required_image_parameters)
         except ValueError as e:
-            logging.exception(e)
-            exit(1)
+            raise UserException(e) from e
 
         if self.configuration.parameters.get(KEY_DEBUG):
             self.set_debug_mode()
@@ -73,6 +83,11 @@ class ComponentBase(ABC, CommonInterface):
 
     @staticmethod
     def set_debug_mode():
+        """
+        Set the default logger to verbose mode.
+        Returns:
+
+        """
         logging.getLogger().setLevel(logging.DEBUG)
 
     @abstractmethod
