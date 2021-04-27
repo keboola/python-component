@@ -18,9 +18,11 @@ class ComponentBase(ABC, CommonInterface):
                  required_image_parameters: Optional[List[str]] = None,
                  data_path_override: Optional[str] = None):
         """
-        Base class for general Python components. Initializes the CommonInterface and performs configuration validation.
+        Base class for general Python components. Initializes the CommonInterface
+        and performs configuration validation.
 
-        For easier debugging the data folder is picked up by default from `../data` path, relative to working directory.
+        For easier debugging the data folder is picked up by default from `../data` path,
+        relative to working directory.
 
         If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
 
