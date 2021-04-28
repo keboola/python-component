@@ -1031,7 +1031,7 @@ class TableInputMapping(SubscriptableDataclass):
     full_path: str = None
     where_operator: str = &#39;&#39;
     days: int = 0
-    column_types: TableColumnTypes = None
+    column_types: List[TableColumnTypes] = None
 
 
 @dataclass
@@ -2944,7 +2944,7 @@ for more information.</p>
 </dd>
 <dt id="keboola.component.dao.TableInputMapping"><code class="flex name class">
 <span>class <span class="ident">TableInputMapping</span></span>
-<span>(</span><span>source: str = '', destination: str = None, limit: int = None, columns: List[str] = &lt;factory&gt;, where_values: List[str] = None, full_path: str = None, where_operator: str = '', days: int = 0, column_types: <a title="keboola.component.dao.TableColumnTypes" href="#keboola.component.dao.TableColumnTypes">TableColumnTypes</a> = None)</span>
+<span>(</span><span>source: str = '', destination: str = None, limit: int = None, columns: List[str] = &lt;factory&gt;, where_values: List[str] = None, full_path: str = None, where_operator: str = '', days: int = 0, column_types: List[<a title="keboola.component.dao.TableColumnTypes" href="#keboola.component.dao.TableColumnTypes">TableColumnTypes</a>] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Abstraction of <a href="https://developers.keboola.com/extend/common-interface/config-file/#tables">input mapping definition</a> in the config file</p></div>
@@ -2965,7 +2965,7 @@ for more information.</p>
     full_path: str = None
     where_operator: str = &#39;&#39;
     days: int = 0
-    column_types: TableColumnTypes = None</code></pre>
+    column_types: List[TableColumnTypes] = None</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2973,7 +2973,7 @@ for more information.</p>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="keboola.component.dao.TableInputMapping.column_types"><code class="name">var <span class="ident">column_types</span> : <a title="keboola.component.dao.TableColumnTypes" href="#keboola.component.dao.TableColumnTypes">TableColumnTypes</a></code></dt>
+<dt id="keboola.component.dao.TableInputMapping.column_types"><code class="name">var <span class="ident">column_types</span> : List[<a title="keboola.component.dao.TableColumnTypes" href="#keboola.component.dao.TableColumnTypes">TableColumnTypes</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>

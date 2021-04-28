@@ -26,20 +26,29 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import glob
-
-import argparse
+<pre><code class="python">import argparse
+import csv
+import glob
 import json
 import logging
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
-from pygelf import GelfUdpHandler, GelfTcpHandler
-from pytz import utc
 from typing import List, Dict
 
+import sys
+from pygelf import GelfUdpHandler, GelfTcpHandler
+from pytz import utc
+
 from . import dao
+
+
+def register_csv_dialect():
+    &#34;&#34;&#34;
+    Register the KBC CSV dialect
+    &#34;&#34;&#34;
+    csv.register_dialect(&#39;kbc&#39;, lineterminator=&#39;\n&#39;, delimiter=&#39;,&#39;,
+                         quotechar=&#39;&#34;&#39;)
 
 
 def init_environment_variables() -&gt; dao.EnvironmentVariables:
@@ -98,6 +107,7 @@ class CommonInterface:
             logging_type (str): optional &#39;std&#39; or &#39;gelf&#39;, if left empty determined automatically
         &#34;&#34;&#34;
         self.environment_variables = init_environment_variables()
+        register_csv_dialect()
 
         # init logging
         logging_type_inf = CommonInterface.LOGGING_TYPE_GELF if os.getenv(&#39;KBC_LOGGER_ADDR&#39;,
@@ -114,9 +124,12 @@ class CommonInterface:
         if not data_folder_path:
             data_folder_path = self._get_data_folder_from_context()
 
-        # try to load the configuration
-        # raises ValueError
-        Configuration(data_folder_path)
+        # validate
+        if not os.path.exists(data_folder_path) and not os.path.isdir(data_folder_path):
+            raise ValueError(
+                f&#34;The data directory does not exist, verify that the data directory is correct. Dir: &#34;
+                f&#34;{data_folder_path}&#34;
+            )
 
         self.data_folder_path = data_folder_path
 
@@ -573,7 +586,8 @@ class CommonInterface:
             max_timestamp = utc.localize(datetime(1900, 5, 17))
             for f in files_per_name[group]:
                 creation_date = f.created
-                if creation_date &gt; max_timestamp:
+                # if date not present ignore and add anyway
+                if creation_date is None or creation_date &gt; max_timestamp:
                     max_timestamp = creation_date
                     max_file = f
             filtered_files.append(max_file)
@@ -910,6 +924,9 @@ class CommonInterface:
     # ### PROPERTIES
     @property
     def configuration(self):
+        # try to load the configuration
+        # raises ValueError
+
         return Configuration(self.data_folder_path)
 
     @property
@@ -945,7 +962,7 @@ class Configuration:
         Args:
             data_folder_path (object):
         &#34;&#34;&#34;
-        self.config_data = []
+        self.config_data = {}
         self.data_dir = data_folder_path
 
         try:
@@ -954,7 +971,8 @@ class Configuration:
                 self.config_data = json.load(config_file)
         except (OSError, IOError):
             raise ValueError(
-                f&#34;Configuration file config.json not found, verify that the data directory is correct. Dir: &#34;
+                f&#34;Configuration file config.json not found, verify that the data directory is correct and that the &#34;
+                f&#34;config file is present. Dir: &#34;
                 f&#34;{self.data_dir}&#34;
             )
 
@@ -999,9 +1017,9 @@ class Configuration:
         tables_defs = self.config_data.get(&#39;storage&#39;, {}).get(&#39;input&#39;, {}).get(&#39;tables&#39;, [])
         tables = []
         for table in tables_defs:
-            if &#39;column_types&#39; in table:
-                # nested dataclass
-                table[&#39;column_types&#39;] = dao.build_dataclass_from_dict(dao.TableColumnTypes, table[&#39;column_types&#39;])
+            # nested dataclass
+            table[&#39;column_types&#39;] = [dao.build_dataclass_from_dict(dao.TableColumnTypes, coltype) for coltype in
+                                     table.get(&#39;column_types&#39;, [])]
 
             im = dao.build_dataclass_from_dict(dao.TableInputMapping, table)
             im.full_path = os.path.normpath(
@@ -1012,7 +1030,7 @@ class Configuration:
                     table[&#39;destination&#39;]
                 )
             )
-            tables.append(table)
+            tables.append(im)
         return tables
 
     @property
@@ -1110,6 +1128,23 @@ class Configuration:
                                     )</code></pre>
 </details>
 </dd>
+<dt id="keboola.component.interface.register_csv_dialect"><code class="name flex">
+<span>def <span class="ident">register_csv_dialect</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Register the KBC CSV dialect</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def register_csv_dialect():
+    &#34;&#34;&#34;
+    Register the KBC CSV dialect
+    &#34;&#34;&#34;
+    csv.register_dialect(&#39;kbc&#39;, lineterminator=&#39;\n&#39;, delimiter=&#39;,&#39;,
+                         quotechar=&#39;&#34;&#39;)</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -1180,6 +1215,7 @@ is established in following order:</p>
             logging_type (str): optional &#39;std&#39; or &#39;gelf&#39;, if left empty determined automatically
         &#34;&#34;&#34;
         self.environment_variables = init_environment_variables()
+        register_csv_dialect()
 
         # init logging
         logging_type_inf = CommonInterface.LOGGING_TYPE_GELF if os.getenv(&#39;KBC_LOGGER_ADDR&#39;,
@@ -1196,9 +1232,12 @@ is established in following order:</p>
         if not data_folder_path:
             data_folder_path = self._get_data_folder_from_context()
 
-        # try to load the configuration
-        # raises ValueError
-        Configuration(data_folder_path)
+        # validate
+        if not os.path.exists(data_folder_path) and not os.path.isdir(data_folder_path):
+            raise ValueError(
+                f&#34;The data directory does not exist, verify that the data directory is correct. Dir: &#34;
+                f&#34;{data_folder_path}&#34;
+            )
 
         self.data_folder_path = data_folder_path
 
@@ -1655,7 +1694,8 @@ is established in following order:</p>
             max_timestamp = utc.localize(datetime(1900, 5, 17))
             for f in files_per_name[group]:
                 creation_date = f.created
-                if creation_date &gt; max_timestamp:
+                # if date not present ignore and add anyway
+                if creation_date is None or creation_date &gt; max_timestamp:
                     max_timestamp = creation_date
                     max_file = f
             filtered_files.append(max_file)
@@ -1992,6 +2032,9 @@ is established in following order:</p>
     # ### PROPERTIES
     @property
     def configuration(self):
+        # try to load the configuration
+        # raises ValueError
+
         return Configuration(self.data_folder_path)
 
     @property
@@ -2010,6 +2053,10 @@ is established in following order:</p>
     def files_in_path(self):
         return os.path.join(self.data_folder_path, &#39;in&#39;, &#39;files&#39;)</code></pre>
 </details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="keboola.component.base.ComponentBase" href="base.html#keboola.component.base.ComponentBase">ComponentBase</a></li>
+</ul>
 <h3>Class variables</h3>
 <dl>
 <dt id="keboola.component.interface.CommonInterface.LOGGING_TYPE_GELF"><code class="name">var <span class="ident">LOGGING_TYPE_GELF</span></code></dt>
@@ -2327,6 +2374,9 @@ def write_tabledef_manifests(table_definitions: List[dao.TableDefinition]):
 </summary>
 <pre><code class="python">@property
 def configuration(self):
+    # try to load the configuration
+    # raises ValueError
+
     return Configuration(self.data_folder_path)</code></pre>
 </details>
 </dd>
@@ -3183,7 +3233,7 @@ See docs:
         Args:
             data_folder_path (object):
         &#34;&#34;&#34;
-        self.config_data = []
+        self.config_data = {}
         self.data_dir = data_folder_path
 
         try:
@@ -3192,7 +3242,8 @@ See docs:
                 self.config_data = json.load(config_file)
         except (OSError, IOError):
             raise ValueError(
-                f&#34;Configuration file config.json not found, verify that the data directory is correct. Dir: &#34;
+                f&#34;Configuration file config.json not found, verify that the data directory is correct and that the &#34;
+                f&#34;config file is present. Dir: &#34;
                 f&#34;{self.data_dir}&#34;
             )
 
@@ -3237,9 +3288,9 @@ See docs:
         tables_defs = self.config_data.get(&#39;storage&#39;, {}).get(&#39;input&#39;, {}).get(&#39;tables&#39;, [])
         tables = []
         for table in tables_defs:
-            if &#39;column_types&#39; in table:
-                # nested dataclass
-                table[&#39;column_types&#39;] = dao.build_dataclass_from_dict(dao.TableColumnTypes, table[&#39;column_types&#39;])
+            # nested dataclass
+            table[&#39;column_types&#39;] = [dao.build_dataclass_from_dict(dao.TableColumnTypes, coltype) for coltype in
+                                     table.get(&#39;column_types&#39;, [])]
 
             im = dao.build_dataclass_from_dict(dao.TableInputMapping, table)
             im.full_path = os.path.normpath(
@@ -3250,7 +3301,7 @@ See docs:
                     table[&#39;destination&#39;]
                 )
             )
-            tables.append(table)
+            tables.append(im)
         return tables
 
     @property
@@ -3415,9 +3466,9 @@ def tables_input_mapping(self) -&gt; List[dao.TableInputMapping]:
     tables_defs = self.config_data.get(&#39;storage&#39;, {}).get(&#39;input&#39;, {}).get(&#39;tables&#39;, [])
     tables = []
     for table in tables_defs:
-        if &#39;column_types&#39; in table:
-            # nested dataclass
-            table[&#39;column_types&#39;] = dao.build_dataclass_from_dict(dao.TableColumnTypes, table[&#39;column_types&#39;])
+        # nested dataclass
+        table[&#39;column_types&#39;] = [dao.build_dataclass_from_dict(dao.TableColumnTypes, coltype) for coltype in
+                                 table.get(&#39;column_types&#39;, [])]
 
         im = dao.build_dataclass_from_dict(dao.TableInputMapping, table)
         im.full_path = os.path.normpath(
@@ -3428,7 +3479,7 @@ def tables_input_mapping(self) -&gt; List[dao.TableInputMapping]:
                 table[&#39;destination&#39;]
             )
         )
-        tables.append(table)
+        tables.append(im)
     return tables</code></pre>
 </details>
 </dd>
@@ -3479,6 +3530,7 @@ def tables_output_mapping(self) -&gt; List[dao.TableOutputMapping]:
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="keboola.component.interface.init_environment_variables" href="#keboola.component.interface.init_environment_variables">init_environment_variables</a></code></li>
+<li><code><a title="keboola.component.interface.register_csv_dialect" href="#keboola.component.interface.register_csv_dialect">register_csv_dialect</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
