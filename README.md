@@ -4,7 +4,7 @@
 
 ![Build & Test](https://github.com/keboola/python-component/workflows/Build%20&%20Test/badge.svg?branch=main)
 [![Code Climate](https://codeclimate.com/github/keboola/python-component/badges/gpa.svg)](https://codeclimate.com/github/keboola/python-docker-application)
-
+[![PyPI version](https://badge.fury.io/py/keboola.component.svg)](https://badge.fury.io/py/keboola.component)
 
 This library provides a Python wrapper over the
 [Keboola Common Interface](https://developers.keboola.com/extend/common-interface/). It simplifies all tasks related
