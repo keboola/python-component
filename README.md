@@ -3,7 +3,7 @@
 ## Introduction
 
 ![Build & Test](https://github.com/keboola/python-component/workflows/Build%20&%20Test/badge.svg?branch=main)
-[![Code Climate](https://codeclimate.com/github/keboola/python-component/badges/gpa.svg)](https://codeclimate.com/github/keboola/python-docker-application)
+[![Code Climate](https://codeclimate.com/github/keboola/python-component/badges/gpa.svg)](https://codeclimate.com/github/keboola/python-component)
 [![PyPI version](https://badge.fury.io/py/keboola.component.svg)](https://badge.fury.io/py/keboola.component)
 
 This library provides a Python wrapper over the
@@ -42,6 +42,7 @@ The package contains two core modules:
 
 - `keboola.component.interface` - Core methods and class to initialize and handle the [Keboola Common Interface](https://developers.keboola.com/extend/common-interface/) tasks
 - `keboola.component.dao` - Data classes and containers for objects defined by the Common Interface such as manifest files, metadata, environment variables, etc.
+- `keboola.component.base` - Base classes to build the Keboola Component applications from.
 
 
 ## CommonInterface
@@ -358,7 +359,7 @@ ci.write_state_file({"last_updated": datetime.now().isoformat()})
 
 The library automatically initializes STDOUT or GELF logger based on the presence of the `KBC_LOGGER_PORT/HOST` environment variable 
 upon the `CommonInterface` initialization. To use the GELF logger just enable the logger for your appplication in the Developer Portal. 
-More info in the [dedicated article](/extend/common-interface/logging/#examples).
+More info in the [dedicated article](https://developers.keboola.com/extend/common-interface/logging/#examples).
 
 Once it is enabled, you may just log your messages using the logging library:
 
@@ -371,6 +372,14 @@ import logging
 ci = CommonInterface()
 
 logging.info("Info message")
+```
+
+**TIP:** When the logger verbosity is set to `verbose` you may leverage `extra` fields to log the detailed message 
+in the detail of the log event by adding extra fields to you messages:
+
+```python
+logging.error(f'{error}. See log detail for full query. ',
+                         extra={"failed_query": json.dumps(query)})
 ```
 
 You may also choose to override the settings by enabling the GELF or STDOUT explicitly and specifying the host/port parameters:
@@ -399,13 +408,13 @@ It performs following tasks by default:
 
 - Initializes the CommonInterface and performs configuration validation.
 - For easier debugging the data folder is picked up by default from `../data` path,
-        relative to working directory.
+        relative to working directory when the `KBC_DATADIR` env variable is not specified.
 - If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
 
 **Constructor arguments**:
 - required_parameters: List of required configuration/parameters
 - required_image_parameters: List of required configuration parameters
-- data_path_override:optional path to data folder that overrides the default behaviour 
+- data_path_override: optional path to data folder that overrides the default behaviour 
 (`KBC_DATADIR` environment variable). May be also specified by `-d` or `--data` commandline argument
 
 Raises: `UserException` - on config validation errors.
