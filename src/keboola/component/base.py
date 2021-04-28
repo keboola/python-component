@@ -39,14 +39,14 @@ class ComponentBase(ABC, CommonInterface):
         # for easier local project setup
         super().__init__(data_folder_path=self._get_data_folder_override_path(data_path_override))
 
-        self._required_parameters = required_parameters
-        self._required_image_parameters = required_image_parameters
+        self._required_parameters = required_parameters if required_parameters else []
+        self._required_image_parameters = required_image_parameters if required_image_parameters else []
 
         logging.info('Loading configuration...')
         try:
             # validation of required parameters. Produces ValueError
-            self.validate_configuration(required_parameters)
-            self.validate_image_parameters(required_image_parameters)
+            self.validate_configuration(self._required_parameters)
+            self.validate_image_parameters(self._required_image_parameters)
         except ValueError as e:
             raise UserException(e) from e
 
@@ -65,7 +65,7 @@ class ComponentBase(ABC, CommonInterface):
 
     def _get_data_folder_override_path(self, data_path_override: str = None) -> str:
         """
-        Returns overriden value of the data_folder_path in case the data_path_override variable
+        Returns overridden value of the data_folder_path in case the data_path_override variable
         or `KBC_DATADIR` environment variable is defined. The `data_path_override` variable takes precendence.
 
         Returns null if override is not in place.
