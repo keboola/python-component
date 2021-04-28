@@ -42,6 +42,7 @@ The package contains two core modules:
 
 - `keboola.component.interface` - Core methods and class to initialize and handle the [Keboola Common Interface](https://developers.keboola.com/extend/common-interface/) tasks
 - `keboola.component.dao` - Data classes and containers for objects defined by the Common Interface such as manifest files, metadata, environment variables, etc.
+- `keboola.component.base` - Base classes to build the Keboola Component applications from.
 
 
 ## CommonInterface
