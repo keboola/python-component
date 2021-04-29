@@ -1,2 +1,2 @@
 pygelf
-pytz
+pytz<2021.0
