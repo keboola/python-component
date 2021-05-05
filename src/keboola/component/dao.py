@@ -839,10 +839,11 @@ class FileDefinition:
 
         return file_def
 
-    def get_manifest_dictionary(self) -> dict:
+    def get_manifest_dictionary(self, manifest_type='out') -> dict:
         """
 
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
+        By default returns output manifest.
              The result keeps only values that are applicable for
              the selected type of the Manifest file. Because although input and output manifests share most of
              the attributes, some are not shared.
@@ -850,12 +851,15 @@ class FileDefinition:
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
 
+        Args:
+            manifest_type (str): either 'in' or 'out'.
+
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
 
         """
 
-        return self.__get_raw_manifest_by_type(self.stage)
+        return self.__get_raw_manifest_by_type(manifest_type)
 
     def __get_raw_manifest_by_type(self, manifest_type):
         new_manifest = {}
@@ -875,7 +879,7 @@ class FileDefinition:
         return new_manifest
 
     def __get_stage_inferred(self):
-        stage = 'in'
+        stage = 'out'
         if Path(self.full_path).parent.parent.name == 'in':
             stage = 'in'
         elif Path(self.full_path).parent.parent.name == 'out':

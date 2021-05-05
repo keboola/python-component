@@ -309,8 +309,7 @@ class TestFileDefinition(unittest.TestCase):
         file_def = FileDefinition(file_path)
 
         self.assertDictEqual(
-            {'id': '151971405',  # unrecognized id are ignored on output manifest
-             'tags': [],
+            {'tags': [],
              'is_public': False,
              'is_permanent': False,
              'is_encrypted': False,
@@ -327,8 +326,7 @@ class TestFileDefinition(unittest.TestCase):
                                   )
 
         self.assertDictEqual(
-            {'id': '123',
-             'tags': ['foo', 'bar'],
+            {'tags': ['foo', 'bar'],
              'is_public': True,
              'is_permanent': True,
              'is_encrypted': True,
