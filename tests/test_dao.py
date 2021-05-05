@@ -305,11 +305,11 @@ class TestFileDefinition(unittest.TestCase):
         os.environ["KBC_DATADIR"] = path
 
     def test_file_manifest_minimal(self):
-        file_path = os.path.join(os.environ["KBC_DATADIR"], '151971405_21702.strip.print.gif')
+        file_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
         file_def = FileDefinition(file_path)
 
         self.assertDictEqual(
-            {'id': '151971405',  # unrecognized attributes are ignored on output manifest
+            {'id': '151971405',  # unrecognized id are ignored on output manifest
              'tags': [],
              'is_public': False,
              'is_permanent': False,
@@ -337,6 +337,21 @@ class TestFileDefinition(unittest.TestCase):
         )
         self.assertEqual(file_def.name, 'testDef')
         self.assertEqual(file_def.id, '123')
+
+    def test_file_output_manifest_ignores_unrecognized(self):
+        file_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif.manifest')
+        file_def = FileDefinition.build_from_manifest(file_path)
+
+        # change stage
+        file_def.stage = 'out'
+
+        self.assertDictEqual(
+            {'tags': ['dilbert'],
+             'is_encrypted': True,
+             'is_public': False
+             },
+            file_def.get_manifest_dictionary()
+        )
 
     def test_build_from_manifest_matching_file_valid_attributes(self):
         sample_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
