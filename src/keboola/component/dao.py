@@ -1,9 +1,8 @@
 import dataclasses
-from dataclasses import dataclass
-from enum import Enum
-
 import json
+from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import List, Union, Dict
 
@@ -754,8 +753,15 @@ class FileDefinition:
             15 days)
         is_encrypted: If true, the file content will be encrypted in the storage.
         notify: Notifies project administrators that a file was uploaded.
+        stage: Helper property marking the stage of the file.
 
     """
+
+    OUTPUT_MANIFEST_KEYS = ["tags",
+                            "is_public",
+                            "is_permanent",
+                            "is_encrypted",
+                            "notify"]
 
     def __init__(self, full_path: str,
                  tags: List[str] = None,
@@ -766,7 +772,7 @@ class FileDefinition:
         """
 
         Args:
-            full_path (str): (optional) Full path of the file.
+            full_path (str): Full path of the file.
             tags (list):
                 List of tags that are assigned to this file
             is_public: When true, the file URL will be permanent and publicly accessible.
@@ -791,6 +797,9 @@ class FileDefinition:
         self.is_permanent = is_permanent
         self.is_encrypted = is_encrypted
         self.notify = notify
+
+        # infer stage by default
+        self.__stage = self.__get_stage_inferred()
 
     @classmethod
     def build_from_manifest(cls,
@@ -830,23 +839,62 @@ class FileDefinition:
 
         return file_def
 
-    def get_manifest_dictionary(self) -> dict:
+    def get_manifest_dictionary(self, manifest_type='out') -> dict:
         """
 
-        Args:
-            manifest_type (str): either 'in' or 'out'. This option keeps only values that are applicable for
+        Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
+        By default returns output manifest.
+             The result keeps only values that are applicable for
              the selected type of the Manifest file. Because although input and output manifests share most of
              the attributes, some are not shared.
 
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
 
+        Args:
+            manifest_type (str): either 'in' or 'out'.
+
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
 
         """
 
-        return self._raw_manifest
+        return self.__get_raw_manifest_by_type(manifest_type)
+
+    def __get_raw_manifest_by_type(self, manifest_type):
+        new_manifest = {}
+        if manifest_type == 'out':
+            new_manifest = self.__build_out_manifest()
+        else:
+            new_manifest = self._raw_manifest
+
+        return new_manifest
+
+    def __build_out_manifest(self):
+        new_manifest = {}
+        for key in self.OUTPUT_MANIFEST_KEYS:
+            if key in self._raw_manifest:
+                new_manifest[key] = self._raw_manifest[key]
+
+        return new_manifest
+
+    def __get_stage_inferred(self):
+        stage = 'out'
+        if Path(self.full_path).parent.parent.name == 'in':
+            stage = 'in'
+        elif Path(self.full_path).parent.parent.name == 'out':
+            stage = 'out'
+        return stage
+
+    @property
+    def stage(self) -> str:
+        return self.__stage
+
+    @stage.setter
+    def stage(self, stage: str):
+        if stage not in ['in', 'out']:
+            raise ValueError(f'Invalid stage "{stage}", supported values are: "in", "out"')
+        self.__stage = stage
 
     # ########### Output manifest properties - R/W
 

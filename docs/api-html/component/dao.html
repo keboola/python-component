@@ -27,11 +27,10 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import dataclasses
-from dataclasses import dataclass
-from enum import Enum
-
 import json
+from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import List, Union, Dict
 
@@ -782,8 +781,15 @@ class FileDefinition:
             15 days)
         is_encrypted: If true, the file content will be encrypted in the storage.
         notify: Notifies project administrators that a file was uploaded.
+        stage: Helper property marking the stage of the file.
 
     &#34;&#34;&#34;
+
+    OUTPUT_MANIFEST_KEYS = [&#34;tags&#34;,
+                            &#34;is_public&#34;,
+                            &#34;is_permanent&#34;,
+                            &#34;is_encrypted&#34;,
+                            &#34;notify&#34;]
 
     def __init__(self, full_path: str,
                  tags: List[str] = None,
@@ -794,7 +800,7 @@ class FileDefinition:
         &#34;&#34;&#34;
 
         Args:
-            full_path (str): (optional) Full path of the file.
+            full_path (str): Full path of the file.
             tags (list):
                 List of tags that are assigned to this file
             is_public: When true, the file URL will be permanent and publicly accessible.
@@ -819,6 +825,9 @@ class FileDefinition:
         self.is_permanent = is_permanent
         self.is_encrypted = is_encrypted
         self.notify = notify
+
+        # infer stage by default
+        self.__stage = self.__get_stage_inferred()
 
     @classmethod
     def build_from_manifest(cls,
@@ -858,23 +867,62 @@ class FileDefinition:
 
         return file_def
 
-    def get_manifest_dictionary(self) -&gt; dict:
+    def get_manifest_dictionary(self, manifest_type=&#39;out&#39;) -&gt; dict:
         &#34;&#34;&#34;
 
-        Args:
-            manifest_type (str): either &#39;in&#39; or &#39;out&#39;. This option keeps only values that are applicable for
+        Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
+        By default returns output manifest.
+             The result keeps only values that are applicable for
              the selected type of the Manifest file. Because although input and output manifests share most of
              the attributes, some are not shared.
 
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
 
+        Args:
+            manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
+
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
 
         &#34;&#34;&#34;
 
-        return self._raw_manifest
+        return self.__get_raw_manifest_by_type(manifest_type)
+
+    def __get_raw_manifest_by_type(self, manifest_type):
+        new_manifest = {}
+        if manifest_type == &#39;out&#39;:
+            new_manifest = self.__build_out_manifest()
+        else:
+            new_manifest = self._raw_manifest
+
+        return new_manifest
+
+    def __build_out_manifest(self):
+        new_manifest = {}
+        for key in self.OUTPUT_MANIFEST_KEYS:
+            if key in self._raw_manifest:
+                new_manifest[key] = self._raw_manifest[key]
+
+        return new_manifest
+
+    def __get_stage_inferred(self):
+        stage = &#39;out&#39;
+        if Path(self.full_path).parent.parent.name == &#39;in&#39;:
+            stage = &#39;in&#39;
+        elif Path(self.full_path).parent.parent.name == &#39;out&#39;:
+            stage = &#39;out&#39;
+        return stage
+
+    @property
+    def stage(self) -&gt; str:
+        return self.__stage
+
+    @stage.setter
+    def stage(self, stage: str):
+        if stage not in [&#39;in&#39;, &#39;out&#39;]:
+            raise ValueError(f&#39;Invalid stage &#34;{stage}&#34;, supported values are: &#34;in&#34;, &#34;out&#34;&#39;)
+        self.__stage = stage
 
     # ########### Output manifest properties - R/W
 
@@ -1259,11 +1307,13 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 <dd>If true, the file content will be encrypted in the storage.</dd>
 <dt><strong><code>notify</code></strong></dt>
 <dd>Notifies project administrators that a file was uploaded.</dd>
+<dt><strong><code>stage</code></strong></dt>
+<dd>Helper property marking the stage of the file.</dd>
 </dl>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>full_path</code></strong> :&ensp;<code>str</code></dt>
-<dd>(optional) Full path of the file.</dd>
+<dd>Full path of the file.</dd>
 <dt>tags (list):</dt>
 <dt>List of tags that are assigned to this file</dt>
 <dt><strong><code>is_public</code></strong></dt>
@@ -1312,8 +1362,15 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
             15 days)
         is_encrypted: If true, the file content will be encrypted in the storage.
         notify: Notifies project administrators that a file was uploaded.
+        stage: Helper property marking the stage of the file.
 
     &#34;&#34;&#34;
+
+    OUTPUT_MANIFEST_KEYS = [&#34;tags&#34;,
+                            &#34;is_public&#34;,
+                            &#34;is_permanent&#34;,
+                            &#34;is_encrypted&#34;,
+                            &#34;notify&#34;]
 
     def __init__(self, full_path: str,
                  tags: List[str] = None,
@@ -1324,7 +1381,7 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
         &#34;&#34;&#34;
 
         Args:
-            full_path (str): (optional) Full path of the file.
+            full_path (str): Full path of the file.
             tags (list):
                 List of tags that are assigned to this file
             is_public: When true, the file URL will be permanent and publicly accessible.
@@ -1349,6 +1406,9 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
         self.is_permanent = is_permanent
         self.is_encrypted = is_encrypted
         self.notify = notify
+
+        # infer stage by default
+        self.__stage = self.__get_stage_inferred()
 
     @classmethod
     def build_from_manifest(cls,
@@ -1388,23 +1448,62 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 
         return file_def
 
-    def get_manifest_dictionary(self) -&gt; dict:
+    def get_manifest_dictionary(self, manifest_type=&#39;out&#39;) -&gt; dict:
         &#34;&#34;&#34;
 
-        Args:
-            manifest_type (str): either &#39;in&#39; or &#39;out&#39;. This option keeps only values that are applicable for
+        Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
+        By default returns output manifest.
+             The result keeps only values that are applicable for
              the selected type of the Manifest file. Because although input and output manifests share most of
              the attributes, some are not shared.
 
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
 
+        Args:
+            manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
+
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
 
         &#34;&#34;&#34;
 
-        return self._raw_manifest
+        return self.__get_raw_manifest_by_type(manifest_type)
+
+    def __get_raw_manifest_by_type(self, manifest_type):
+        new_manifest = {}
+        if manifest_type == &#39;out&#39;:
+            new_manifest = self.__build_out_manifest()
+        else:
+            new_manifest = self._raw_manifest
+
+        return new_manifest
+
+    def __build_out_manifest(self):
+        new_manifest = {}
+        for key in self.OUTPUT_MANIFEST_KEYS:
+            if key in self._raw_manifest:
+                new_manifest[key] = self._raw_manifest[key]
+
+        return new_manifest
+
+    def __get_stage_inferred(self):
+        stage = &#39;out&#39;
+        if Path(self.full_path).parent.parent.name == &#39;in&#39;:
+            stage = &#39;in&#39;
+        elif Path(self.full_path).parent.parent.name == &#39;out&#39;:
+            stage = &#39;out&#39;
+        return stage
+
+    @property
+    def stage(self) -&gt; str:
+        return self.__stage
+
+    @stage.setter
+    def stage(self, stage: str):
+        if stage not in [&#39;in&#39;, &#39;out&#39;]:
+            raise ValueError(f&#39;Invalid stage &#34;{stage}&#34;, supported values are: &#34;in&#34;, &#34;out&#34;&#39;)
+        self.__stage = stage
 
     # ########### Output manifest properties - R/W
 
@@ -1532,6 +1631,10 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 <h3>Class variables</h3>
 <dl>
 <dt id="keboola.component.dao.FileDefinition.ABSStaging"><code class="name">var <span class="ident">ABSStaging</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.FileDefinition.OUTPUT_MANIFEST_KEYS"><code class="name">var <span class="ident">OUTPUT_MANIFEST_KEYS</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1756,6 +1859,18 @@ def size_bytes(self) -&gt; int:  # File size in the KBC Storage (read only input
     return self._raw_manifest.get(&#39;size_bytes&#39;, 0)</code></pre>
 </details>
 </dd>
+<dt id="keboola.component.dao.FileDefinition.stage"><code class="name">var <span class="ident">stage</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def stage(self) -&gt; str:
+    return self.__stage</code></pre>
+</details>
+</dd>
 <dt id="keboola.component.dao.FileDefinition.tags"><code class="name">var <span class="ident">tags</span> : List[str]</code></dt>
 <dd>
 <div class="desc"></div>
@@ -1772,41 +1887,49 @@ def tags(self) -&gt; List[str]:
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.FileDefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type='out') ‑> dict</span>
 </code></dt>
 <dd>
-<div class="desc"><h2 id="args">Args</h2>
+<div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
+By default returns output manifest.
+The result keeps only values that are applicable for
+the selected type of the Manifest file. Because although input and output manifests share most of
+the attributes, some are not shared.</p>
+<pre><code> See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+ for more information.
+</code></pre>
+<h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>manifest_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>either 'in' or 'out'. This option keeps only values that are applicable for</dd>
+<dd>either 'in' or 'out'.</dd>
 </dl>
-<p>the selected type of the Manifest file. Because although input and output manifests share most of
-the attributes, some are not shared.</p>
-<p>See <a href="https://developers.keboola.com/extend/common-interface/manifest-files">manifest files</a>
-for more information.</p>
 <h2 id="returns">Returns</h2>
 <p>dict representation of the manifest file in a format expected / produced by the Keboola Connection</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_manifest_dictionary(self) -&gt; dict:
+<pre><code class="python">def get_manifest_dictionary(self, manifest_type=&#39;out&#39;) -&gt; dict:
     &#34;&#34;&#34;
 
-    Args:
-        manifest_type (str): either &#39;in&#39; or &#39;out&#39;. This option keeps only values that are applicable for
+    Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
+    By default returns output manifest.
+         The result keeps only values that are applicable for
          the selected type of the Manifest file. Because although input and output manifests share most of
          the attributes, some are not shared.
 
          See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
          for more information.
 
+    Args:
+        manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
+
     Returns:
         dict representation of the manifest file in a format expected / produced by the Keboola Connection
 
     &#34;&#34;&#34;
 
-    return self._raw_manifest</code></pre>
+    return self.__get_raw_manifest_by_type(manifest_type)</code></pre>
 </details>
 </dd>
 </dl>
@@ -3906,6 +4029,7 @@ Returns:TableMetadata</p></div>
 <h4><code><a title="keboola.component.dao.FileDefinition" href="#keboola.component.dao.FileDefinition">FileDefinition</a></code></h4>
 <ul class="">
 <li><code><a title="keboola.component.dao.FileDefinition.ABSStaging" href="#keboola.component.dao.FileDefinition.ABSStaging">ABSStaging</a></code></li>
+<li><code><a title="keboola.component.dao.FileDefinition.OUTPUT_MANIFEST_KEYS" href="#keboola.component.dao.FileDefinition.OUTPUT_MANIFEST_KEYS">OUTPUT_MANIFEST_KEYS</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.S3Staging" href="#keboola.component.dao.FileDefinition.S3Staging">S3Staging</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.abs_staging" href="#keboola.component.dao.FileDefinition.abs_staging">abs_staging</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.build_from_manifest" href="#keboola.component.dao.FileDefinition.build_from_manifest">build_from_manifest</a></code></li>
@@ -3920,6 +4044,7 @@ Returns:TableMetadata</p></div>
 <li><code><a title="keboola.component.dao.FileDefinition.notify" href="#keboola.component.dao.FileDefinition.notify">notify</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.s3_staging" href="#keboola.component.dao.FileDefinition.s3_staging">s3_staging</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.size_bytes" href="#keboola.component.dao.FileDefinition.size_bytes">size_bytes</a></code></li>
+<li><code><a title="keboola.component.dao.FileDefinition.stage" href="#keboola.component.dao.FileDefinition.stage">stage</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.tags" href="#keboola.component.dao.FileDefinition.tags">tags</a></code></li>
 </ul>
 </li>
