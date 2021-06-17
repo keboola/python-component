@@ -282,12 +282,8 @@ class TestCommonInterface(unittest.TestCase):
 
         self.assertEqual(len(files), 5)
         for file in files:
-            if file.name == '21702.strip.print.gif':
-                self.assertEqual(file.tags, [
-                    "dilbert"
-                ])
-                self.assertEqual(file.max_age_days, 180)
-                self.assertEqual(file.size_bytes, 4931)
+            if file.name == 'duty_calls.png':
+                self.assertEqual(file.id, '151971455')
 
     def test_get_input_files_definition_by_tag(self):
         ci = CommonInterface()
