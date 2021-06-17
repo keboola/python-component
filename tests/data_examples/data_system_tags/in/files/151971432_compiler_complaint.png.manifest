@@ -1,0 +1,18 @@
+{
+    "id": 151971432,
+    "name": "compiler_complaint.png",
+    "created": "2015-11-01T20:14:48+0100",
+    "is_public": false,
+    "is_encrypted": true,
+    "tags": [
+        "foo",
+        "bar",
+        "componentId: 1234",
+        "configurationId: 12345",
+        "configurationRowId: 12345",
+        "runId: 22123",
+        "branchId: 312321"
+    ],
+    "max_age_days": 180,
+    "size_bytes": 14833
+}

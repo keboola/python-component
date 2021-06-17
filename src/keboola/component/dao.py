@@ -755,11 +755,11 @@ class FileDefinition:
         notify: Notifies project administrators that a file was uploaded.
 
     """
-    SYSTEM_TAGS = ['componentId',
-                   'configurationId',
-                   'configurationRowId',
-                   'runId',
-                   'branchId']
+    SYSTEM_TAG_PREFIXES = ['componentId:',
+                           'configurationId:',
+                           'configurationRowId:',
+                           'runId:',
+                           'branchId:']
 
     OUTPUT_MANIFEST_KEYS = ["tags",
                             "is_public",
@@ -882,6 +882,13 @@ class FileDefinition:
             stage = 'out'
         return stage
 
+    @classmethod
+    def is_system_tag(cls, tag: str) -> bool:
+        for prefix in cls.SYSTEM_TAG_PREFIXES:
+            if tag.startswith(prefix):
+                return True
+        return False
+
     @property
     def name(self):
         """
@@ -919,7 +926,19 @@ class FileDefinition:
     # ########### Output manifest properties - R/W
 
     @property
+    def user_tags(self) -> List[str]:
+        """
+        User defined tags excluding the system tags
+        """
+        # filter system tags
+        tags: List[str] = [tag for tag in self._raw_manifest.get('tags', []) if not self.is_system_tag(tag)]
+        return tags
+
+    @property
     def tags(self) -> List[str]:
+        """
+        All tags specified on the file
+        """
         return self._raw_manifest.get('tags', [])
 
     @tags.setter

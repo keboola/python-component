@@ -4,11 +4,11 @@ import glob
 import json
 import logging
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
-import sys
 from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
 
@@ -472,24 +472,31 @@ class CommonInterface:
 
     # # File processing
 
-    def get_input_file_definitions_grouped_by_tag_group(self, orphaned_manifests=False, only_latest_files=True,
-                                                        tags: List[str] = None) -> Dict[str, List[dao.FileDefinition]]:
+    def get_input_file_definitions_grouped_by_tag_group(self, orphaned_manifests=False,
+                                                        only_latest_files=True,
+                                                        tags: List[str] = None,
+                                                        include_system_tags=False) \
+            -> Dict[str, List[dao.FileDefinition]]:
         """
         Convenience method returning lists of files in dictionary grouped by tag group.
 
-        (tag group is string built from ordered and concatenated tags, e.g. 'tag1, tag2'
+        (tag group is string built from alphabetically ordered and concatenated tags, e.g. 'tag1;tag2'
 
         Args:
             orphaned_manifests (bool): If True, manifests without corresponding files are fetched. Otherwise
                     a ValueError is raised.
             only_latest_files (bool): If True, only latest versions of each files are included.
-            tags (List[str]): optional list of tags. If specified only files with matching tag group will be fetched.
+            tags (List[str]): optional list of tags. If specified only files containing specified tags will be fetched.
+            include_system_tags (bool): optional flag that will use system generated tags in groups as well.
+                                   See FileDefinition.SYSTEM_TAG_PREFIXES
 
         Returns:
+            Dict[str,List[dao.FileDefinition]] indexed by tag group => string built from alphabetically ordered
+            and concatenated tags, e.g. `tag1;tag2`
 
         """
         file_definitions = self.get_input_files_definitions(orphaned_manifests, only_latest_files, tags)
-        return self.__group_file_defs_by_tag_group(file_definitions)
+        return self.__group_file_defs_by_tag_group(file_definitions, include_system_tags=include_system_tags)
 
     def get_input_file_definitions_grouped_by_name(self, orphaned_manifests=False, only_latest_files=True,
                                                    tags: List[str] = None) -> Dict[str, List[dao.FileDefinition]]:
@@ -508,49 +515,57 @@ class CommonInterface:
         file_definitions = self.get_input_files_definitions(orphaned_manifests, only_latest_files, tags)
         return self.__group_files_by_name(file_definitions)
 
-    def __group_file_defs_by_tag_group(self, file_definitions: List[dao.FileDefinition]) \
+    def __group_file_defs_by_tag_group(self, file_definitions: List[dao.FileDefinition], include_system_tags=False) \
             -> Dict[str, List[dao.FileDefinition]]:
 
-        files_per_tag = {}
+        files_per_tag: dict = {}
         for f in file_definitions:
 
-            tag_group_v1 = f.tags
+            tag_group_v1 = f.tags if include_system_tags else f.user_tags
             tag_group_v1.sort()
-            tag_group_key = ','.join(tag_group_v1)
+            tag_group_key = ';'.join(tag_group_v1)
             if not files_per_tag.get(tag_group_key):
                 files_per_tag[tag_group_key] = []
             files_per_tag[tag_group_key].append(f)
         return files_per_tag
 
     def _filter_files(self, file_definitions: List[dao.FileDefinition], tags: List[str] = None,
-                      only_latest: bool = True):
+                      only_latest: bool = True) -> List[dao.FileDefinition]:
 
-        filtered_files = []
+        filtered_files = file_definitions
 
         if only_latest:
-            filtered_files = self.__filter_filedefs_by_latest(file_definitions)
+            filtered_files = self.__filter_filedefs_by_latest(filtered_files)
 
+        # filter by tags
         if tags:
-            files_per_tag = self.__group_file_defs_by_tag_group(filtered_files)
-            tags.sort()
-            filter_key = ','.join(tags)
-
-            filtered_files = files_per_tag[filter_key]
-
-        if not only_latest and tags is None:
-            filtered_files = file_definitions
+            new_filtered = []
+            filter_set = set(tags)
+            for fd in filtered_files:
+                tags_set = set(fd.tags)
+                if filter_set.issubset(tags_set):
+                    new_filtered.append(fd)
+            filtered_files = new_filtered
 
         return filtered_files
 
-    def __group_files_by_name(self, file_definitions: List[dao.FileDefinition]):
-        files_per_name = {}
+    def __group_files_by_name(self, file_definitions: List[dao.FileDefinition]) -> Dict[str, List[dao.FileDefinition]]:
+        files_per_name: dict = {}
         for f in file_definitions:
             if not files_per_name.get(f.name):
                 files_per_name[f.name] = []
             files_per_name[f.name].append(f)
         return files_per_name
 
-    def __filter_filedefs_by_latest(self, file_definitions: List[dao.FileDefinition]):
+    def __filter_filedefs_by_latest(self, file_definitions: List[dao.FileDefinition]) -> List[dao.FileDefinition]:
+        """
+        Get latest file (according to the timestamp) by each filename
+        Args:
+            file_definitions:
+
+        Returns:
+
+        """
         filtered_files = list()
         files_per_name = self.__group_files_by_name(file_definitions)
         for group in files_per_name:
@@ -566,7 +581,8 @@ class CommonInterface:
         return filtered_files
 
     def get_input_files_definitions(self, orphaned_manifests=False,
-                                    only_latest_files=True, tags: List[str] = None) -> List[dao.FileDefinition]:
+                                    only_latest_files=True,
+                                    tags: Optional[List[str]] = None) -> List[dao.FileDefinition]:
         """
         Return dao.FileDefinition objects by scanning the `data/in/files` folder.
 
@@ -576,7 +592,7 @@ class CommonInterface:
 
         By default, orphaned manifests are skipped, otherwise fails with ValueError.
 
-        A filter may be specified to match only some tags.
+        A filter may be specified to match only some tags. All files containing specified tags will be returned.
 
 
         See Also: keboola.component.dao.FileDefinition
