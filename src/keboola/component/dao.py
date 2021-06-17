@@ -755,6 +755,11 @@ class FileDefinition:
         notify: Notifies project administrators that a file was uploaded.
 
     """
+    SYSTEM_TAGS = ['componentId',
+                   'configurationId',
+                   'configurationRowId',
+                   'runId',
+                   'branchId']
 
     OUTPUT_MANIFEST_KEYS = ["tags",
                             "is_public",
@@ -885,7 +890,7 @@ class FileDefinition:
         # separate id from name
         file_name = Path(self.full_path).name
         if self._raw_manifest.get('id'):
-            fsplit = file_name.split('_', 2)
+            fsplit = file_name.split('_', 1)
             if len(fsplit) > 1:
                 self._raw_manifest['id'] = fsplit[0]
                 file_name = fsplit[1]

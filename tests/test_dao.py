@@ -318,7 +318,7 @@ class TestFileDefinition(unittest.TestCase):
         )
 
     def test_file_manifest_full(self):
-        file_def = FileDefinition("123_testDef", is_permanent=True,
+        file_def = FileDefinition("123_test_Def", is_permanent=True,
                                   is_encrypted=True,
                                   is_public=True,
                                   tags=['foo', 'bar'],
@@ -334,7 +334,7 @@ class TestFileDefinition(unittest.TestCase):
              'notify': True},
             file_def.get_manifest_dictionary()
         )
-        self.assertEqual(file_def.name, 'testDef')
+        self.assertEqual(file_def.name, 'test_Def')
         self.assertEqual(file_def.id, '123')
 
     def test_file_output_manifest_ignores_unrecognized(self):
