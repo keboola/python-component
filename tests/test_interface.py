@@ -282,12 +282,8 @@ class TestCommonInterface(unittest.TestCase):
 
         self.assertEqual(len(files), 5)
         for file in files:
-            if file.name == '21702.strip.print.gif':
-                self.assertEqual(file.tags, [
-                    "dilbert"
-                ])
-                self.assertEqual(file.max_age_days, 180)
-                self.assertEqual(file.size_bytes, 4931)
+            if file.name == 'duty_calls.png':
+                self.assertEqual(file.id, '151971455')
 
     def test_get_input_files_definition_by_tag(self):
         ci = CommonInterface()
@@ -302,6 +298,46 @@ class TestCommonInterface(unittest.TestCase):
                 ])
                 self.assertEqual(file.max_age_days, 180)
                 self.assertEqual(file.size_bytes, 4931)
+
+    def test_get_input_files_definition_by_tag_w_system(self):
+        ci = CommonInterface(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                          'data_examples', 'data_system_tags'))
+
+        files = ci.get_input_files_definitions(tags=['dilbert'])
+
+        self.assertEqual(len(files), 3)
+        for file in files:
+            if file.name == '21702.strip.print.gif':
+                self.assertEqual(file.tags, [
+                    "dilbert",
+                    "componentId: 1234",
+                    "configurationId: 12345",
+                    "configurationRowId: 12345",
+                    "runId: 22123",
+                    "branchId: 312321"
+                ])
+                self.assertEqual(file.max_age_days, 180)
+                self.assertEqual(file.size_bytes, 4931)
+
+    def test_get_input_files_definition_tag_group_w_system(self):
+        ci = CommonInterface(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                          'data_examples', 'data_system_tags'))
+
+        files = ci.get_input_file_definitions_grouped_by_tag_group(only_latest_files=False)
+
+        self.assertEqual(len(files), 2)
+        self.assertEqual(len(files["bar;foo"]), 3)
+        for file in files["bar;foo"]:
+            if file.name == 'compiler_complaint.png':
+                self.assertEqual(file.tags, [
+                    "foo",
+                    "bar",
+                    "componentId: 1234",
+                    "configurationId: 12345",
+                    "configurationRowId: 12345",
+                    "runId: 22123",
+                    "branchId: 312321"
+                ])
 
     def test_get_input_files_definition_nofilter(self):
         ci = CommonInterface()

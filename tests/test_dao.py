@@ -318,12 +318,13 @@ class TestFileDefinition(unittest.TestCase):
         )
 
     def test_file_manifest_full(self):
-        file_def = FileDefinition("123_testDef", is_permanent=True,
+        file_def = FileDefinition("123_test_Def", is_permanent=True,
                                   is_encrypted=True,
                                   is_public=True,
                                   tags=['foo', 'bar'],
                                   notify=True
                                   )
+        file_def._raw_manifest['id'] = '123'
 
         self.assertDictEqual(
             {'tags': ['foo', 'bar'],
@@ -333,7 +334,7 @@ class TestFileDefinition(unittest.TestCase):
              'notify': True},
             file_def.get_manifest_dictionary()
         )
-        self.assertEqual(file_def.name, 'testDef')
+        self.assertEqual(file_def.name, 'test_Def')
         self.assertEqual(file_def.id, '123')
 
     def test_file_output_manifest_ignores_unrecognized(self):
@@ -374,3 +375,45 @@ class TestFileDefinition(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             FileDefinition.build_from_manifest(os.path.join(sample_path, 'orphaned.csv.manifest'))
+
+    def test_user_tags(self):
+        all_tags = ['foo',
+                    'bar',
+                    'componentId: 1234',
+                    'configurationId: 12345',
+                    'configurationRowId: 12345',
+                    'runId: 22123',
+                    'branchId: 312321'
+                    ]
+        file_def = FileDefinition("123_test_Def", is_permanent=True,
+                                  is_encrypted=True,
+                                  is_public=True,
+                                  tags=all_tags,
+                                  notify=True
+                                  )
+
+        self.assertDictEqual(
+            {'tags': all_tags,
+             'is_public': True,
+             'is_permanent': True,
+             'is_encrypted': True,
+             'notify': True},
+            file_def.get_manifest_dictionary()
+        )
+
+        self.assertEqual(['foo', 'bar'], file_def.user_tags)
+
+    def test_all_tags(self):
+        all_tags = ['foo',
+                    'bar',
+                    'componentId: 1234',
+                    'configurationId: 12345',
+                    'configurationRowId: 12345',
+                    'runId: 22123',
+                    'branchId: 312321'
+                    ]
+        file_def = FileDefinition("123_test_Def",
+                                  tags=all_tags
+                                  )
+
+        self.assertEqual(all_tags, file_def.tags)
