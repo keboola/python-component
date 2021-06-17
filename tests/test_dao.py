@@ -324,6 +324,7 @@ class TestFileDefinition(unittest.TestCase):
                                   tags=['foo', 'bar'],
                                   notify=True
                                   )
+        file_def._raw_manifest['id'] = '123'
 
         self.assertDictEqual(
             {'tags': ['foo', 'bar'],

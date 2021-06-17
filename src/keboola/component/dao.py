@@ -744,7 +744,7 @@ class FileDefinition:
 
 
     Attributes:
-        name: Table / file name.
+        name: File name.
         full_path (str): (optional) Full path of the file.
         tags (list):
                 List of tags that are assigned to this file
@@ -753,7 +753,6 @@ class FileDefinition:
             15 days)
         is_encrypted: If true, the file content will be encrypted in the storage.
         notify: Notifies project administrators that a file was uploaded.
-        stage: Helper property marking the stage of the file.
 
     """
 
@@ -781,16 +780,8 @@ class FileDefinition:
             is_encrypted: If true, the file content will be encrypted in the storage.
             notify: Notifies project administrators that a file was uploaded.
         """
-        self._raw_manifest = dict()
+        self._raw_manifest: dict = dict()
         self.full_path = full_path
-        # separate id from name
-        name = Path(full_path).name
-        fsplit = name.split('_', 2)
-        if len(fsplit) > 1:
-            self._raw_manifest['id'] = fsplit[0]
-            self.name = fsplit[1]
-        else:
-            self.name = name
 
         self.tags = tags
         self.is_public = is_public
@@ -887,7 +878,31 @@ class FileDefinition:
         return stage
 
     @property
+    def name(self):
+        """
+        File name - excluding the KBC ID if present (`str`, read-only)
+        """
+        # separate id from name
+        file_name = Path(self.full_path).name
+        if self._raw_manifest.get('id'):
+            fsplit = file_name.split('_', 2)
+            if len(fsplit) > 1:
+                self._raw_manifest['id'] = fsplit[0]
+                file_name = fsplit[1]
+        return file_name
+
+    @property
+    def full_name(self):
+        """
+        File name - full file name, directly from the path. Includes the KBC generated ID. (`str`, read-only)
+        """
+        return Path(self.full_path).name
+
+    @property
     def stage(self) -> str:
+        """
+        Helper property marking the stage of the file. (str)
+        """
         return self.__stage
 
     @stage.setter
@@ -939,14 +954,6 @@ class FileDefinition:
     @notify.setter
     def notify(self, notify: bool):
         self._raw_manifest['notify'] = notify
-
-    @property
-    def name(self) -> str:
-        return self.__name
-
-    @name.setter
-    def name(self, val: str):
-        self.__name = val
 
     # ########### Input manifest properties - Read ONLY
     @property
