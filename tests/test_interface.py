@@ -284,6 +284,36 @@ class TestCommonInterface(unittest.TestCase):
                 self.assertEqual(table.full_path, os.path.join(ci.tables_in_path, 'fooBar'))
                 self.assertEqual(table.name, 'fooBar')
 
+    def test_get_input_tables_definition_orphaned_manifest(self):
+        ci = CommonInterface()
+
+        tables = ci.get_input_tables_definitions(orphaned_manifests=True)
+
+        self.assertEqual(len(tables), 5)
+        for table in tables:
+            if table.name == 'sample.csv':
+                self.assertEqual(table.columns, [
+                    "x",
+                    "Sales",
+                    "CompPrice",
+                    "Income",
+                    "Advertising",
+                    "Population",
+                    "Price",
+                    "ShelveLoc",
+                    "Age",
+                    "Education",
+                    "Urban",
+                    "US",
+                    "High"
+                ])
+                self.assertEqual(table.rows_count, 400)
+                self.assertEqual(table.data_size_bytes, 81920)
+            elif table.name == 'fooBar':
+                self.assertEqual(table.id, 'in.c-main.test2')
+                self.assertEqual(table.full_path, os.path.join(ci.tables_in_path, 'fooBar'))
+                self.assertEqual(table.name, 'fooBar')
+
     def test_state_file_initialized(self):
         ci = CommonInterface()
         state = ci.get_state_file()

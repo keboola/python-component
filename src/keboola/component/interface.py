@@ -298,7 +298,7 @@ class CommonInterface:
             table_defs.append(dao.TableDefinition.build_from_manifest(manifest_path))
 
         if orphaned_manifests:
-            files_w_manifest = [t.full_path for t in table_defs]
+            files_w_manifest = [t.name + '.manifest' for t in table_defs]
             manifest_files = [f for f in glob.glob(self.tables_in_path + "/**.manifest", recursive=False)
                               if Path(f).name not in files_w_manifest]
             for t in manifest_files:
