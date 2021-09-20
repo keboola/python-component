@@ -497,7 +497,7 @@ class IODefinition(ABC):
     def s3_staging(self) -> Union[S3Staging, None]:
         s3 = self._raw_manifest.get('s3')
         if s3:
-            return IODefinition.S3Staging(is_sliced=s3['is_sliced'],
+            return IODefinition.S3Staging(is_sliced=s3['isSliced'],
                                           region=s3['region'],
                                           bucket=s3['bucket'],
                                           key=s3['key'],
