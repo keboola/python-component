@@ -109,7 +109,7 @@ class TestCommonInterface(unittest.TestCase):
         tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'in', 'tables')
         self.assertEqual(tables_out, ci.tables_in_path)
 
-    def test_create_and_write_table_manifest(self):
+    def test_create_and_write_table_manifest_deprecated(self):
         ci = CommonInterface()
         # create table def
         out_table = ci.create_out_table_definition('some-table.csv',
@@ -145,8 +145,44 @@ class TestCommonInterface(unittest.TestCase):
         )
         os.remove(manifest_filename)
 
+    def test_create_and_write_table_manifest(self):
+        ci = CommonInterface()
+        # create table def
+        out_table = ci.create_out_table_definition('some-table.csv',
+                                                   columns=['foo', 'bar'],
+                                                   destination='some-destination',
+                                                   primary_key=['foo'],
+                                                   incremental=True,
+                                                   delete_where={'column': 'lilly',
+                                                                 'values': ['a', 'b'],
+                                                                 'operator': 'eq'}
+                                                   )
+        out_table.table_metadata.add_table_metadata('bar', 'kochba')
+        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+
+        # write
+        ci.write_manifest(out_table)
+        manifest_filename = out_table.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {
+                'destination': 'some-destination',
+                'columns': ['foo', 'bar'],
+                'primary_key': ['foo'],
+                'incremental': True,
+                'metadata': [{'key': 'bar', 'value': 'kochba'}],
+                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+                'delete_where_column': 'lilly',
+                'delete_where_values': ['a', 'b'],
+                'delete_where_operator': 'eq'
+            },
+            config
+        )
+        os.remove(manifest_filename)
+
     # #### DATA FOLDER MANIPULATION
-    def test_create_and_write_table_manifest_multi(self):
+    def test_create_and_write_table_manifest_multi_deprecated(self):
         ci = CommonInterface()
         # create table def
         out_table = ci.create_out_table_definition('some-table.csv',
@@ -163,6 +199,42 @@ class TestCommonInterface(unittest.TestCase):
 
         # write
         ci.write_tabledef_manifests([out_table])
+        manifest_filename = out_table.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {
+                'destination': 'some-destination',
+                'columns': ['foo', 'bar'],
+                'primary_key': ['foo'],
+                'incremental': True,
+                'metadata': [{'key': 'bar', 'value': 'kochba'}],
+                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+                'delete_where_column': 'lilly',
+                'delete_where_values': ['a', 'b'],
+                'delete_where_operator': 'eq'
+            },
+            config
+        )
+        os.remove(manifest_filename)
+
+    def test_create_and_write_table_manifest_multi(self):
+        ci = CommonInterface()
+        # create table def
+        out_table = ci.create_out_table_definition('some-table.csv',
+                                                   columns=['foo', 'bar'],
+                                                   destination='some-destination',
+                                                   primary_key=['foo'],
+                                                   incremental=True,
+                                                   delete_where={'column': 'lilly',
+                                                                 'values': ['a', 'b'],
+                                                                 'operator': 'eq'}
+                                                   )
+        out_table.table_metadata.add_table_metadata('bar', 'kochba')
+        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+
+        # write
+        ci.write_manifests([out_table])
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -249,7 +321,7 @@ class TestCommonInterface(unittest.TestCase):
 
     # Files
 
-    def test_create_and_write_file_manifest(self):
+    def test_create_and_write_file_manifest_deprecated(self):
         ci = CommonInterface()
         # create table def
         out_file = ci.create_out_file_definition('some-file.jpg',
@@ -262,6 +334,32 @@ class TestCommonInterface(unittest.TestCase):
 
         # write
         ci.write_filedef_manifest(out_file)
+        manifest_filename = out_file.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {'tags': ['foo', 'bar'],
+             'is_public': True,
+             'is_permanent': True,
+             'is_encrypted': True,
+             'notify': True},
+            config
+        )
+        os.remove(manifest_filename)
+
+    def test_create_and_write_file_manifest(self):
+        ci = CommonInterface()
+        # create table def
+        out_file = ci.create_out_file_definition('some-file.jpg',
+                                                 is_permanent=True,
+                                                 is_encrypted=True,
+                                                 is_public=True,
+                                                 tags=['foo', 'bar'],
+                                                 notify=True
+                                                 )
+
+        # write
+        ci.write_manifest(out_file)
         manifest_filename = out_file.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
