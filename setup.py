@@ -13,7 +13,7 @@ project_urls = {
 }
 
 setuptools.setup(
-    name="keboola.component",  # TESTING NAME
+    name="keboola.component",
     version="1.3.0",
     author="Keboola KDS Team",
     project_urls=project_urls,
@@ -21,7 +21,8 @@ setuptools.setup(
     tests_require=['pytest'],
     install_requires=[
         'pygelf',
-        'pytz'
+        'pytz',
+        'deprecated'
     ],
     author_email="support@keboola.com",
     description="General library for Python applications running in Keboola Connection environment",
