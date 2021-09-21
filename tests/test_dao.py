@@ -332,7 +332,7 @@ class TestFileDefinition(unittest.TestCase):
              'is_permanent': True,
              'is_encrypted': True,
              'notify': True},
-            file_def.get_manifest_dictionary()
+            file_def.get_manifest_dictionary('out')
         )
         self.assertEqual(file_def.name, 'test_Def')
         self.assertEqual(file_def.id, '123')

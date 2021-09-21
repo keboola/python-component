@@ -28,11 +28,12 @@
 </summary>
 <pre><code class="python">import dataclasses
 import json
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Optional
 
 KBC_DEFAULT_TIME_FORMAT = &#39;%Y-%m-%dT%H:%M:%S%z&#39;
 
@@ -402,7 +403,156 @@ class TableMetadata:
             raise ValueError(&#39;, &#39;.join(errors) + f&#39;\n Supported base types are: [{SupportedDataTypes.list()}]&#39;)
 
 
-class TableDefinition:
+class IODefinition(ABC):
+
+    def __init__(self, full_path):
+        self._raw_manifest: dict = dict()
+        self.full_path = full_path
+
+        # infer stage by default
+        self.__stage = self.__get_stage_inferred()
+
+    @classmethod
+    def build_from_manifest(cls,
+                            manifest_file_path: str
+                            ):
+        raise NotImplementedError
+
+    def _filter_attributes_by_manifest_type(self, manifest_type):
+        &#34;&#34;&#34;
+        Filter manifest to contain only supported fields
+        Args:
+            manifest_type:
+
+        Returns:
+
+        &#34;&#34;&#34;
+        supported_fields = self._manifest_attributes.get(manifest_type, [])
+        new_dict = self._raw_manifest.copy()
+        if supported_fields:
+            for attr in self._raw_manifest:
+                if attr not in supported_fields:
+                    new_dict.pop(attr, None)
+        return new_dict
+
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None) -&gt; dict:
+        &#34;&#34;&#34;
+        Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
+        By default returns output manifest.
+             The result keeps only values that are applicable for
+             the selected type of the Manifest file. Because although input and output manifests share most of
+             the attributes, some are not shared.
+
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Args:
+            manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Returns:
+            dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+        &#34;&#34;&#34;
+        if not manifest_type:
+            manifest_type = self.stage
+
+        return self._filter_attributes_by_manifest_type(manifest_type)
+
+    @property
+    def stage(self) -&gt; str:
+        &#34;&#34;&#34;
+        Helper property marking the stage of the file. (str)
+        &#34;&#34;&#34;
+        return self.__stage
+
+    @stage.setter
+    def stage(self, stage: str):
+        if stage not in [&#39;in&#39;, &#39;out&#39;]:
+            raise ValueError(f&#39;Invalid stage &#34;{stage}&#34;, supported values are: &#34;in&#34;, &#34;out&#34;&#39;)
+        self.__stage = stage
+
+    @property
+    @abstractmethod
+    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
+        &#34;&#34;&#34;
+        Manifest attributes
+        &#34;&#34;&#34;
+        return {}
+
+    @property
+    @abstractmethod
+    def name(self) -&gt; str:
+        &#34;&#34;&#34;
+        File name - excluding the KBC ID if present (`str`, read-only)
+        &#34;&#34;&#34;
+        raise NotImplementedError
+
+    def __get_stage_inferred(self):
+        stage = &#39;in&#39;
+        if not self.full_path or not Path(self.full_path).exists():
+            return stage
+
+        if Path(self.full_path).parent.parent.name == &#39;in&#39;:
+            stage = &#39;in&#39;
+        elif Path(self.full_path).parent.parent.name == &#39;out&#39;:
+            stage = &#39;out&#39;
+        return stage
+
+    # ############ Staging parameters
+
+    @dataclass
+    class S3Staging:
+        is_sliced: bool
+        region: str
+        bucket: str
+        key: str
+        credentials_access_key_id: str
+        credentials_secret_access_key: str
+        credentials_session_token: str
+
+    @dataclass
+    class ABSStaging:
+        is_sliced: bool
+        region: str
+        container: str
+        name: str
+        credentials_sas_connection_string: str
+        credentials_expiration: str
+
+    @property
+    def s3_staging(self) -&gt; Union[S3Staging, None]:
+        s3 = self._raw_manifest.get(&#39;s3&#39;)
+        if s3:
+            return IODefinition.S3Staging(is_sliced=s3[&#39;is_sliced&#39;],
+                                          region=s3[&#39;region&#39;],
+                                          bucket=s3[&#39;bucket&#39;],
+                                          key=s3[&#39;key&#39;],
+                                          credentials_access_key_id=s3[&#39;credentials&#39;][&#39;access_key_id&#39;],
+                                          credentials_secret_access_key=s3[&#39;credentials&#39;][&#39;secret_access_key&#39;],
+                                          credentials_session_token=s3[&#39;credentials&#39;][&#39;session_token&#39;]
+                                          )
+        else:
+            return None
+
+    @property
+    def abs_staging(self) -&gt; Union[ABSStaging, None]:
+        _abs = self._raw_manifest.get(&#39;abs&#39;)
+        if _abs:
+            return IODefinition.ABSStaging(is_sliced=_abs[&#39;is_sliced&#39;],
+                                           region=_abs[&#39;region&#39;],
+                                           container=_abs[&#39;container&#39;],
+                                           name=_abs[&#39;name&#39;],
+                                           credentials_sas_connection_string=_abs[&#39;credentials&#39;][
+                                               &#39;sas_connection_string&#39;],
+                                           credentials_expiration=_abs[&#39;credentials&#39;][&#39;expiration&#39;]
+                                           )
+        else:
+            return None
+
+
+class TableDefinition(IODefinition):
     &#34;&#34;&#34;
     Table definition class. It is used as a container for `in/tables/` files.
     It is a representation of input/output manifest objects with additional attributes containing information
@@ -497,8 +647,8 @@ class TableDefinition:
             table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata
             delete_where (dict): Dict with settings for deleting rows
         &#34;&#34;&#34;
-        self.full_path = full_path
-        self.name = name
+        super().__init__(full_path)
+        self._name = name
         self.is_sliced = is_sliced
         self._raw_manifest = dict()
 
@@ -566,6 +716,10 @@ class TableDefinition:
 
         return table_def
 
+    @property
+    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
+        return self.MANIFEST_ATTRIBUTES
+
     # #### Manifest properties
     @property
     def destination(self) -&gt; str:
@@ -594,6 +748,13 @@ class TableDefinition:
                 self._raw_manifest[&#39;id&#39;] = val
             else:
                 raise TypeError(&#34;ID must be a string&#34;)
+
+    @property
+    def name(self) -&gt; str:
+        &#34;&#34;&#34;
+        File name - excluding the KBC ID if present (`str`, read-only)
+        &#34;&#34;&#34;
+        return self._name
 
     @property
     def rows_count(self) -&gt; int:
@@ -715,14 +876,10 @@ class TableDefinition:
         self._raw_manifest[&#39;metadata&#39;] = table_metadata.get_table_metadata_for_manifest()
         self._raw_manifest[&#39;column_metadata&#39;] = table_metadata.get_column_metadata_for_manifest()
 
-    def get_manifest_dictionary(self) -&gt; dict:
+    def get_manifest_dictionary(self, stage_type: Optional[str] = None) -&gt; dict:
         &#34;&#34;&#34;
 
         Args:
-            manifest_type (str): either &#39;in&#39; or &#39;out&#39;. This option keeps only values that are applicable for
-             the selected type of the Manifest file. Because although input and output manifests share most of
-             the attributes, some are not shared.
-
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
 
@@ -732,24 +889,11 @@ class TableDefinition:
         &#34;&#34;&#34;
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
-
+        super(TableDefinition, self).get_manifest_dictionary(stage_type)
         return self._raw_manifest
 
-    def _filter_attributes_by_manifest_type(self, manifest_type):
-        &#34;&#34;&#34;
-        Not used for now. As unrecognized manifest attributes are ignored.
-        Args:
-            manifest_type:
 
-        Returns:
-
-        &#34;&#34;&#34;
-        for attr in TableDefinition.MANIFEST_ATTRIBUTES[manifest_type]:
-            if attr not in self._raw_manifest:
-                self._raw_manifest.pop(attr, None)
-
-
-class FileDefinition:
+class FileDefinition(IODefinition):
     &#34;&#34;&#34;
     File definition class. It is used as a container for `{in/out}/files/` files.
     It is a representation of input/output [manifest objects](
@@ -813,17 +957,13 @@ class FileDefinition:
             is_encrypted: If true, the file content will be encrypted in the storage.
             notify: Notifies project administrators that a file was uploaded.
         &#34;&#34;&#34;
-        self._raw_manifest: dict = dict()
-        self.full_path = full_path
+        super().__init__(full_path)
 
         self.tags = tags
         self.is_public = is_public
         self.is_permanent = is_permanent
         self.is_encrypted = is_encrypted
         self.notify = notify
-
-        # infer stage by default
-        self.__stage = self.__get_stage_inferred()
 
     @classmethod
     def build_from_manifest(cls,
@@ -863,53 +1003,6 @@ class FileDefinition:
 
         return file_def
 
-    def get_manifest_dictionary(self, manifest_type=&#39;out&#39;) -&gt; dict:
-        &#34;&#34;&#34;
-
-        Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
-        By default returns output manifest.
-             The result keeps only values that are applicable for
-             the selected type of the Manifest file. Because although input and output manifests share most of
-             the attributes, some are not shared.
-
-             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
-             for more information.
-
-        Args:
-            manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
-
-        Returns:
-            dict representation of the manifest file in a format expected / produced by the Keboola Connection
-
-        &#34;&#34;&#34;
-
-        return self.__get_raw_manifest_by_type(manifest_type)
-
-    def __get_raw_manifest_by_type(self, manifest_type):
-        new_manifest = {}
-        if manifest_type == &#39;out&#39;:
-            new_manifest = self.__build_out_manifest()
-        else:
-            new_manifest = self._raw_manifest
-
-        return new_manifest
-
-    def __build_out_manifest(self):
-        new_manifest = {}
-        for key in self.OUTPUT_MANIFEST_KEYS:
-            if key in self._raw_manifest:
-                new_manifest[key] = self._raw_manifest[key]
-
-        return new_manifest
-
-    def __get_stage_inferred(self):
-        stage = &#39;out&#39;
-        if Path(self.full_path).parent.parent.name == &#39;in&#39;:
-            stage = &#39;in&#39;
-        elif Path(self.full_path).parent.parent.name == &#39;out&#39;:
-            stage = &#39;out&#39;
-        return stage
-
     @classmethod
     def is_system_tag(cls, tag: str) -&gt; bool:
         for prefix in cls.SYSTEM_TAG_PREFIXES:
@@ -918,7 +1011,7 @@ class FileDefinition:
         return False
 
     @property
-    def name(self):
+    def name(self) -&gt; str:
         &#34;&#34;&#34;
         File name - excluding the KBC ID if present (`str`, read-only)
         &#34;&#34;&#34;
@@ -939,17 +1032,8 @@ class FileDefinition:
         return Path(self.full_path).name
 
     @property
-    def stage(self) -&gt; str:
-        &#34;&#34;&#34;
-        Helper property marking the stage of the file. (str)
-        &#34;&#34;&#34;
-        return self.__stage
-
-    @stage.setter
-    def stage(self, stage: str):
-        if stage not in [&#39;in&#39;, &#39;out&#39;]:
-            raise ValueError(f&#39;Invalid stage &#34;{stage}&#34;, supported values are: &#34;in&#34;, &#34;out&#34;&#39;)
-        self.__stage = stage
+    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
+        return {&#39;out&#39;: self.OUTPUT_MANIFEST_KEYS}
 
     # ########### Output manifest properties - R/W
 
@@ -1026,57 +1110,6 @@ class FileDefinition:
     @property
     def max_age_days(self) -&gt; int:  # File max age (read only input attribute)
         return self._raw_manifest.get(&#39;max_age_days&#39;, 0)
-
-    # ############ Staging parameters
-
-    @dataclass
-    class S3Staging:
-        issSliced: bool
-        region: str
-        bucket: str
-        key: str
-        credentials_access_key_id: str
-        credentials_secret_access_key: str
-        credentials_session_token: str
-
-    @dataclass
-    class ABSStaging:
-        is_sliced: bool
-        region: str
-        container: str
-        name: str
-        credentials_sas_connection_string: str
-        credentials_expiration: str
-
-    @property
-    def s3_staging(self) -&gt; Union[S3Staging, None]:
-        s3 = self._raw_manifest.get(&#39;s3&#39;)
-        if s3:
-            return FileDefinition.S3Staging(isSliced=s3[&#39;is_sliced&#39;],
-                                            region=s3[&#39;region&#39;],
-                                            bucket=s3[&#39;bucket&#39;],
-                                            key=s3[&#39;key&#39;],
-                                            credentials_access_key_id=s3[&#39;credentials&#39;][&#39;access_key_id&#39;],
-                                            credentials_secret_access_key=s3[&#39;credentials&#39;][&#39;secret_access_key&#39;],
-                                            credentials_session_token=s3[&#39;credentials&#39;][&#39;session_token&#39;]
-                                            )
-        else:
-            return None
-
-    @property
-    def abs_staging(self) -&gt; Union[ABSStaging, None]:
-        _abs = self._raw_manifest.get(&#39;abs&#39;)
-        if _abs:
-            return FileDefinition.ABSStaging(is_sliced=_abs[&#39;is_sliced&#39;],
-                                             region=_abs[&#39;region&#39;],
-                                             container=_abs[&#39;container&#39;],
-                                             name=_abs[&#39;name&#39;],
-                                             credentials_sas_connection_string=_abs[&#39;credentials&#39;][
-                                                 &#39;sas_connection_string&#39;],
-                                             credentials_expiration=_abs[&#39;credentials&#39;][&#39;expiration&#39;]
-                                             )
-        else:
-            return None
 
 
 # ####### CONFIGURATION
@@ -1359,7 +1392,7 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class FileDefinition:
+<pre><code class="python">class FileDefinition(IODefinition):
     &#34;&#34;&#34;
     File definition class. It is used as a container for `{in/out}/files/` files.
     It is a representation of input/output [manifest objects](
@@ -1423,17 +1456,13 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
             is_encrypted: If true, the file content will be encrypted in the storage.
             notify: Notifies project administrators that a file was uploaded.
         &#34;&#34;&#34;
-        self._raw_manifest: dict = dict()
-        self.full_path = full_path
+        super().__init__(full_path)
 
         self.tags = tags
         self.is_public = is_public
         self.is_permanent = is_permanent
         self.is_encrypted = is_encrypted
         self.notify = notify
-
-        # infer stage by default
-        self.__stage = self.__get_stage_inferred()
 
     @classmethod
     def build_from_manifest(cls,
@@ -1473,53 +1502,6 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 
         return file_def
 
-    def get_manifest_dictionary(self, manifest_type=&#39;out&#39;) -&gt; dict:
-        &#34;&#34;&#34;
-
-        Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
-        By default returns output manifest.
-             The result keeps only values that are applicable for
-             the selected type of the Manifest file. Because although input and output manifests share most of
-             the attributes, some are not shared.
-
-             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
-             for more information.
-
-        Args:
-            manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
-
-        Returns:
-            dict representation of the manifest file in a format expected / produced by the Keboola Connection
-
-        &#34;&#34;&#34;
-
-        return self.__get_raw_manifest_by_type(manifest_type)
-
-    def __get_raw_manifest_by_type(self, manifest_type):
-        new_manifest = {}
-        if manifest_type == &#39;out&#39;:
-            new_manifest = self.__build_out_manifest()
-        else:
-            new_manifest = self._raw_manifest
-
-        return new_manifest
-
-    def __build_out_manifest(self):
-        new_manifest = {}
-        for key in self.OUTPUT_MANIFEST_KEYS:
-            if key in self._raw_manifest:
-                new_manifest[key] = self._raw_manifest[key]
-
-        return new_manifest
-
-    def __get_stage_inferred(self):
-        stage = &#39;out&#39;
-        if Path(self.full_path).parent.parent.name == &#39;in&#39;:
-            stage = &#39;in&#39;
-        elif Path(self.full_path).parent.parent.name == &#39;out&#39;:
-            stage = &#39;out&#39;
-        return stage
-
     @classmethod
     def is_system_tag(cls, tag: str) -&gt; bool:
         for prefix in cls.SYSTEM_TAG_PREFIXES:
@@ -1528,7 +1510,7 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
         return False
 
     @property
-    def name(self):
+    def name(self) -&gt; str:
         &#34;&#34;&#34;
         File name - excluding the KBC ID if present (`str`, read-only)
         &#34;&#34;&#34;
@@ -1549,17 +1531,8 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
         return Path(self.full_path).name
 
     @property
-    def stage(self) -&gt; str:
-        &#34;&#34;&#34;
-        Helper property marking the stage of the file. (str)
-        &#34;&#34;&#34;
-        return self.__stage
-
-    @stage.setter
-    def stage(self, stage: str):
-        if stage not in [&#39;in&#39;, &#39;out&#39;]:
-            raise ValueError(f&#39;Invalid stage &#34;{stage}&#34;, supported values are: &#34;in&#34;, &#34;out&#34;&#39;)
-        self.__stage = stage
+    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
+        return {&#39;out&#39;: self.OUTPUT_MANIFEST_KEYS}
 
     # ########### Output manifest properties - R/W
 
@@ -1635,70 +1608,16 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 
     @property
     def max_age_days(self) -&gt; int:  # File max age (read only input attribute)
-        return self._raw_manifest.get(&#39;max_age_days&#39;, 0)
-
-    # ############ Staging parameters
-
-    @dataclass
-    class S3Staging:
-        issSliced: bool
-        region: str
-        bucket: str
-        key: str
-        credentials_access_key_id: str
-        credentials_secret_access_key: str
-        credentials_session_token: str
-
-    @dataclass
-    class ABSStaging:
-        is_sliced: bool
-        region: str
-        container: str
-        name: str
-        credentials_sas_connection_string: str
-        credentials_expiration: str
-
-    @property
-    def s3_staging(self) -&gt; Union[S3Staging, None]:
-        s3 = self._raw_manifest.get(&#39;s3&#39;)
-        if s3:
-            return FileDefinition.S3Staging(isSliced=s3[&#39;is_sliced&#39;],
-                                            region=s3[&#39;region&#39;],
-                                            bucket=s3[&#39;bucket&#39;],
-                                            key=s3[&#39;key&#39;],
-                                            credentials_access_key_id=s3[&#39;credentials&#39;][&#39;access_key_id&#39;],
-                                            credentials_secret_access_key=s3[&#39;credentials&#39;][&#39;secret_access_key&#39;],
-                                            credentials_session_token=s3[&#39;credentials&#39;][&#39;session_token&#39;]
-                                            )
-        else:
-            return None
-
-    @property
-    def abs_staging(self) -&gt; Union[ABSStaging, None]:
-        _abs = self._raw_manifest.get(&#39;abs&#39;)
-        if _abs:
-            return FileDefinition.ABSStaging(is_sliced=_abs[&#39;is_sliced&#39;],
-                                             region=_abs[&#39;region&#39;],
-                                             container=_abs[&#39;container&#39;],
-                                             name=_abs[&#39;name&#39;],
-                                             credentials_sas_connection_string=_abs[&#39;credentials&#39;][
-                                                 &#39;sas_connection_string&#39;],
-                                             credentials_expiration=_abs[&#39;credentials&#39;][&#39;expiration&#39;]
-                                             )
-        else:
-            return None</code></pre>
+        return self._raw_manifest.get(&#39;max_age_days&#39;, 0)</code></pre>
 </details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="keboola.component.dao.IODefinition" href="#keboola.component.dao.IODefinition">IODefinition</a></li>
+<li>abc.ABC</li>
+</ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="keboola.component.dao.FileDefinition.ABSStaging"><code class="name">var <span class="ident">ABSStaging</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt id="keboola.component.dao.FileDefinition.OUTPUT_MANIFEST_KEYS"><code class="name">var <span class="ident">OUTPUT_MANIFEST_KEYS</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="keboola.component.dao.FileDefinition.S3Staging"><code class="name">var <span class="ident">S3Staging</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1783,29 +1702,6 @@ def is_system_tag(cls, tag: str) -&gt; bool:
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="keboola.component.dao.FileDefinition.abs_staging"><code class="name">var <span class="ident">abs_staging</span> : Union[<a title="keboola.component.dao.FileDefinition.ABSStaging" href="#keboola.component.dao.FileDefinition.ABSStaging">FileDefinition.ABSStaging</a>, NoneType]</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def abs_staging(self) -&gt; Union[ABSStaging, None]:
-    _abs = self._raw_manifest.get(&#39;abs&#39;)
-    if _abs:
-        return FileDefinition.ABSStaging(is_sliced=_abs[&#39;is_sliced&#39;],
-                                         region=_abs[&#39;region&#39;],
-                                         container=_abs[&#39;container&#39;],
-                                         name=_abs[&#39;name&#39;],
-                                         credentials_sas_connection_string=_abs[&#39;credentials&#39;][
-                                             &#39;sas_connection_string&#39;],
-                                         credentials_expiration=_abs[&#39;credentials&#39;][&#39;expiration&#39;]
-                                         )
-    else:
-        return None</code></pre>
-</details>
-</dd>
 <dt id="keboola.component.dao.FileDefinition.created"><code class="name">var <span class="ident">created</span> : Union[datetime.datetime, NoneType]</code></dt>
 <dd>
 <div class="desc"></div>
@@ -1896,28 +1792,6 @@ def max_age_days(self) -&gt; int:  # File max age (read only input attribute)
     return self._raw_manifest.get(&#39;max_age_days&#39;, 0)</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.dao.FileDefinition.name"><code class="name">var <span class="ident">name</span></code></dt>
-<dd>
-<div class="desc"><p>File name - excluding the KBC ID if present (<code>str</code>, read-only)</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def name(self):
-    &#34;&#34;&#34;
-    File name - excluding the KBC ID if present (`str`, read-only)
-    &#34;&#34;&#34;
-    # separate id from name
-    file_name = Path(self.full_path).name
-    if self._raw_manifest.get(&#39;id&#39;):
-        fsplit = file_name.split(&#39;_&#39;, 1)
-        if len(fsplit) &gt; 1:
-            self._raw_manifest[&#39;id&#39;] = fsplit[0]
-            file_name = fsplit[1]
-    return file_name</code></pre>
-</details>
-</dd>
 <dt id="keboola.component.dao.FileDefinition.notify"><code class="name">var <span class="ident">notify</span> : bool</code></dt>
 <dd>
 <div class="desc"></div>
@@ -1930,29 +1804,6 @@ def notify(self) -&gt; bool:
     return self._raw_manifest.get(&#39;notify&#39;, False)</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.dao.FileDefinition.s3_staging"><code class="name">var <span class="ident">s3_staging</span> : Union[<a title="keboola.component.dao.FileDefinition.S3Staging" href="#keboola.component.dao.FileDefinition.S3Staging">FileDefinition.S3Staging</a>, NoneType]</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def s3_staging(self) -&gt; Union[S3Staging, None]:
-    s3 = self._raw_manifest.get(&#39;s3&#39;)
-    if s3:
-        return FileDefinition.S3Staging(isSliced=s3[&#39;is_sliced&#39;],
-                                        region=s3[&#39;region&#39;],
-                                        bucket=s3[&#39;bucket&#39;],
-                                        key=s3[&#39;key&#39;],
-                                        credentials_access_key_id=s3[&#39;credentials&#39;][&#39;access_key_id&#39;],
-                                        credentials_secret_access_key=s3[&#39;credentials&#39;][&#39;secret_access_key&#39;],
-                                        credentials_session_token=s3[&#39;credentials&#39;][&#39;session_token&#39;]
-                                        )
-    else:
-        return None</code></pre>
-</details>
-</dd>
 <dt id="keboola.component.dao.FileDefinition.size_bytes"><code class="name">var <span class="ident">size_bytes</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
@@ -1963,21 +1814,6 @@ def s3_staging(self) -&gt; Union[S3Staging, None]:
 <pre><code class="python">@property
 def size_bytes(self) -&gt; int:  # File size in the KBC Storage (read only input attribute)
     return self._raw_manifest.get(&#39;size_bytes&#39;, 0)</code></pre>
-</details>
-</dd>
-<dt id="keboola.component.dao.FileDefinition.stage"><code class="name">var <span class="ident">stage</span> : str</code></dt>
-<dd>
-<div class="desc"><p>Helper property marking the stage of the file. (str)</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def stage(self) -&gt; str:
-    &#34;&#34;&#34;
-    Helper property marking the stage of the file. (str)
-    &#34;&#34;&#34;
-    return self.__stage</code></pre>
 </details>
 </dd>
 <dt id="keboola.component.dao.FileDefinition.tags"><code class="name">var <span class="ident">tags</span> : List[str]</code></dt>
@@ -2013,55 +1849,18 @@ def user_tags(self) -&gt; List[str]:
 </details>
 </dd>
 </dl>
-<h3>Methods</h3>
-<dl>
-<dt id="keboola.component.dao.FileDefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type='out') ‑> dict</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
-By default returns output manifest.
-The result keeps only values that are applicable for
-the selected type of the Manifest file. Because although input and output manifests share most of
-the attributes, some are not shared.</p>
-<pre><code> See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
- for more information.
-</code></pre>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>manifest_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>either 'in' or 'out'.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>dict representation of the manifest file in a format expected / produced by the Keboola Connection</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_manifest_dictionary(self, manifest_type=&#39;out&#39;) -&gt; dict:
-    &#34;&#34;&#34;
-
-    Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
-    By default returns output manifest.
-         The result keeps only values that are applicable for
-         the selected type of the Manifest file. Because although input and output manifests share most of
-         the attributes, some are not shared.
-
-         See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
-         for more information.
-
-    Args:
-        manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
-
-    Returns:
-        dict representation of the manifest file in a format expected / produced by the Keboola Connection
-
-    &#34;&#34;&#34;
-
-    return self.__get_raw_manifest_by_type(manifest_type)</code></pre>
-</details>
-</dd>
-</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="keboola.component.dao.IODefinition" href="#keboola.component.dao.IODefinition">IODefinition</a></b></code>:
+<ul class="hlist">
+<li><code><a title="keboola.component.dao.IODefinition.ABSStaging" href="#keboola.component.dao.IODefinition.ABSStaging">ABSStaging</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.S3Staging" href="#keboola.component.dao.IODefinition.S3Staging">S3Staging</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.get_manifest_dictionary" href="#keboola.component.dao.IODefinition.get_manifest_dictionary">get_manifest_dictionary</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.name" href="#keboola.component.dao.IODefinition.name">name</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.stage" href="#keboola.component.dao.IODefinition.stage">stage</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 <dt id="keboola.component.dao.FileInputMapping"><code class="flex name class">
 <span>class <span class="ident">FileInputMapping</span></span>
@@ -2143,6 +1942,339 @@ the attributes, some are not shared.</p>
 <dt id="keboola.component.dao.FileOutputMapping.tags"><code class="name">var <span class="ident">tags</span> : List[str]</code></dt>
 <dd>
 <div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="keboola.component.dao.IODefinition"><code class="flex name class">
+<span>class <span class="ident">IODefinition</span></span>
+<span>(</span><span>full_path)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class IODefinition(ABC):
+
+    def __init__(self, full_path):
+        self._raw_manifest: dict = dict()
+        self.full_path = full_path
+
+        # infer stage by default
+        self.__stage = self.__get_stage_inferred()
+
+    @classmethod
+    def build_from_manifest(cls,
+                            manifest_file_path: str
+                            ):
+        raise NotImplementedError
+
+    def _filter_attributes_by_manifest_type(self, manifest_type):
+        &#34;&#34;&#34;
+        Filter manifest to contain only supported fields
+        Args:
+            manifest_type:
+
+        Returns:
+
+        &#34;&#34;&#34;
+        supported_fields = self._manifest_attributes.get(manifest_type, [])
+        new_dict = self._raw_manifest.copy()
+        if supported_fields:
+            for attr in self._raw_manifest:
+                if attr not in supported_fields:
+                    new_dict.pop(attr, None)
+        return new_dict
+
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None) -&gt; dict:
+        &#34;&#34;&#34;
+        Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
+        By default returns output manifest.
+             The result keeps only values that are applicable for
+             the selected type of the Manifest file. Because although input and output manifests share most of
+             the attributes, some are not shared.
+
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Args:
+            manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Returns:
+            dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+        &#34;&#34;&#34;
+        if not manifest_type:
+            manifest_type = self.stage
+
+        return self._filter_attributes_by_manifest_type(manifest_type)
+
+    @property
+    def stage(self) -&gt; str:
+        &#34;&#34;&#34;
+        Helper property marking the stage of the file. (str)
+        &#34;&#34;&#34;
+        return self.__stage
+
+    @stage.setter
+    def stage(self, stage: str):
+        if stage not in [&#39;in&#39;, &#39;out&#39;]:
+            raise ValueError(f&#39;Invalid stage &#34;{stage}&#34;, supported values are: &#34;in&#34;, &#34;out&#34;&#39;)
+        self.__stage = stage
+
+    @property
+    @abstractmethod
+    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
+        &#34;&#34;&#34;
+        Manifest attributes
+        &#34;&#34;&#34;
+        return {}
+
+    @property
+    @abstractmethod
+    def name(self) -&gt; str:
+        &#34;&#34;&#34;
+        File name - excluding the KBC ID if present (`str`, read-only)
+        &#34;&#34;&#34;
+        raise NotImplementedError
+
+    def __get_stage_inferred(self):
+        stage = &#39;in&#39;
+        if not self.full_path or not Path(self.full_path).exists():
+            return stage
+
+        if Path(self.full_path).parent.parent.name == &#39;in&#39;:
+            stage = &#39;in&#39;
+        elif Path(self.full_path).parent.parent.name == &#39;out&#39;:
+            stage = &#39;out&#39;
+        return stage
+
+    # ############ Staging parameters
+
+    @dataclass
+    class S3Staging:
+        is_sliced: bool
+        region: str
+        bucket: str
+        key: str
+        credentials_access_key_id: str
+        credentials_secret_access_key: str
+        credentials_session_token: str
+
+    @dataclass
+    class ABSStaging:
+        is_sliced: bool
+        region: str
+        container: str
+        name: str
+        credentials_sas_connection_string: str
+        credentials_expiration: str
+
+    @property
+    def s3_staging(self) -&gt; Union[S3Staging, None]:
+        s3 = self._raw_manifest.get(&#39;s3&#39;)
+        if s3:
+            return IODefinition.S3Staging(is_sliced=s3[&#39;is_sliced&#39;],
+                                          region=s3[&#39;region&#39;],
+                                          bucket=s3[&#39;bucket&#39;],
+                                          key=s3[&#39;key&#39;],
+                                          credentials_access_key_id=s3[&#39;credentials&#39;][&#39;access_key_id&#39;],
+                                          credentials_secret_access_key=s3[&#39;credentials&#39;][&#39;secret_access_key&#39;],
+                                          credentials_session_token=s3[&#39;credentials&#39;][&#39;session_token&#39;]
+                                          )
+        else:
+            return None
+
+    @property
+    def abs_staging(self) -&gt; Union[ABSStaging, None]:
+        _abs = self._raw_manifest.get(&#39;abs&#39;)
+        if _abs:
+            return IODefinition.ABSStaging(is_sliced=_abs[&#39;is_sliced&#39;],
+                                           region=_abs[&#39;region&#39;],
+                                           container=_abs[&#39;container&#39;],
+                                           name=_abs[&#39;name&#39;],
+                                           credentials_sas_connection_string=_abs[&#39;credentials&#39;][
+                                               &#39;sas_connection_string&#39;],
+                                           credentials_expiration=_abs[&#39;credentials&#39;][&#39;expiration&#39;]
+                                           )
+        else:
+            return None</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="keboola.component.dao.FileDefinition" href="#keboola.component.dao.FileDefinition">FileDefinition</a></li>
+<li><a title="keboola.component.dao.TableDefinition" href="#keboola.component.dao.TableDefinition">TableDefinition</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="keboola.component.dao.IODefinition.ABSStaging"><code class="name">var <span class="ident">ABSStaging</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.IODefinition.S3Staging"><code class="name">var <span class="ident">S3Staging</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="keboola.component.dao.IODefinition.build_from_manifest"><code class="name flex">
+<span>def <span class="ident">build_from_manifest</span></span>(<span>manifest_file_path: str)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def build_from_manifest(cls,
+                        manifest_file_path: str
+                        ):
+    raise NotImplementedError</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="keboola.component.dao.IODefinition.abs_staging"><code class="name">var <span class="ident">abs_staging</span> : Union[<a title="keboola.component.dao.IODefinition.ABSStaging" href="#keboola.component.dao.IODefinition.ABSStaging">IODefinition.ABSStaging</a>, NoneType]</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def abs_staging(self) -&gt; Union[ABSStaging, None]:
+    _abs = self._raw_manifest.get(&#39;abs&#39;)
+    if _abs:
+        return IODefinition.ABSStaging(is_sliced=_abs[&#39;is_sliced&#39;],
+                                       region=_abs[&#39;region&#39;],
+                                       container=_abs[&#39;container&#39;],
+                                       name=_abs[&#39;name&#39;],
+                                       credentials_sas_connection_string=_abs[&#39;credentials&#39;][
+                                           &#39;sas_connection_string&#39;],
+                                       credentials_expiration=_abs[&#39;credentials&#39;][&#39;expiration&#39;]
+                                       )
+    else:
+        return None</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.dao.IODefinition.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"><p>File name - excluding the KBC ID if present (<code>str</code>, read-only)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@abstractmethod
+def name(self) -&gt; str:
+    &#34;&#34;&#34;
+    File name - excluding the KBC ID if present (`str`, read-only)
+    &#34;&#34;&#34;
+    raise NotImplementedError</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.dao.IODefinition.s3_staging"><code class="name">var <span class="ident">s3_staging</span> : Union[<a title="keboola.component.dao.IODefinition.S3Staging" href="#keboola.component.dao.IODefinition.S3Staging">IODefinition.S3Staging</a>, NoneType]</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def s3_staging(self) -&gt; Union[S3Staging, None]:
+    s3 = self._raw_manifest.get(&#39;s3&#39;)
+    if s3:
+        return IODefinition.S3Staging(is_sliced=s3[&#39;is_sliced&#39;],
+                                      region=s3[&#39;region&#39;],
+                                      bucket=s3[&#39;bucket&#39;],
+                                      key=s3[&#39;key&#39;],
+                                      credentials_access_key_id=s3[&#39;credentials&#39;][&#39;access_key_id&#39;],
+                                      credentials_secret_access_key=s3[&#39;credentials&#39;][&#39;secret_access_key&#39;],
+                                      credentials_session_token=s3[&#39;credentials&#39;][&#39;session_token&#39;]
+                                      )
+    else:
+        return None</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.dao.IODefinition.stage"><code class="name">var <span class="ident">stage</span> : str</code></dt>
+<dd>
+<div class="desc"><p>Helper property marking the stage of the file. (str)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def stage(self) -&gt; str:
+    &#34;&#34;&#34;
+    Helper property marking the stage of the file. (str)
+    &#34;&#34;&#34;
+    return self.__stage</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="keboola.component.dao.IODefinition.get_manifest_dictionary"><code class="name flex">
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Union[str, NoneType] = None) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
+By default returns output manifest.
+The result keeps only values that are applicable for
+the selected type of the Manifest file. Because although input and output manifests share most of
+the attributes, some are not shared.</p>
+<pre><code> See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+ for more information.
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>manifest_type</code></strong> :&ensp;<code>str</code></dt>
+<dd>either 'in' or 'out'.</dd>
+</dl>
+<p>See <a href="https://developers.keboola.com/extend/common-interface/manifest-files">manifest files</a>
+for more information.</p>
+<h2 id="returns">Returns</h2>
+<p>dict representation of the manifest file in a format expected / produced by the Keboola Connection</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_manifest_dictionary(self, manifest_type: Optional[str] = None) -&gt; dict:
+    &#34;&#34;&#34;
+    Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
+    By default returns output manifest.
+         The result keeps only values that are applicable for
+         the selected type of the Manifest file. Because although input and output manifests share most of
+         the attributes, some are not shared.
+
+         See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+         for more information.
+
+    Args:
+        manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
+         See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+         for more information.
+
+    Returns:
+        dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+    &#34;&#34;&#34;
+    if not manifest_type:
+        manifest_type = self.stage
+
+    return self._filter_attributes_by_manifest_type(manifest_type)</code></pre>
+</details>
 </dd>
 </dl>
 </dd>
@@ -2536,7 +2668,7 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class TableDefinition:
+<pre><code class="python">class TableDefinition(IODefinition):
     &#34;&#34;&#34;
     Table definition class. It is used as a container for `in/tables/` files.
     It is a representation of input/output manifest objects with additional attributes containing information
@@ -2631,8 +2763,8 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
             table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata
             delete_where (dict): Dict with settings for deleting rows
         &#34;&#34;&#34;
-        self.full_path = full_path
-        self.name = name
+        super().__init__(full_path)
+        self._name = name
         self.is_sliced = is_sliced
         self._raw_manifest = dict()
 
@@ -2700,6 +2832,10 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
 
         return table_def
 
+    @property
+    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
+        return self.MANIFEST_ATTRIBUTES
+
     # #### Manifest properties
     @property
     def destination(self) -&gt; str:
@@ -2728,6 +2864,13 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
                 self._raw_manifest[&#39;id&#39;] = val
             else:
                 raise TypeError(&#34;ID must be a string&#34;)
+
+    @property
+    def name(self) -&gt; str:
+        &#34;&#34;&#34;
+        File name - excluding the KBC ID if present (`str`, read-only)
+        &#34;&#34;&#34;
+        return self._name
 
     @property
     def rows_count(self) -&gt; int:
@@ -2849,14 +2992,10 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
         self._raw_manifest[&#39;metadata&#39;] = table_metadata.get_table_metadata_for_manifest()
         self._raw_manifest[&#39;column_metadata&#39;] = table_metadata.get_column_metadata_for_manifest()
 
-    def get_manifest_dictionary(self) -&gt; dict:
+    def get_manifest_dictionary(self, stage_type: Optional[str] = None) -&gt; dict:
         &#34;&#34;&#34;
 
         Args:
-            manifest_type (str): either &#39;in&#39; or &#39;out&#39;. This option keeps only values that are applicable for
-             the selected type of the Manifest file. Because although input and output manifests share most of
-             the attributes, some are not shared.
-
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
 
@@ -2866,22 +3005,14 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
         &#34;&#34;&#34;
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
-
-        return self._raw_manifest
-
-    def _filter_attributes_by_manifest_type(self, manifest_type):
-        &#34;&#34;&#34;
-        Not used for now. As unrecognized manifest attributes are ignored.
-        Args:
-            manifest_type:
-
-        Returns:
-
-        &#34;&#34;&#34;
-        for attr in TableDefinition.MANIFEST_ATTRIBUTES[manifest_type]:
-            if attr not in self._raw_manifest:
-                self._raw_manifest.pop(attr, None)</code></pre>
+        super(TableDefinition, self).get_manifest_dictionary(stage_type)
+        return self._raw_manifest</code></pre>
 </details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="keboola.component.dao.IODefinition" href="#keboola.component.dao.IODefinition">IODefinition</a></li>
+<li>abc.ABC</li>
+</ul>
 <h3>Class variables</h3>
 <dl>
 <dt id="keboola.component.dao.TableDefinition.INPUT_MANIFEST_ATTRIBUTES"><code class="name">var <span class="ident">INPUT_MANIFEST_ATTRIBUTES</span></code></dt>
@@ -3110,16 +3241,10 @@ def table_metadata(self) -&gt; TableMetadata:
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.TableDefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, stage_type: Union[str, NoneType] = None) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>manifest_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>either 'in' or 'out'. This option keeps only values that are applicable for</dd>
-</dl>
-<p>the selected type of the Manifest file. Because although input and output manifests share most of
-the attributes, some are not shared.</p>
 <p>See <a href="https://developers.keboola.com/extend/common-interface/manifest-files">manifest files</a>
 for more information.</p>
 <h2 id="returns">Returns</h2>
@@ -3128,14 +3253,10 @@ for more information.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_manifest_dictionary(self) -&gt; dict:
+<pre><code class="python">def get_manifest_dictionary(self, stage_type: Optional[str] = None) -&gt; dict:
     &#34;&#34;&#34;
 
     Args:
-        manifest_type (str): either &#39;in&#39; or &#39;out&#39;. This option keeps only values that are applicable for
-         the selected type of the Manifest file. Because although input and output manifests share most of
-         the attributes, some are not shared.
-
          See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
          for more information.
 
@@ -3145,7 +3266,7 @@ for more information.</p>
     &#34;&#34;&#34;
     # in case the table_metadata is out of sync, e.g. the object was modified in-place
     self._set_table_metadata_to_manifest(self._table_metadata)
-
+    super(TableDefinition, self).get_manifest_dictionary(stage_type)
     return self._raw_manifest</code></pre>
 </details>
 </dd>
@@ -3193,6 +3314,17 @@ for more information.</p>
 </details>
 </dd>
 </dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="keboola.component.dao.IODefinition" href="#keboola.component.dao.IODefinition">IODefinition</a></b></code>:
+<ul class="hlist">
+<li><code><a title="keboola.component.dao.IODefinition.ABSStaging" href="#keboola.component.dao.IODefinition.ABSStaging">ABSStaging</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.S3Staging" href="#keboola.component.dao.IODefinition.S3Staging">S3Staging</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.name" href="#keboola.component.dao.IODefinition.name">name</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.stage" href="#keboola.component.dao.IODefinition.stage">stage</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 <dt id="keboola.component.dao.TableInputMapping"><code class="flex name class">
 <span>class <span class="ident">TableInputMapping</span></span>
@@ -4157,26 +4289,19 @@ Returns:TableMetadata</p></div>
 <li>
 <h4><code><a title="keboola.component.dao.FileDefinition" href="#keboola.component.dao.FileDefinition">FileDefinition</a></code></h4>
 <ul class="">
-<li><code><a title="keboola.component.dao.FileDefinition.ABSStaging" href="#keboola.component.dao.FileDefinition.ABSStaging">ABSStaging</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.OUTPUT_MANIFEST_KEYS" href="#keboola.component.dao.FileDefinition.OUTPUT_MANIFEST_KEYS">OUTPUT_MANIFEST_KEYS</a></code></li>
-<li><code><a title="keboola.component.dao.FileDefinition.S3Staging" href="#keboola.component.dao.FileDefinition.S3Staging">S3Staging</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.SYSTEM_TAG_PREFIXES" href="#keboola.component.dao.FileDefinition.SYSTEM_TAG_PREFIXES">SYSTEM_TAG_PREFIXES</a></code></li>
-<li><code><a title="keboola.component.dao.FileDefinition.abs_staging" href="#keboola.component.dao.FileDefinition.abs_staging">abs_staging</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.build_from_manifest" href="#keboola.component.dao.FileDefinition.build_from_manifest">build_from_manifest</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.created" href="#keboola.component.dao.FileDefinition.created">created</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.full_name" href="#keboola.component.dao.FileDefinition.full_name">full_name</a></code></li>
-<li><code><a title="keboola.component.dao.FileDefinition.get_manifest_dictionary" href="#keboola.component.dao.FileDefinition.get_manifest_dictionary">get_manifest_dictionary</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.id" href="#keboola.component.dao.FileDefinition.id">id</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.is_encrypted" href="#keboola.component.dao.FileDefinition.is_encrypted">is_encrypted</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.is_permanent" href="#keboola.component.dao.FileDefinition.is_permanent">is_permanent</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.is_public" href="#keboola.component.dao.FileDefinition.is_public">is_public</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.is_system_tag" href="#keboola.component.dao.FileDefinition.is_system_tag">is_system_tag</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.max_age_days" href="#keboola.component.dao.FileDefinition.max_age_days">max_age_days</a></code></li>
-<li><code><a title="keboola.component.dao.FileDefinition.name" href="#keboola.component.dao.FileDefinition.name">name</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.notify" href="#keboola.component.dao.FileDefinition.notify">notify</a></code></li>
-<li><code><a title="keboola.component.dao.FileDefinition.s3_staging" href="#keboola.component.dao.FileDefinition.s3_staging">s3_staging</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.size_bytes" href="#keboola.component.dao.FileDefinition.size_bytes">size_bytes</a></code></li>
-<li><code><a title="keboola.component.dao.FileDefinition.stage" href="#keboola.component.dao.FileDefinition.stage">stage</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.tags" href="#keboola.component.dao.FileDefinition.tags">tags</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.user_tags" href="#keboola.component.dao.FileDefinition.user_tags">user_tags</a></code></li>
 </ul>
@@ -4196,6 +4321,19 @@ Returns:TableMetadata</p></div>
 <li><code><a title="keboola.component.dao.FileOutputMapping.is_public" href="#keboola.component.dao.FileOutputMapping.is_public">is_public</a></code></li>
 <li><code><a title="keboola.component.dao.FileOutputMapping.source" href="#keboola.component.dao.FileOutputMapping.source">source</a></code></li>
 <li><code><a title="keboola.component.dao.FileOutputMapping.tags" href="#keboola.component.dao.FileOutputMapping.tags">tags</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="keboola.component.dao.IODefinition" href="#keboola.component.dao.IODefinition">IODefinition</a></code></h4>
+<ul class="">
+<li><code><a title="keboola.component.dao.IODefinition.ABSStaging" href="#keboola.component.dao.IODefinition.ABSStaging">ABSStaging</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.S3Staging" href="#keboola.component.dao.IODefinition.S3Staging">S3Staging</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.abs_staging" href="#keboola.component.dao.IODefinition.abs_staging">abs_staging</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.build_from_manifest" href="#keboola.component.dao.IODefinition.build_from_manifest">build_from_manifest</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.get_manifest_dictionary" href="#keboola.component.dao.IODefinition.get_manifest_dictionary">get_manifest_dictionary</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.name" href="#keboola.component.dao.IODefinition.name">name</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.s3_staging" href="#keboola.component.dao.IODefinition.s3_staging">s3_staging</a></code></li>
+<li><code><a title="keboola.component.dao.IODefinition.stage" href="#keboola.component.dao.IODefinition.stage">stage</a></code></li>
 </ul>
 </li>
 <li>

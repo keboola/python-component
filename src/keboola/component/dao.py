@@ -1,10 +1,11 @@
 import dataclasses
 import json
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Optional
 
 KBC_DEFAULT_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
@@ -374,7 +375,156 @@ class TableMetadata:
             raise ValueError(', '.join(errors) + f'\n Supported base types are: [{SupportedDataTypes.list()}]')
 
 
-class TableDefinition:
+class IODefinition(ABC):
+
+    def __init__(self, full_path):
+        self._raw_manifest: dict = dict()
+        self.full_path = full_path
+
+        # infer stage by default
+        self.__stage = self.__get_stage_inferred()
+
+    @classmethod
+    def build_from_manifest(cls,
+                            manifest_file_path: str
+                            ):
+        raise NotImplementedError
+
+    def _filter_attributes_by_manifest_type(self, manifest_type):
+        """
+        Filter manifest to contain only supported fields
+        Args:
+            manifest_type:
+
+        Returns:
+
+        """
+        supported_fields = self._manifest_attributes.get(manifest_type, [])
+        new_dict = self._raw_manifest.copy()
+        if supported_fields:
+            for attr in self._raw_manifest:
+                if attr not in supported_fields:
+                    new_dict.pop(attr, None)
+        return new_dict
+
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None) -> dict:
+        """
+        Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
+        By default returns output manifest.
+             The result keeps only values that are applicable for
+             the selected type of the Manifest file. Because although input and output manifests share most of
+             the attributes, some are not shared.
+
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Args:
+            manifest_type (str): either 'in' or 'out'.
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Returns:
+            dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+        """
+        if not manifest_type:
+            manifest_type = self.stage
+
+        return self._filter_attributes_by_manifest_type(manifest_type)
+
+    @property
+    def stage(self) -> str:
+        """
+        Helper property marking the stage of the file. (str)
+        """
+        return self.__stage
+
+    @stage.setter
+    def stage(self, stage: str):
+        if stage not in ['in', 'out']:
+            raise ValueError(f'Invalid stage "{stage}", supported values are: "in", "out"')
+        self.__stage = stage
+
+    @property
+    @abstractmethod
+    def _manifest_attributes(self) -> Dict[str, List[str]]:
+        """
+        Manifest attributes
+        """
+        return {}
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """
+        File name - excluding the KBC ID if present (`str`, read-only)
+        """
+        raise NotImplementedError
+
+    def __get_stage_inferred(self):
+        stage = 'in'
+        if not self.full_path or not Path(self.full_path).exists():
+            return stage
+
+        if Path(self.full_path).parent.parent.name == 'in':
+            stage = 'in'
+        elif Path(self.full_path).parent.parent.name == 'out':
+            stage = 'out'
+        return stage
+
+    # ############ Staging parameters
+
+    @dataclass
+    class S3Staging:
+        is_sliced: bool
+        region: str
+        bucket: str
+        key: str
+        credentials_access_key_id: str
+        credentials_secret_access_key: str
+        credentials_session_token: str
+
+    @dataclass
+    class ABSStaging:
+        is_sliced: bool
+        region: str
+        container: str
+        name: str
+        credentials_sas_connection_string: str
+        credentials_expiration: str
+
+    @property
+    def s3_staging(self) -> Union[S3Staging, None]:
+        s3 = self._raw_manifest.get('s3')
+        if s3:
+            return IODefinition.S3Staging(is_sliced=s3['isSliced'],
+                                          region=s3['region'],
+                                          bucket=s3['bucket'],
+                                          key=s3['key'],
+                                          credentials_access_key_id=s3['credentials']['access_key_id'],
+                                          credentials_secret_access_key=s3['credentials']['secret_access_key'],
+                                          credentials_session_token=s3['credentials']['session_token']
+                                          )
+        else:
+            return None
+
+    @property
+    def abs_staging(self) -> Union[ABSStaging, None]:
+        _abs = self._raw_manifest.get('abs')
+        if _abs:
+            return IODefinition.ABSStaging(is_sliced=_abs['is_sliced'],
+                                           region=_abs['region'],
+                                           container=_abs['container'],
+                                           name=_abs['name'],
+                                           credentials_sas_connection_string=_abs['credentials'][
+                                               'sas_connection_string'],
+                                           credentials_expiration=_abs['credentials']['expiration']
+                                           )
+        else:
+            return None
+
+
+class TableDefinition(IODefinition):
     """
     Table definition class. It is used as a container for `in/tables/` files.
     It is a representation of input/output manifest objects with additional attributes containing information
@@ -469,8 +619,8 @@ class TableDefinition:
             table_metadata: <.dao.TableMetadata> object containing column and table metadata
             delete_where (dict): Dict with settings for deleting rows
         """
-        self.full_path = full_path
-        self.name = name
+        super().__init__(full_path)
+        self._name = name
         self.is_sliced = is_sliced
         self._raw_manifest = dict()
 
@@ -538,6 +688,10 @@ class TableDefinition:
 
         return table_def
 
+    @property
+    def _manifest_attributes(self) -> Dict[str, List[str]]:
+        return self.MANIFEST_ATTRIBUTES
+
     # #### Manifest properties
     @property
     def destination(self) -> str:
@@ -566,6 +720,13 @@ class TableDefinition:
                 self._raw_manifest['id'] = val
             else:
                 raise TypeError("ID must be a string")
+
+    @property
+    def name(self) -> str:
+        """
+        File name - excluding the KBC ID if present (`str`, read-only)
+        """
+        return self._name
 
     @property
     def rows_count(self) -> int:
@@ -687,14 +848,10 @@ class TableDefinition:
         self._raw_manifest['metadata'] = table_metadata.get_table_metadata_for_manifest()
         self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
 
-    def get_manifest_dictionary(self) -> dict:
+    def get_manifest_dictionary(self, stage_type: Optional[str] = None) -> dict:
         """
 
         Args:
-            manifest_type (str): either 'in' or 'out'. This option keeps only values that are applicable for
-             the selected type of the Manifest file. Because although input and output manifests share most of
-             the attributes, some are not shared.
-
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
 
@@ -704,24 +861,11 @@ class TableDefinition:
         """
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
-
+        super(TableDefinition, self).get_manifest_dictionary(stage_type)
         return self._raw_manifest
 
-    def _filter_attributes_by_manifest_type(self, manifest_type):
-        """
-        Not used for now. As unrecognized manifest attributes are ignored.
-        Args:
-            manifest_type:
 
-        Returns:
-
-        """
-        for attr in TableDefinition.MANIFEST_ATTRIBUTES[manifest_type]:
-            if attr not in self._raw_manifest:
-                self._raw_manifest.pop(attr, None)
-
-
-class FileDefinition:
+class FileDefinition(IODefinition):
     """
     File definition class. It is used as a container for `{in/out}/files/` files.
     It is a representation of input/output [manifest objects](
@@ -785,17 +929,13 @@ class FileDefinition:
             is_encrypted: If true, the file content will be encrypted in the storage.
             notify: Notifies project administrators that a file was uploaded.
         """
-        self._raw_manifest: dict = dict()
-        self.full_path = full_path
+        super().__init__(full_path)
 
         self.tags = tags
         self.is_public = is_public
         self.is_permanent = is_permanent
         self.is_encrypted = is_encrypted
         self.notify = notify
-
-        # infer stage by default
-        self.__stage = self.__get_stage_inferred()
 
     @classmethod
     def build_from_manifest(cls,
@@ -835,53 +975,6 @@ class FileDefinition:
 
         return file_def
 
-    def get_manifest_dictionary(self, manifest_type='out') -> dict:
-        """
-
-        Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
-        By default returns output manifest.
-             The result keeps only values that are applicable for
-             the selected type of the Manifest file. Because although input and output manifests share most of
-             the attributes, some are not shared.
-
-             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
-             for more information.
-
-        Args:
-            manifest_type (str): either 'in' or 'out'.
-
-        Returns:
-            dict representation of the manifest file in a format expected / produced by the Keboola Connection
-
-        """
-
-        return self.__get_raw_manifest_by_type(manifest_type)
-
-    def __get_raw_manifest_by_type(self, manifest_type):
-        new_manifest = {}
-        if manifest_type == 'out':
-            new_manifest = self.__build_out_manifest()
-        else:
-            new_manifest = self._raw_manifest
-
-        return new_manifest
-
-    def __build_out_manifest(self):
-        new_manifest = {}
-        for key in self.OUTPUT_MANIFEST_KEYS:
-            if key in self._raw_manifest:
-                new_manifest[key] = self._raw_manifest[key]
-
-        return new_manifest
-
-    def __get_stage_inferred(self):
-        stage = 'out'
-        if Path(self.full_path).parent.parent.name == 'in':
-            stage = 'in'
-        elif Path(self.full_path).parent.parent.name == 'out':
-            stage = 'out'
-        return stage
-
     @classmethod
     def is_system_tag(cls, tag: str) -> bool:
         for prefix in cls.SYSTEM_TAG_PREFIXES:
@@ -890,7 +983,7 @@ class FileDefinition:
         return False
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
         File name - excluding the KBC ID if present (`str`, read-only)
         """
@@ -911,17 +1004,8 @@ class FileDefinition:
         return Path(self.full_path).name
 
     @property
-    def stage(self) -> str:
-        """
-        Helper property marking the stage of the file. (str)
-        """
-        return self.__stage
-
-    @stage.setter
-    def stage(self, stage: str):
-        if stage not in ['in', 'out']:
-            raise ValueError(f'Invalid stage "{stage}", supported values are: "in", "out"')
-        self.__stage = stage
+    def _manifest_attributes(self) -> Dict[str, List[str]]:
+        return {'out': self.OUTPUT_MANIFEST_KEYS}
 
     # ########### Output manifest properties - R/W
 
@@ -998,57 +1082,6 @@ class FileDefinition:
     @property
     def max_age_days(self) -> int:  # File max age (read only input attribute)
         return self._raw_manifest.get('max_age_days', 0)
-
-    # ############ Staging parameters
-
-    @dataclass
-    class S3Staging:
-        issSliced: bool
-        region: str
-        bucket: str
-        key: str
-        credentials_access_key_id: str
-        credentials_secret_access_key: str
-        credentials_session_token: str
-
-    @dataclass
-    class ABSStaging:
-        is_sliced: bool
-        region: str
-        container: str
-        name: str
-        credentials_sas_connection_string: str
-        credentials_expiration: str
-
-    @property
-    def s3_staging(self) -> Union[S3Staging, None]:
-        s3 = self._raw_manifest.get('s3')
-        if s3:
-            return FileDefinition.S3Staging(isSliced=s3['is_sliced'],
-                                            region=s3['region'],
-                                            bucket=s3['bucket'],
-                                            key=s3['key'],
-                                            credentials_access_key_id=s3['credentials']['access_key_id'],
-                                            credentials_secret_access_key=s3['credentials']['secret_access_key'],
-                                            credentials_session_token=s3['credentials']['session_token']
-                                            )
-        else:
-            return None
-
-    @property
-    def abs_staging(self) -> Union[ABSStaging, None]:
-        _abs = self._raw_manifest.get('abs')
-        if _abs:
-            return FileDefinition.ABSStaging(is_sliced=_abs['is_sliced'],
-                                             region=_abs['region'],
-                                             container=_abs['container'],
-                                             name=_abs['name'],
-                                             credentials_sas_connection_string=_abs['credentials'][
-                                                 'sas_connection_string'],
-                                             credentials_expiration=_abs['credentials']['expiration']
-                                             )
-        else:
-            return None
 
 
 # ####### CONFIGURATION
