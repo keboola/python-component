@@ -198,7 +198,7 @@ It contains the manifest file representation and initializes all attributes avai
 
 This object represents both Input and Output manifests. All output manifest attributes are exposed in the class.
 
-There are convenience methods for result processing and manifest creation `CommonInterface.write_table_def_manifest`. 
+There are convenience methods for result processing and manifest creation `CommonInterface.write_manifest`. 
 Also it is possible to create the container for the output table using the `CommonInterface.create_out_table_definition()`.
 
 ![TableDefinition dependencies](docs/imgs/TableDefinition_class.png)
@@ -229,7 +229,7 @@ result_table.table_metadata.add_column_data_type('id', dao.SupportedDataTypes.ST
                                                  length=100)
 
 # write manifest
-ci.write_tabledef_manifest(result_table)
+ci.write_manifest(result_table)
 ```
 
 ### Get input table by name
@@ -470,7 +470,7 @@ class Component(ComponentBase):
             writer.writerow({"timestamp": datetime.now().isoformat()})
 
         # Save table manifest (output.csv.manifest) from the tabledefinition
-        self.write_tabledef_manifest(table)
+        self.write_manifest(table)
 
         # Write new state - will be available next run
         self.write_state_file({"some_state_parameter": "value"})
