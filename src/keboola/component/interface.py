@@ -14,6 +14,7 @@ from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
 
 from . import dao
+from .exceptions import UserException
 
 
 def register_csv_dialect():
@@ -656,7 +657,7 @@ class CommonInterface:
         - Support for nested params?
     """
 
-    def validate_configuration(self, mandatory_params=None):
+    def validate_configuration_parameters(self, mandatory_params=None):
         """
                 Validates config parameters based on provided mandatory parameters.
                 All provided parameters must be present in config to pass.
@@ -697,7 +698,7 @@ class CommonInterface:
                 """
         if not mandatory_params:
             mandatory_params = []
-        return self.validate_parameters(self.configuration.parameters, mandatory_params, 'config parameters')
+        return self._validate_parameters(self.configuration.parameters, mandatory_params, 'config parameters')
 
     def validate_image_parameters(self, mandatory_params):
         """
@@ -738,10 +739,10 @@ class CommonInterface:
                 Following logical expression is evaluated:
                 par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
                 """
-        return self.validate_parameters(self.configuration.image_parameters,
-                                        mandatory_params, 'image/stack parameters')
+        return self._validate_parameters(self.configuration.image_parameters,
+                                         mandatory_params, 'image/stack parameters')
 
-    def validate_parameters(self, parameters, mandatory_params, _type):
+    def _validate_parameters(self, parameters, mandatory_params, _type):
         """
         Validates provided parameters based on provided mandatory parameters.
         All provided parameters must be present in config to pass.
@@ -779,6 +780,9 @@ class CommonInterface:
 
         Following logical expression is evaluated:
         par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
+
+        Raises:
+            UserException: on missing parameters
         """
         missing_fields = []
         for par in mandatory_params:
@@ -788,7 +792,7 @@ class CommonInterface:
                 missing_fields.append(par)
 
         if missing_fields:
-            raise ValueError(
+            raise UserException(
                 'Missing mandatory {} fields: [{}] '.format(_type, ', '.join(missing_fields)))
 
     def _validate_par_group(self, par_group, parameters):

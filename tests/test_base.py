@@ -2,7 +2,7 @@ import os
 import unittest
 
 from keboola.component.base import ComponentBase
-from keboola.component.base import UserException
+from keboola.component import UserException
 
 
 class MockComponent(ComponentBase):

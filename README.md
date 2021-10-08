@@ -406,14 +406,12 @@ for general Python components. Base your components on this class for simpler de
 
 It performs following tasks by default:
 
-- Initializes the CommonInterface and performs configuration validation.
+- Initializes the CommonInterface.
 - For easier debugging the data folder is picked up by default from `../data` path,
         relative to working directory when the `KBC_DATADIR` env variable is not specified.
 - If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
 
 **Constructor arguments**:
-- required_parameters: List of required configuration/parameters
-- required_image_parameters: List of required configuration parameters
 - data_path_override: optional path to data folder that overrides the default behaviour 
 (`KBC_DATADIR` environment variable). May be also specified by `-d` or `--data` commandline argument
 
@@ -426,7 +424,8 @@ import csv
 import logging
 from datetime import datetime
 
-from keboola.component.base import ComponentBase, UserException
+from keboola.component.base import ComponentBase
+from keboola.component import UserException
 
 # configuration variables
 KEY_PRINT_HELLO = 'print_hello'
@@ -437,9 +436,6 @@ REQUIRED_PARAMETERS = [KEY_PRINT_HELLO]
 REQUIRED_IMAGE_PARS = []
 
 class Component(ComponentBase):
-    def __init__(self):
-        super().__init__(required_parameters=REQUIRED_PARAMETERS,
-                         required_image_parameters=REQUIRED_IMAGE_PARS)
 
     def run(self):
         '''
@@ -447,6 +443,10 @@ class Component(ComponentBase):
         '''
 
         # ####### EXAMPLE TO REMOVE
+        # check for missing configuration parameters
+        self.validate_configuration_parameters(REQUIRED_PARAMETERS)
+        self.validate_image_parameters(REQUIRED_IMAGE_PARS)
+
         params = self.configuration.parameters
         # Access parameters in data/config.json
         if params.get(KEY_PRINT_HELLO):

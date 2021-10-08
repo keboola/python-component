@@ -525,7 +525,7 @@ class IODefinition(ABC):
     def s3_staging(self) -&gt; Union[S3Staging, None]:
         s3 = self._raw_manifest.get(&#39;s3&#39;)
         if s3:
-            return IODefinition.S3Staging(is_sliced=s3[&#39;is_sliced&#39;],
+            return IODefinition.S3Staging(is_sliced=s3[&#39;isSliced&#39;],
                                           region=s3[&#39;region&#39;],
                                           bucket=s3[&#39;bucket&#39;],
                                           key=s3[&#39;key&#39;],
@@ -2078,7 +2078,7 @@ inheritance.</p></div>
     def s3_staging(self) -&gt; Union[S3Staging, None]:
         s3 = self._raw_manifest.get(&#39;s3&#39;)
         if s3:
-            return IODefinition.S3Staging(is_sliced=s3[&#39;is_sliced&#39;],
+            return IODefinition.S3Staging(is_sliced=s3[&#39;isSliced&#39;],
                                           region=s3[&#39;region&#39;],
                                           bucket=s3[&#39;bucket&#39;],
                                           key=s3[&#39;key&#39;],
@@ -2195,7 +2195,7 @@ def name(self) -&gt; str:
 def s3_staging(self) -&gt; Union[S3Staging, None]:
     s3 = self._raw_manifest.get(&#39;s3&#39;)
     if s3:
-        return IODefinition.S3Staging(is_sliced=s3[&#39;is_sliced&#39;],
+        return IODefinition.S3Staging(is_sliced=s3[&#39;isSliced&#39;],
                                       region=s3[&#39;region&#39;],
                                       bucket=s3[&#39;bucket&#39;],
                                       key=s3[&#39;key&#39;],
