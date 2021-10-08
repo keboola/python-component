@@ -121,7 +121,22 @@ class ComponentBase(ABC, CommonInterface):
 
 
         &#34;&#34;&#34;
-        pass</code></pre>
+        pass
+
+    def execute_action(self):
+        &#34;&#34;&#34;
+        Executes action defined in the configuration. The action name must match implemented method.
+        The default action is &#39;run&#39;.
+        &#34;&#34;&#34;
+        action = self.configuration.action
+        if not action:
+            logging.warning(&#34;No action defined in the configuration, using the default run action.&#34;)
+            action = &#39;run&#39;
+        logging.info(f&#34;Running action: {action}&#34;)
+        try:
+            return getattr(self, action)()
+        except AttributeError as e:
+            raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e</code></pre>
 </details>
 </section>
 <section>
@@ -245,7 +260,22 @@ validation is done at constructor level</p>
 
 
         &#34;&#34;&#34;
-        pass</code></pre>
+        pass
+
+    def execute_action(self):
+        &#34;&#34;&#34;
+        Executes action defined in the configuration. The action name must match implemented method.
+        The default action is &#39;run&#39;.
+        &#34;&#34;&#34;
+        action = self.configuration.action
+        if not action:
+            logging.warning(&#34;No action defined in the configuration, using the default run action.&#34;)
+            action = &#39;run&#39;
+        logging.info(f&#34;Running action: {action}&#34;)
+        try:
+            return getattr(self, action)()
+        except AttributeError as e:
+            raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -277,6 +307,32 @@ def set_debug_mode():
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="keboola.component.base.ComponentBase.execute_action"><code class="name flex">
+<span>def <span class="ident">execute_action</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Executes action defined in the configuration. The action name must match implemented method.
+The default action is 'run'.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def execute_action(self):
+    &#34;&#34;&#34;
+    Executes action defined in the configuration. The action name must match implemented method.
+    The default action is &#39;run&#39;.
+    &#34;&#34;&#34;
+    action = self.configuration.action
+    if not action:
+        logging.warning(&#34;No action defined in the configuration, using the default run action.&#34;)
+        action = &#39;run&#39;
+    logging.info(f&#34;Running action: {action}&#34;)
+    try:
+        return getattr(self, action)()
+    except AttributeError as e:
+        raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e</code></pre>
+</details>
+</dd>
 <dt id="keboola.component.base.ComponentBase.run"><code class="name flex">
 <span>def <span class="ident">run</span></span>(<span>self)</span>
 </code></dt>
@@ -344,6 +400,7 @@ def run(self):
 <li>
 <h4><code><a title="keboola.component.base.ComponentBase" href="#keboola.component.base.ComponentBase">ComponentBase</a></code></h4>
 <ul class="">
+<li><code><a title="keboola.component.base.ComponentBase.execute_action" href="#keboola.component.base.ComponentBase.execute_action">execute_action</a></code></li>
 <li><code><a title="keboola.component.base.ComponentBase.run" href="#keboola.component.base.ComponentBase.run">run</a></code></li>
 <li><code><a title="keboola.component.base.ComponentBase.set_debug_mode" href="#keboola.component.base.ComponentBase.set_debug_mode">set_debug_mode</a></code></li>
 </ul>
