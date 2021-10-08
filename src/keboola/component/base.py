@@ -94,3 +94,18 @@ class ComponentBase(ABC, CommonInterface):
 
         """
         pass
+
+    def execute_action(self):
+        """
+        Executes action defined in the configuration. The action name must match implemented method.
+        The default action is 'run'.
+        """
+        action = self.configuration.action
+        if not action:
+            logging.warning("No action defined in the configuration, using the default run action.")
+            action = 'run'
+        logging.info(f"Running action: {action}")
+        try:
+            return getattr(self, action)()
+        except AttributeError as e:
+            raise AttributeError(f"The defined action {action} is not implemented!") from e

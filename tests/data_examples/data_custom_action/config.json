@@ -72,7 +72,7 @@
         },
         "baz": "bazBar"
     },
-    "action": "run",
+    "action": "custom_action",
     "authorization": {
         "oauth_api": {
             "id": "123456",
