@@ -42,6 +42,7 @@ from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
 
 from . import dao
+from .exceptions import UserException
 
 
 def register_csv_dialect():
@@ -326,7 +327,7 @@ class CommonInterface:
             table_defs.append(dao.TableDefinition.build_from_manifest(manifest_path))
 
         if orphaned_manifests:
-            files_w_manifest = [t.full_path for t in table_defs]
+            files_w_manifest = [t.name + &#39;.manifest&#39; for t in table_defs]
             manifest_files = [f for f in glob.glob(self.tables_in_path + &#34;/**.manifest&#34;, recursive=False)
                               if Path(f).name not in files_w_manifest]
             for t in manifest_files:
@@ -684,7 +685,7 @@ class CommonInterface:
         - Support for nested params?
     &#34;&#34;&#34;
 
-    def validate_configuration(self, mandatory_params=None):
+    def validate_configuration_parameters(self, mandatory_params=None):
         &#34;&#34;&#34;
                 Validates config parameters based on provided mandatory parameters.
                 All provided parameters must be present in config to pass.
@@ -725,7 +726,7 @@ class CommonInterface:
                 &#34;&#34;&#34;
         if not mandatory_params:
             mandatory_params = []
-        return self.validate_parameters(self.configuration.parameters, mandatory_params, &#39;config parameters&#39;)
+        return self._validate_parameters(self.configuration.parameters, mandatory_params, &#39;config parameters&#39;)
 
     def validate_image_parameters(self, mandatory_params):
         &#34;&#34;&#34;
@@ -766,10 +767,10 @@ class CommonInterface:
                 Following logical expression is evaluated:
                 par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
                 &#34;&#34;&#34;
-        return self.validate_parameters(self.configuration.image_parameters,
-                                        mandatory_params, &#39;image/stack parameters&#39;)
+        return self._validate_parameters(self.configuration.image_parameters,
+                                         mandatory_params, &#39;image/stack parameters&#39;)
 
-    def validate_parameters(self, parameters, mandatory_params, _type):
+    def _validate_parameters(self, parameters, mandatory_params, _type):
         &#34;&#34;&#34;
         Validates provided parameters based on provided mandatory parameters.
         All provided parameters must be present in config to pass.
@@ -807,6 +808,9 @@ class CommonInterface:
 
         Following logical expression is evaluated:
         par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
+
+        Raises:
+            UserException: on missing parameters
         &#34;&#34;&#34;
         missing_fields = []
         for par in mandatory_params:
@@ -816,7 +820,7 @@ class CommonInterface:
                 missing_fields.append(par)
 
         if missing_fields:
-            raise ValueError(
+            raise UserException(
                 &#39;Missing mandatory {} fields: [{}] &#39;.format(_type, &#39;, &#39;.join(missing_fields)))
 
     def _validate_par_group(self, par_group, parameters):
@@ -1498,7 +1502,7 @@ is established in following order:</p>
             table_defs.append(dao.TableDefinition.build_from_manifest(manifest_path))
 
         if orphaned_manifests:
-            files_w_manifest = [t.full_path for t in table_defs]
+            files_w_manifest = [t.name + &#39;.manifest&#39; for t in table_defs]
             manifest_files = [f for f in glob.glob(self.tables_in_path + &#34;/**.manifest&#34;, recursive=False)
                               if Path(f).name not in files_w_manifest]
             for t in manifest_files:
@@ -1856,7 +1860,7 @@ is established in following order:</p>
         - Support for nested params?
     &#34;&#34;&#34;
 
-    def validate_configuration(self, mandatory_params=None):
+    def validate_configuration_parameters(self, mandatory_params=None):
         &#34;&#34;&#34;
                 Validates config parameters based on provided mandatory parameters.
                 All provided parameters must be present in config to pass.
@@ -1897,7 +1901,7 @@ is established in following order:</p>
                 &#34;&#34;&#34;
         if not mandatory_params:
             mandatory_params = []
-        return self.validate_parameters(self.configuration.parameters, mandatory_params, &#39;config parameters&#39;)
+        return self._validate_parameters(self.configuration.parameters, mandatory_params, &#39;config parameters&#39;)
 
     def validate_image_parameters(self, mandatory_params):
         &#34;&#34;&#34;
@@ -1938,10 +1942,10 @@ is established in following order:</p>
                 Following logical expression is evaluated:
                 par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
                 &#34;&#34;&#34;
-        return self.validate_parameters(self.configuration.image_parameters,
-                                        mandatory_params, &#39;image/stack parameters&#39;)
+        return self._validate_parameters(self.configuration.image_parameters,
+                                         mandatory_params, &#39;image/stack parameters&#39;)
 
-    def validate_parameters(self, parameters, mandatory_params, _type):
+    def _validate_parameters(self, parameters, mandatory_params, _type):
         &#34;&#34;&#34;
         Validates provided parameters based on provided mandatory parameters.
         All provided parameters must be present in config to pass.
@@ -1979,6 +1983,9 @@ is established in following order:</p>
 
         Following logical expression is evaluated:
         par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
+
+        Raises:
+            UserException: on missing parameters
         &#34;&#34;&#34;
         missing_fields = []
         for par in mandatory_params:
@@ -1988,7 +1995,7 @@ is established in following order:</p>
                 missing_fields.append(par)
 
         if missing_fields:
-            raise ValueError(
+            raise UserException(
                 &#39;Missing mandatory {} fields: [{}] &#39;.format(_type, &#39;, &#39;.join(missing_fields)))
 
     def _validate_par_group(self, par_group, parameters):
@@ -3102,7 +3109,7 @@ Returns: List[dao.TableDefinition]</p></div>
         table_defs.append(dao.TableDefinition.build_from_manifest(manifest_path))
 
     if orphaned_manifests:
-        files_w_manifest = [t.full_path for t in table_defs]
+        files_w_manifest = [t.name + &#39;.manifest&#39; for t in table_defs]
         manifest_files = [f for f in glob.glob(self.tables_in_path + &#34;/**.manifest&#34;, recursive=False)
                           if Path(f).name not in files_w_manifest]
         for t in manifest_files:
@@ -3152,8 +3159,8 @@ Returns: List[dao.TableDefinition]</p></div>
         )</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.interface.CommonInterface.validate_configuration"><code class="name flex">
-<span>def <span class="ident">validate_configuration</span></span>(<span>self, mandatory_params=None)</span>
+<dt id="keboola.component.interface.CommonInterface.validate_configuration_parameters"><code class="name flex">
+<span>def <span class="ident">validate_configuration_parameters</span></span>(<span>self, mandatory_params=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Validates config parameters based on provided mandatory parameters.
@@ -3192,7 +3199,7 @@ par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def validate_configuration(self, mandatory_params=None):
+<pre><code class="python">def validate_configuration_parameters(self, mandatory_params=None):
     &#34;&#34;&#34;
             Validates config parameters based on provided mandatory parameters.
             All provided parameters must be present in config to pass.
@@ -3233,7 +3240,7 @@ par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))</p></div>
             &#34;&#34;&#34;
     if not mandatory_params:
         mandatory_params = []
-    return self.validate_parameters(self.configuration.parameters, mandatory_params, &#39;config parameters&#39;)</code></pre>
+    return self._validate_parameters(self.configuration.parameters, mandatory_params, &#39;config parameters&#39;)</code></pre>
 </details>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.validate_image_parameters"><code class="name flex">
@@ -3315,99 +3322,8 @@ par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))</p></div>
             Following logical expression is evaluated:
             par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
             &#34;&#34;&#34;
-    return self.validate_parameters(self.configuration.image_parameters,
-                                    mandatory_params, &#39;image/stack parameters&#39;)</code></pre>
-</details>
-</dd>
-<dt id="keboola.component.interface.CommonInterface.validate_parameters"><code class="name flex">
-<span>def <span class="ident">validate_parameters</span></span>(<span>self, parameters, mandatory_params, _type)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Validates provided parameters based on provided mandatory parameters.
-All provided parameters must be present in config to pass.
-ex1.:
-par1 = 'par1'
-par2 = 'par2'
-mandatory_params = [par1, par2]
-Validation will fail when one of the above parameters is not found</p>
-<p>Two levels of nesting:
-Parameters can be grouped as arrays par3 = [groupPar1, groupPar2] =&gt; at least one of the pars has to be
-present
-ex2.
-par1 = 'par1'
-par2 = 'par2'
-par3 = 'par3'
-groupPar1 = 'groupPar1'
-groupPar2 = 'groupPar2'
-group1 = [groupPar1, groupPar2]
-group3 = [par3, group1]
-mandatory_params = [par1, par2, group1]</p>
-<p>Folowing logical expression is evaluated:
-Par1 AND Par2 AND (groupPar1 OR groupPar2)</p>
-<p>ex3
-par1 = 'par1'
-par2 = 'par2'
-par3 = 'par3'
-groupPar1 = 'groupPar1'
-groupPar2 = 'groupPar2'
-group1 = [groupPar1, groupPar2]
-group3 = [par3, group1]
-mandatory_params = [par1, par2, group3]</p>
-<p>Following logical expression is evaluated:
-par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def validate_parameters(self, parameters, mandatory_params, _type):
-    &#34;&#34;&#34;
-    Validates provided parameters based on provided mandatory parameters.
-    All provided parameters must be present in config to pass.
-    ex1.:
-    par1 = &#39;par1&#39;
-    par2 = &#39;par2&#39;
-    mandatory_params = [par1, par2]
-    Validation will fail when one of the above parameters is not found
-
-    Two levels of nesting:
-    Parameters can be grouped as arrays par3 = [groupPar1, groupPar2] =&gt; at least one of the pars has to be
-    present
-    ex2.
-    par1 = &#39;par1&#39;
-    par2 = &#39;par2&#39;
-    par3 = &#39;par3&#39;
-    groupPar1 = &#39;groupPar1&#39;
-    groupPar2 = &#39;groupPar2&#39;
-    group1 = [groupPar1, groupPar2]
-    group3 = [par3, group1]
-    mandatory_params = [par1, par2, group1]
-
-    Folowing logical expression is evaluated:
-    Par1 AND Par2 AND (groupPar1 OR groupPar2)
-
-    ex3
-    par1 = &#39;par1&#39;
-    par2 = &#39;par2&#39;
-    par3 = &#39;par3&#39;
-    groupPar1 = &#39;groupPar1&#39;
-    groupPar2 = &#39;groupPar2&#39;
-    group1 = [groupPar1, groupPar2]
-    group3 = [par3, group1]
-    mandatory_params = [par1, par2, group3]
-
-    Following logical expression is evaluated:
-    par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
-    &#34;&#34;&#34;
-    missing_fields = []
-    for par in mandatory_params:
-        if isinstance(par, list):
-            missing_fields.extend(self._validate_par_group(par, parameters))
-        elif not parameters.get(par):
-            missing_fields.append(par)
-
-    if missing_fields:
-        raise ValueError(
-            &#39;Missing mandatory {} fields: [{}] &#39;.format(_type, &#39;, &#39;.join(missing_fields)))</code></pre>
+    return self._validate_parameters(self.configuration.image_parameters,
+                                     mandatory_params, &#39;image/stack parameters&#39;)</code></pre>
 </details>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.write_state_file"><code class="name flex">
@@ -3788,9 +3704,8 @@ def tables_output_mapping(self) -&gt; List[dao.TableOutputMapping]:
 <li><code><a title="keboola.component.interface.CommonInterface.set_gelf_logger" href="#keboola.component.interface.CommonInterface.set_gelf_logger">set_gelf_logger</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.tables_in_path" href="#keboola.component.interface.CommonInterface.tables_in_path">tables_in_path</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.tables_out_path" href="#keboola.component.interface.CommonInterface.tables_out_path">tables_out_path</a></code></li>
-<li><code><a title="keboola.component.interface.CommonInterface.validate_configuration" href="#keboola.component.interface.CommonInterface.validate_configuration">validate_configuration</a></code></li>
+<li><code><a title="keboola.component.interface.CommonInterface.validate_configuration_parameters" href="#keboola.component.interface.CommonInterface.validate_configuration_parameters">validate_configuration_parameters</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.validate_image_parameters" href="#keboola.component.interface.CommonInterface.validate_image_parameters">validate_image_parameters</a></code></li>
-<li><code><a title="keboola.component.interface.CommonInterface.validate_parameters" href="#keboola.component.interface.CommonInterface.validate_parameters">validate_parameters</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.write_filedef_manifest" href="#keboola.component.interface.CommonInterface.write_filedef_manifest">write_filedef_manifest</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.write_filedef_manifests" href="#keboola.component.interface.CommonInterface.write_filedef_manifests">write_filedef_manifests</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.write_manifest" href="#keboola.component.interface.CommonInterface.write_manifest">write_manifest</a></code></li>

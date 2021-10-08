@@ -30,21 +30,17 @@
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 from .interface import CommonInterface
 
 KEY_DEBUG = &#39;debug&#39;
 
 
-class UserException(Exception):
-    pass
-
-
 class ComponentBase(ABC, CommonInterface):
-    def __init__(self, required_parameters: Optional[List[str]] = None,
-                 required_image_parameters: Optional[List[str]] = None,
-                 data_path_override: Optional[str] = None):
+    def __init__(self, data_path_override: Optional[str] = None,
+                 required_parameters: Optional[dict] = None,
+                 required_image_parameters: Optional[dict] = None):
         &#34;&#34;&#34;
         Base class for general Python components. Initializes the CommonInterface
         and performs configuration validation.
@@ -55,11 +51,15 @@ class ComponentBase(ABC, CommonInterface):
         If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
 
         Args:
-            required_parameters: List of required configuration/parameters
-            required_image_parameters: List of required configuration parameters
             data_path_override:
                 optional path to data folder that overrides the default behaviour (`KBC_DATADIR` environment variable).
                 May be also specified by &#39;-d&#39; or &#39;--data&#39; commandline argument
+            required_parameters:
+                Optional[dict]: DEPRECATED required configuration parameters, if filled in,
+                validation is done at constructor level
+            required_image_parameters:
+                Optional[dict]: DEPRECATED required image parameters, if filled in,
+                validation is done at constructor level
         Raises:
             UserException - on config validation errors.
         &#34;&#34;&#34;
@@ -67,16 +67,10 @@ class ComponentBase(ABC, CommonInterface):
         # for easier local project setup
         super().__init__(data_folder_path=self._get_data_folder_override_path(data_path_override))
 
-        self._required_parameters = required_parameters if required_parameters else []
-        self._required_image_parameters = required_image_parameters if required_image_parameters else []
-
-        logging.info(&#39;Loading configuration...&#39;)
-        try:
-            # validation of required parameters. Produces ValueError
-            self.validate_configuration(self._required_parameters)
-            self.validate_image_parameters(self._required_image_parameters)
-        except ValueError as e:
-            raise UserException(e) from e
+        if required_parameters:
+            self.validate_configuration_parameters(required_parameters)
+        if required_image_parameters:
+            self.validate_image_parameters(required_image_parameters)
 
         if self.configuration.parameters.get(KEY_DEBUG):
             self.set_debug_mode()
@@ -123,7 +117,7 @@ class ComponentBase(ABC, CommonInterface):
     @abstractmethod
     def run(self):
         &#34;&#34;&#34;
-        Main execution code.
+        Main execution code of default run action.
 
 
         &#34;&#34;&#34;
@@ -141,7 +135,7 @@ class ComponentBase(ABC, CommonInterface):
 <dl>
 <dt id="keboola.component.base.ComponentBase"><code class="flex name class">
 <span>class <span class="ident">ComponentBase</span></span>
-<span>(</span><span>required_parameters: Union[List[str], NoneType] = None, required_image_parameters: Union[List[str], NoneType] = None, data_path_override: Union[str, NoneType] = None)</span>
+<span>(</span><span>data_path_override: Union[str, NoneType] = None, required_parameters: Union[dict, NoneType] = None, required_image_parameters: Union[dict, NoneType] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper class that provides a standard way to create an ABC using
@@ -152,15 +146,15 @@ and performs configuration validation.</p>
 relative to working directory.</p>
 <p>If <code>debug</code> parameter is present in the <code>config.json</code>, the default logger is set to verbose DEBUG mode.</p>
 <h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>required_parameters</code></strong></dt>
-<dd>List of required configuration/parameters</dd>
-<dt><strong><code>required_image_parameters</code></strong></dt>
-<dd>List of required configuration parameters</dd>
-</dl>
 <p>data_path_override:
 optional path to data folder that overrides the default behaviour (<code>KBC_DATADIR</code> environment variable).
-May be also specified by '-d' or '&ndash;data' commandline argument</p>
+May be also specified by '-d' or '&ndash;data' commandline argument
+required_parameters:
+Optional[dict]: DEPRECATED required configuration parameters, if filled in,
+validation is done at constructor level
+required_image_parameters:
+Optional[dict]: DEPRECATED required image parameters, if filled in,
+validation is done at constructor level</p>
 <h2 id="raises">Raises</h2>
 <p>UserException - on config validation errors.</p></div>
 <details class="source">
@@ -168,9 +162,9 @@ May be also specified by '-d' or '&ndash;data' commandline argument</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ComponentBase(ABC, CommonInterface):
-    def __init__(self, required_parameters: Optional[List[str]] = None,
-                 required_image_parameters: Optional[List[str]] = None,
-                 data_path_override: Optional[str] = None):
+    def __init__(self, data_path_override: Optional[str] = None,
+                 required_parameters: Optional[dict] = None,
+                 required_image_parameters: Optional[dict] = None):
         &#34;&#34;&#34;
         Base class for general Python components. Initializes the CommonInterface
         and performs configuration validation.
@@ -181,11 +175,15 @@ May be also specified by '-d' or '&ndash;data' commandline argument</p>
         If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
 
         Args:
-            required_parameters: List of required configuration/parameters
-            required_image_parameters: List of required configuration parameters
             data_path_override:
                 optional path to data folder that overrides the default behaviour (`KBC_DATADIR` environment variable).
                 May be also specified by &#39;-d&#39; or &#39;--data&#39; commandline argument
+            required_parameters:
+                Optional[dict]: DEPRECATED required configuration parameters, if filled in,
+                validation is done at constructor level
+            required_image_parameters:
+                Optional[dict]: DEPRECATED required image parameters, if filled in,
+                validation is done at constructor level
         Raises:
             UserException - on config validation errors.
         &#34;&#34;&#34;
@@ -193,16 +191,10 @@ May be also specified by '-d' or '&ndash;data' commandline argument</p>
         # for easier local project setup
         super().__init__(data_folder_path=self._get_data_folder_override_path(data_path_override))
 
-        self._required_parameters = required_parameters if required_parameters else []
-        self._required_image_parameters = required_image_parameters if required_image_parameters else []
-
-        logging.info(&#39;Loading configuration...&#39;)
-        try:
-            # validation of required parameters. Produces ValueError
-            self.validate_configuration(self._required_parameters)
-            self.validate_image_parameters(self._required_image_parameters)
-        except ValueError as e:
-            raise UserException(e) from e
+        if required_parameters:
+            self.validate_configuration_parameters(required_parameters)
+        if required_image_parameters:
+            self.validate_image_parameters(required_image_parameters)
 
         if self.configuration.parameters.get(KEY_DEBUG):
             self.set_debug_mode()
@@ -249,7 +241,7 @@ May be also specified by '-d' or '&ndash;data' commandline argument</p>
     @abstractmethod
     def run(self):
         &#34;&#34;&#34;
-        Main execution code.
+        Main execution code of default run action.
 
 
         &#34;&#34;&#34;
@@ -289,7 +281,7 @@ def set_debug_mode():
 <span>def <span class="ident">run</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Main execution code.</p></div>
+<div class="desc"><p>Main execution code of default run action.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -297,7 +289,7 @@ def set_debug_mode():
 <pre><code class="python">@abstractmethod
 def run(self):
     &#34;&#34;&#34;
-    Main execution code.
+    Main execution code of default run action.
 
 
     &#34;&#34;&#34;
@@ -320,9 +312,8 @@ def run(self):
 <li><code><a title="keboola.component.interface.CommonInterface.get_state_file" href="interface.html#keboola.component.interface.CommonInterface.get_state_file">get_state_file</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.set_default_logger" href="interface.html#keboola.component.interface.CommonInterface.set_default_logger">set_default_logger</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.set_gelf_logger" href="interface.html#keboola.component.interface.CommonInterface.set_gelf_logger">set_gelf_logger</a></code></li>
-<li><code><a title="keboola.component.interface.CommonInterface.validate_configuration" href="interface.html#keboola.component.interface.CommonInterface.validate_configuration">validate_configuration</a></code></li>
+<li><code><a title="keboola.component.interface.CommonInterface.validate_configuration_parameters" href="interface.html#keboola.component.interface.CommonInterface.validate_configuration_parameters">validate_configuration_parameters</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.validate_image_parameters" href="interface.html#keboola.component.interface.CommonInterface.validate_image_parameters">validate_image_parameters</a></code></li>
-<li><code><a title="keboola.component.interface.CommonInterface.validate_parameters" href="interface.html#keboola.component.interface.CommonInterface.validate_parameters">validate_parameters</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.write_filedef_manifest" href="interface.html#keboola.component.interface.CommonInterface.write_filedef_manifest">write_filedef_manifest</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.write_filedef_manifests" href="interface.html#keboola.component.interface.CommonInterface.write_filedef_manifests">write_filedef_manifests</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.write_manifest" href="interface.html#keboola.component.interface.CommonInterface.write_manifest">write_manifest</a></code></li>
@@ -332,25 +323,6 @@ def run(self):
 <li><code><a title="keboola.component.interface.CommonInterface.write_tabledef_manifests" href="interface.html#keboola.component.interface.CommonInterface.write_tabledef_manifests">write_tabledef_manifests</a></code></li>
 </ul>
 </li>
-</ul>
-</dd>
-<dt id="keboola.component.base.UserException"><code class="flex name class">
-<span>class <span class="ident">UserException</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class UserException(Exception):
-    pass</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>builtins.Exception</li>
-<li>builtins.BaseException</li>
 </ul>
 </dd>
 </dl>
@@ -375,9 +347,6 @@ def run(self):
 <li><code><a title="keboola.component.base.ComponentBase.run" href="#keboola.component.base.ComponentBase.run">run</a></code></li>
 <li><code><a title="keboola.component.base.ComponentBase.set_debug_mode" href="#keboola.component.base.ComponentBase.set_debug_mode">set_debug_mode</a></code></li>
 </ul>
-</li>
-<li>
-<h4><code><a title="keboola.component.base.UserException" href="#keboola.component.base.UserException">UserException</a></code></h4>
 </li>
 </ul>
 </li>

@@ -2,21 +2,17 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 from .interface import CommonInterface
 
 KEY_DEBUG = 'debug'
 
 
-class UserException(Exception):
-    pass
-
-
 class ComponentBase(ABC, CommonInterface):
-    def __init__(self, required_parameters: Optional[List[str]] = None,
-                 required_image_parameters: Optional[List[str]] = None,
-                 data_path_override: Optional[str] = None):
+    def __init__(self, data_path_override: Optional[str] = None,
+                 required_parameters: Optional[dict] = None,
+                 required_image_parameters: Optional[dict] = None):
         """
         Base class for general Python components. Initializes the CommonInterface
         and performs configuration validation.
@@ -27,11 +23,15 @@ class ComponentBase(ABC, CommonInterface):
         If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
 
         Args:
-            required_parameters: List of required configuration/parameters
-            required_image_parameters: List of required configuration parameters
             data_path_override:
                 optional path to data folder that overrides the default behaviour (`KBC_DATADIR` environment variable).
                 May be also specified by '-d' or '--data' commandline argument
+            required_parameters:
+                Optional[dict]: DEPRECATED required configuration parameters, if filled in,
+                validation is done at constructor level
+            required_image_parameters:
+                Optional[dict]: DEPRECATED required image parameters, if filled in,
+                validation is done at constructor level
         Raises:
             UserException - on config validation errors.
         """
@@ -39,16 +39,10 @@ class ComponentBase(ABC, CommonInterface):
         # for easier local project setup
         super().__init__(data_folder_path=self._get_data_folder_override_path(data_path_override))
 
-        self._required_parameters = required_parameters if required_parameters else []
-        self._required_image_parameters = required_image_parameters if required_image_parameters else []
-
-        logging.info('Loading configuration...')
-        try:
-            # validation of required parameters. Produces ValueError
-            self.validate_configuration(self._required_parameters)
-            self.validate_image_parameters(self._required_image_parameters)
-        except ValueError as e:
-            raise UserException(e) from e
+        if required_parameters:
+            self.validate_configuration_parameters(required_parameters)
+        if required_image_parameters:
+            self.validate_image_parameters(required_image_parameters)
 
         if self.configuration.parameters.get(KEY_DEBUG):
             self.set_debug_mode()
@@ -95,7 +89,7 @@ class ComponentBase(ABC, CommonInterface):
     @abstractmethod
     def run(self):
         """
-        Main execution code.
+        Main execution code of default run action.
 
 
         """
