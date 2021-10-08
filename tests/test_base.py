@@ -1,13 +1,13 @@
 import os
 import unittest
 
-from keboola.component.base import ComponentBase
 from keboola.component import UserException
+from keboola.component.base import ComponentBase
 
 
 class MockComponent(ComponentBase):
     def run(self):
-        pass
+        return 'run_executed'
 
 
 class TestCommonInterface(unittest.TestCase):
@@ -26,7 +26,18 @@ class TestCommonInterface(unittest.TestCase):
 
     def test_missing_image_parameters_fail(self):
         with self.assertRaises(UserException):
-            MockComponent(required_image_parameters=['missing'])
+            c = MockComponent(required_image_parameters=['missing'])
+            c.execute_action()
+
+    def test_missing_action_fail(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'data_examples', 'data_custom_action')
+        os.environ["KBC_DATADIR"] = path
+        with self.assertRaises(AttributeError):
+            MockComponent().execute_action()
+
+    def test_run_action_passes(self):
+        self.assertEqual(MockComponent().execute_action(), 'run_executed')
 
 
 if __name__ == '__main__':

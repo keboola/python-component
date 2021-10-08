@@ -518,7 +518,7 @@ class TestConfiguration(unittest.TestCase):
     def test_get_action(self):
         cfg = Configuration(os.environ["KBC_DATADIR"])
 
-        self.assertEqual(cfg.action, 'test')
+        self.assertEqual(cfg.action, 'run')
 
     def test_get_action_empty_config(self):
         cfg = Configuration(os.path.join(os.getenv('KBC_DATADIR', ''), '..',
