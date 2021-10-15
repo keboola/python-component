@@ -10,6 +10,11 @@ class MockComponent(ComponentBase):
         return 'run_executed'
 
 
+class MockComponentFail(ComponentBase):
+    def run(self):
+        raise UserException("Failed")
+
+
 class TestCommonInterface(unittest.TestCase):
 
     def setUp(self):
@@ -38,6 +43,10 @@ class TestCommonInterface(unittest.TestCase):
 
     def test_run_action_passes(self):
         self.assertEqual(MockComponent().execute_action(), 'run_executed')
+
+    def test_run_action_fails_with_user_error(self):
+        with self.assertRaises(UserException):
+            MockComponentFail().execute_action()
 
 
 if __name__ == '__main__':

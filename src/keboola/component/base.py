@@ -11,8 +11,8 @@ KEY_DEBUG = 'debug'
 
 class ComponentBase(ABC, CommonInterface):
     def __init__(self, data_path_override: Optional[str] = None,
-                 required_parameters: Optional[dict] = None,
-                 required_image_parameters: Optional[dict] = None):
+                 required_parameters: Optional[list] = None,
+                 required_image_parameters: Optional[list] = None):
         """
         Base class for general Python components. Initializes the CommonInterface
         and performs configuration validation.
@@ -106,6 +106,7 @@ class ComponentBase(ABC, CommonInterface):
             action = 'run'
         logging.info(f"Running action: {action}")
         try:
-            return getattr(self, action)()
+            action_method = getattr(self, action)
         except AttributeError as e:
             raise AttributeError(f"The defined action {action} is not implemented!") from e
+        return action_method()
