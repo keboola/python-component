@@ -788,7 +788,7 @@ class CommonInterface:
         for par in mandatory_params:
             if isinstance(par, list):
                 missing_fields.extend(self._validate_par_group(par, parameters))
-            if parameters.get(par) is None:
+            elif parameters.get(par) is None:
                 missing_fields.append(par)
 
         if missing_fields:
