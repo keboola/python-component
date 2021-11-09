@@ -170,13 +170,15 @@ class TestTableDefinition(unittest.TestCase):
                 'columns': ['foo', 'bar'],
                 'primary_key': ['foo'],
                 'incremental': True,
+                'delimiter': ',',
+                'enclosure': '"',
                 'metadata': [{'key': 'bar', 'value': 'kochba'}],
                 'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
                 'delete_where_column': 'lilly',
                 'delete_where_values': ['a', 'b'],
                 'delete_where_operator': 'eq'
             },
-            table_def.get_manifest_dictionary()
+            table_def.get_manifest_dictionary('out')
         )
 
     def test_build_from_table_manifest_metadata_equals(self):
