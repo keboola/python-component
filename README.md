@@ -22,7 +22,7 @@ This library provides a Python wrapper over the
  - Source code: [https://github.com/keboola/python-component](https://github.com/keboola/python-component)
  - PYPI project code: [https://test.pypi.org/project/keboola.component-kds/](https://test.pypi.org/project/keboola.component-kds/)
  - Documentation: [https://developers.keboola.com/extend/component/python-component-library](https://developers.keboola.com/extend/component/)
- - Python Component template project: [https://bitbucket.org/kds_consulting_team/kbc-python-template/src/master/](https://bitbucket.org/kds_consulting_team/kbc-python-template/src/master/)
+ - Python Component Cookiecutter template project: [https://bitbucket.org/kds_consulting_team/cookiecutter-python-component](https://bitbucket.org/kds_consulting_team/cookiecutter-python-component)
 
 
 # Quick start

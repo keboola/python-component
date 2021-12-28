@@ -599,7 +599,10 @@ class TableDefinition(IODefinition):
                  columns: List[str] = None,
                  incremental: bool = None,
                  table_metadata: TableMetadata = None,
-                 delete_where: dict = None):
+                 enclosure: str = '"',
+                 delimiter: str = ',',
+                 delete_where: dict = None,
+                 stage: str = 'in'):
         """
 
         Args:
@@ -617,7 +620,10 @@ class TableDefinition(IODefinition):
             columns: List of columns for headless CSV files
             incremental: Set to true to enable incremental loading
             table_metadata: <.dao.TableMetadata> object containing column and table metadata
+            enclosure: str: CSV enclosure, by default "
+            delimiter: str: CSV delimiter, by default ,
             delete_where (dict): Dict with settings for deleting rows
+            stage: str: Storage Stage 'in' or 'out'
         """
         super().__init__(full_path)
         self._name = name
@@ -630,10 +636,14 @@ class TableDefinition(IODefinition):
         self.columns = columns
         self.incremental = incremental
 
+        self.enclosure = enclosure
+        self.delimiter = delimiter
+
         if not table_metadata:
             table_metadata = TableMetadata()
         self.table_metadata = table_metadata
         self.set_delete_where_from_dict(delete_where)
+        self.stage = stage
 
     @classmethod
     def build_from_manifest(cls,
@@ -861,7 +871,7 @@ class TableDefinition(IODefinition):
         """
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
-        super(TableDefinition, self).get_manifest_dictionary(stage_type)
+        self._raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type)
         return self._raw_manifest
 
 

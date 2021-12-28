@@ -9,12 +9,12 @@ with open("README.md", "r") as fh:
 project_urls = {
     'Documentation': 'https://htmlpreview.github.io/?https://raw.githubusercontent.com/keboola/python-component/main'
                      '/docs/api-html/component/interface.html',
-    'Component Template project': 'https://bitbucket.org/kds_consulting_team/workspace/projects/COMP'
+    'Component Template project': 'https://bitbucket.org/kds_consulting_team/cookiecutter-python-component'
 }
 
 setuptools.setup(
     name="keboola.component",
-    version="1.3.6",
+    version="1.3.7",
     author="Keboola KDS Team",
     project_urls=project_urls,
     setup_requires=['pytest-runner', 'flake8'],

@@ -321,6 +321,8 @@ class CommonInterface:
                                  columns: List[str] = None,
                                  incremental: bool = None,
                                  table_metadata: dao.TableMetadata = None,
+                                 enclosure: str = '"',
+                                 delimiter: str = ',',
                                  delete_where: dict = None) -> dao.TableDefinition:
         """
                 Helper method for dao.TableDefinition creation along with the "manifest".
@@ -338,6 +340,8 @@ class CommonInterface:
                     columns: List of columns for headless CSV files
                     incremental: Set to true to enable incremental loading
                     table_metadata: <.dao.TableMetadata> object containing column and table metadata
+                    enclosure: str: CSV enclosure, by default "
+                    delimiter: str: CSV delimiter, by default ,
                     delete_where: Dict with settings for deleting rows
         """
         if storage_stage == 'in':
@@ -355,7 +359,10 @@ class CommonInterface:
                                    columns=columns,
                                    incremental=incremental,
                                    table_metadata=table_metadata,
-                                   delete_where=delete_where)
+                                   enclosure=enclosure,
+                                   delimiter=delimiter,
+                                   delete_where=delete_where,
+                                   stage=storage_stage)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,
@@ -397,6 +404,8 @@ class CommonInterface:
                                     columns: List[str] = None,
                                     incremental: bool = None,
                                     table_metadata: dao.TableMetadata = None,
+                                    enclosure: str = '"',
+                                    delimiter: str = ',',
                                     delete_where: dict = None) -> dao.TableDefinition:
         """
                        Helper method for output dao.TableDefinition creation along with the "manifest".
@@ -410,6 +419,8 @@ class CommonInterface:
                            columns: List of columns for headless CSV files
                            incremental: Set to true to enable incremental loading
                            table_metadata: <.dao.TableMetadata> object containing column and table metadata
+                           enclosure: str: CSV enclosure, by default "
+                           delimiter: str: CSV delimiter, by default ,
                            delete_where: Dict with settings for deleting rows
         """
 
@@ -421,6 +432,8 @@ class CommonInterface:
                                              columns=columns,
                                              incremental=incremental,
                                              table_metadata=table_metadata,
+                                             enclosure=enclosure,
+                                             delimiter=delimiter,
                                              delete_where=delete_where)
 
     # # File processing
