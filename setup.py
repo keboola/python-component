@@ -7,9 +7,8 @@ with open("README.md", "r") as fh:
     long_description = long_description.split("\n", header_lines)[header_lines]
 
 project_urls = {
-    'Documentation': 'https://htmlpreview.github.io/?https://raw.githubusercontent.com/keboola/python-component/main'
-                     '/docs/api-html/component/interface.html',
-    'Component Template project': 'https://bitbucket.org/kds_consulting_team/cookiecutter-python-component'
+    'Documentation': 'https://keboola.github.io/python-component/interface.html',
+    'Component Template project': 'https://bitbucket.org/kds_consulting_team/workspace/projects/COMP'
 }
 
 setuptools.setup(
