@@ -39,8 +39,8 @@ KEY_DEBUG = &#39;debug&#39;
 
 class ComponentBase(ABC, CommonInterface):
     def __init__(self, data_path_override: Optional[str] = None,
-                 required_parameters: Optional[dict] = None,
-                 required_image_parameters: Optional[dict] = None):
+                 required_parameters: Optional[list] = None,
+                 required_image_parameters: Optional[list] = None):
         &#34;&#34;&#34;
         Base class for general Python components. Initializes the CommonInterface
         and performs configuration validation.
@@ -134,9 +134,10 @@ class ComponentBase(ABC, CommonInterface):
             action = &#39;run&#39;
         logging.info(f&#34;Running action: {action}&#34;)
         try:
-            return getattr(self, action)()
+            action_method = getattr(self, action)
         except AttributeError as e:
-            raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e</code></pre>
+            raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e
+        return action_method()</code></pre>
 </details>
 </section>
 <section>
@@ -150,7 +151,7 @@ class ComponentBase(ABC, CommonInterface):
 <dl>
 <dt id="keboola.component.base.ComponentBase"><code class="flex name class">
 <span>class <span class="ident">ComponentBase</span></span>
-<span>(</span><span>data_path_override: Union[str, NoneType] = None, required_parameters: Union[dict, NoneType] = None, required_image_parameters: Union[dict, NoneType] = None)</span>
+<span>(</span><span>data_path_override: Union[str, NoneType] = None, required_parameters: Union[list, NoneType] = None, required_image_parameters: Union[list, NoneType] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper class that provides a standard way to create an ABC using
@@ -178,8 +179,8 @@ validation is done at constructor level</p>
 </summary>
 <pre><code class="python">class ComponentBase(ABC, CommonInterface):
     def __init__(self, data_path_override: Optional[str] = None,
-                 required_parameters: Optional[dict] = None,
-                 required_image_parameters: Optional[dict] = None):
+                 required_parameters: Optional[list] = None,
+                 required_image_parameters: Optional[list] = None):
         &#34;&#34;&#34;
         Base class for general Python components. Initializes the CommonInterface
         and performs configuration validation.
@@ -273,9 +274,10 @@ validation is done at constructor level</p>
             action = &#39;run&#39;
         logging.info(f&#34;Running action: {action}&#34;)
         try:
-            return getattr(self, action)()
+            action_method = getattr(self, action)
         except AttributeError as e:
-            raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e</code></pre>
+            raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e
+        return action_method()</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -328,9 +330,10 @@ The default action is 'run'.</p></div>
         action = &#39;run&#39;
     logging.info(f&#34;Running action: {action}&#34;)
     try:
-        return getattr(self, action)()
+        action_method = getattr(self, action)
     except AttributeError as e:
-        raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e</code></pre>
+        raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e
+    return action_method()</code></pre>
 </details>
 </dd>
 <dt id="keboola.component.base.ComponentBase.run"><code class="name flex">

@@ -816,7 +816,7 @@ class CommonInterface:
         for par in mandatory_params:
             if isinstance(par, list):
                 missing_fields.extend(self._validate_par_group(par, parameters))
-            elif not parameters.get(par):
+            elif parameters.get(par) is None:
                 missing_fields.append(par)
 
         if missing_fields:
@@ -1991,7 +1991,7 @@ is established in following order:</p>
         for par in mandatory_params:
             if isinstance(par, list):
                 missing_fields.extend(self._validate_par_group(par, parameters))
-            elif not parameters.get(par):
+            elif parameters.get(par) is None:
                 missing_fields.append(par)
 
         if missing_fields:
