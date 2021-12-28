@@ -627,7 +627,10 @@ class TableDefinition(IODefinition):
                  columns: List[str] = None,
                  incremental: bool = None,
                  table_metadata: TableMetadata = None,
-                 delete_where: dict = None):
+                 enclosure: str = &#39;&#34;&#39;,
+                 delimiter: str = &#39;,&#39;,
+                 delete_where: dict = None,
+                 stage: str = &#39;in&#39;):
         &#34;&#34;&#34;
 
         Args:
@@ -645,7 +648,10 @@ class TableDefinition(IODefinition):
             columns: List of columns for headless CSV files
             incremental: Set to true to enable incremental loading
             table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata
+            enclosure: str: CSV enclosure, by default &#34;
+            delimiter: str: CSV delimiter, by default ,
             delete_where (dict): Dict with settings for deleting rows
+            stage: str: Storage Stage &#39;in&#39; or &#39;out&#39;
         &#34;&#34;&#34;
         super().__init__(full_path)
         self._name = name
@@ -658,10 +664,14 @@ class TableDefinition(IODefinition):
         self.columns = columns
         self.incremental = incremental
 
+        self.enclosure = enclosure
+        self.delimiter = delimiter
+
         if not table_metadata:
             table_metadata = TableMetadata()
         self.table_metadata = table_metadata
         self.set_delete_where_from_dict(delete_where)
+        self.stage = stage
 
     @classmethod
     def build_from_manifest(cls,
@@ -889,7 +899,7 @@ class TableDefinition(IODefinition):
         &#34;&#34;&#34;
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
-        super(TableDefinition, self).get_manifest_dictionary(stage_type)
+        self._raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type)
         return self._raw_manifest
 
 
@@ -2597,7 +2607,7 @@ Applicable only for workspace.</p></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition"><code class="flex name class">
 <span>class <span class="ident">TableDefinition</span></span>
-<span>(</span><span>name: str, full_path: Optional[str] = None, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, columns: List[str] = None, incremental: bool = None, table_metadata: <a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a> = None, delete_where: dict = None)</span>
+<span>(</span><span>name: str, full_path: Optional[str] = None, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, columns: List[str] = None, incremental: bool = None, table_metadata: <a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a> = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None, stage: str = 'in')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Table definition class. It is used as a container for <code>in/tables/</code> files.
@@ -2661,8 +2671,14 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
 <dd>Set to true to enable incremental loading</dd>
 <dt><strong><code>table_metadata</code></strong></dt>
 <dd>&lt;.dao.TableMetadata&gt; object containing column and table metadata</dd>
+<dt><strong><code>enclosure</code></strong></dt>
+<dd>str: CSV enclosure, by default "</dd>
+<dt><strong><code>delimiter</code></strong></dt>
+<dd>str: CSV delimiter, by default ,</dd>
 <dt><strong><code>delete_where</code></strong> :&ensp;<code>dict</code></dt>
 <dd>Dict with settings for deleting rows</dd>
+<dt><strong><code>stage</code></strong></dt>
+<dd>str: Storage Stage 'in' or 'out'</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -2743,7 +2759,10 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
                  columns: List[str] = None,
                  incremental: bool = None,
                  table_metadata: TableMetadata = None,
-                 delete_where: dict = None):
+                 enclosure: str = &#39;&#34;&#39;,
+                 delimiter: str = &#39;,&#39;,
+                 delete_where: dict = None,
+                 stage: str = &#39;in&#39;):
         &#34;&#34;&#34;
 
         Args:
@@ -2761,7 +2780,10 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
             columns: List of columns for headless CSV files
             incremental: Set to true to enable incremental loading
             table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata
+            enclosure: str: CSV enclosure, by default &#34;
+            delimiter: str: CSV delimiter, by default ,
             delete_where (dict): Dict with settings for deleting rows
+            stage: str: Storage Stage &#39;in&#39; or &#39;out&#39;
         &#34;&#34;&#34;
         super().__init__(full_path)
         self._name = name
@@ -2774,10 +2796,14 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
         self.columns = columns
         self.incremental = incremental
 
+        self.enclosure = enclosure
+        self.delimiter = delimiter
+
         if not table_metadata:
             table_metadata = TableMetadata()
         self.table_metadata = table_metadata
         self.set_delete_where_from_dict(delete_where)
+        self.stage = stage
 
     @classmethod
     def build_from_manifest(cls,
@@ -3005,7 +3031,7 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
         &#34;&#34;&#34;
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
-        super(TableDefinition, self).get_manifest_dictionary(stage_type)
+        self._raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type)
         return self._raw_manifest</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -3266,7 +3292,7 @@ for more information.</p>
     &#34;&#34;&#34;
     # in case the table_metadata is out of sync, e.g. the object was modified in-place
     self._set_table_metadata_to_manifest(self._table_metadata)
-    super(TableDefinition, self).get_manifest_dictionary(stage_type)
+    self._raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type)
     return self._raw_manifest</code></pre>
 </details>
 </dd>
