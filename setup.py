@@ -7,8 +7,7 @@ with open("README.md", "r") as fh:
     long_description = long_description.split("\n", header_lines)[header_lines]
 
 project_urls = {
-    'Documentation': 'https://htmlpreview.github.io/?https://raw.githubusercontent.com/keboola/python-component/main'
-                     '/docs/api-html/component/interface.html',
+    'Documentation': 'https://keboola.github.io/python-component/interface.html',
     'Component Template project': 'https://bitbucket.org/kds_consulting_team/cookiecutter-python-component'
 }
 
@@ -43,7 +42,7 @@ setuptools.setup(
         "Intended Audience :: Education",
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Python Modules",
-        "Development Status :: 4 - Beta"
+        "Development Status :: 5 - Production/Stable"
     ],
     python_requires='>=3.7'
 )
