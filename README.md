@@ -494,3 +494,6 @@ if __name__ == "__main__":
         exit(2)
 ```
  
+## License
+
+MIT licensed, see [LICENSE](./LICENSE) file.
