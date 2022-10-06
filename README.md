@@ -493,6 +493,74 @@ if __name__ == "__main__":
         logging.exception(exc)
         exit(2)
 ```
+
+## Table Schemas in ComponentBase
+
+In cases of a static schemas of output/input tables, the schemas can be defined using a JSON Table Schema.
+For output mapping these json schemas can be automatically turned into out table definitions.
+
+### JSON Table Schema example file
+
+```json
+{
+  "name": "product",
+  "description": "this table holds data on products",
+  "parent_tables": [],
+  "primary_keys": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "base_type": "string",
+      "description": "ID of the product",
+      "length": "100",
+      "nullable": false
+    },
+    {
+      "name": "name",
+      "base_type": "string",
+      "description": "Plain-text name of the product",
+      "length": "1000",
+      "default": "Default Name"
+    }
+  ]
+}
+```
+
+### Out table definition from schema example
+
+The example below shows how a table definition can be created from a json schema using the ComponentBase. 
+The schema is located in the 'src/schemas' directory.
+
+ ```python
+import csv
+from keboola.component.base import ComponentBase
+
+DUMMY_PRODUCT_DATA = [{"id": "P0001",
+                       "name": "juice"},
+                      {"id": "P0002",
+                       "name": "chocolate bar"},
+                      {"id": "P0003",
+                       "name": "Stylish Pants"},
+                      ]
+
+
+class Component(ComponentBase):
+
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+        product_table = self.create_out_table_definition_from_schema_name("product")
+        with open(product_table.full_path, 'w') as outfile:
+            writer = csv.DictWriter(outfile, fieldnames=product_table.columns)
+            writer.writerows(DUMMY_PRODUCT_DATA)
+        self.write_manifest(product_table)
+ ```
+
+
+
  
 ## License
 
