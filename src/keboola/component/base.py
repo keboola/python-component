@@ -1,7 +1,7 @@
 import logging
 import os
-import table_schema as ts
-import dao
+from . import dao
+from . import table_schema as ts
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
@@ -91,7 +91,7 @@ class ComponentBase(ABC, CommonInterface):
         return schema_path_override or self._get_default_schema_folder_path()
 
     @staticmethod
-    def _get_default_schema_folder_path() -> str:
+    def _get_default_schema_folder_path() -> Optional[str]:
         """
              Finds the default schema_folder_path if it exists.
 
@@ -102,8 +102,6 @@ class ComponentBase(ABC, CommonInterface):
             return container_schema_dir
         elif os.path.isdir(local_schema_dir):
             return local_schema_dir
-        else:
-            raise FileNotFoundError("Could not find a directory containing schemas. Provide a valid directory.")
 
     @staticmethod
     def set_debug_mode():
@@ -163,7 +161,10 @@ class ComponentBase(ABC, CommonInterface):
                 TableDefinition object initialized with all table metadata defined in a schema
 
         """
-
+        if not self.schema_folder_path:
+            raise FileNotFoundError("A schema folder path must be defined in order to create a out table definition "
+                                    "from a schema. If a schema folder path is not defined, the schemas folder must be "
+                                    "located in the 'src' directory of a component : src/schemas")
         table_schema = ts.get_schema_by_name(schema_name, self.schema_folder_path)
         table_metadata = self._generate_table_metadata(table_schema)
         return self.create_out_table_definition(name=table_schema.csv_name,

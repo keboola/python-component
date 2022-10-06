@@ -15,7 +15,6 @@ from pytz import utc
 
 from . import dao
 from .exceptions import UserException
-from .table_schema import TableSchema, SchemaInterface
 
 
 def register_csv_dialect():

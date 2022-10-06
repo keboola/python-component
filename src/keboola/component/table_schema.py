@@ -68,8 +68,17 @@ def _init_table_schema_from_dict(json_table_schema: Dict) -> TableSchema:
       ]
     }
     """
-    json_table_schema["fields"] = [FieldSchema(**field) for field in json_table_schema["fields"]]
-    return TableSchema(**json_table_schema)
+    try:
+        json_table_schema["fields"] = [FieldSchema(**field) for field in json_table_schema["fields"]]
+    except TypeError as type_error:
+        raise KeyError(
+            f"When creating the table schema the definition of columns failed : {type_error}") from type_error
+    try:
+        ts = TableSchema(**json_table_schema)
+    except TypeError as type_error:
+        raise KeyError(
+            f"When creating the table schema the definition of the table failed : {type_error}") from type_error
+    return ts
 
 
 def get_schema_by_name(schema_name: str, schema_folder_location: str) -> TableSchema:

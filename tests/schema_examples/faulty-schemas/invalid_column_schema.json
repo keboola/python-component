@@ -1,0 +1,22 @@
+{
+  "name": "product",
+  "description": "this table holds data on products",
+  "parent_tables": [],
+  "primary_keys": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "description": "ID of the product",
+      "some-invalid-key": "hi"
+    },
+    {
+      "name": "name",
+      "base_type": "STRING",
+      "description": "Plain-text name of the product",
+      "length": "1000",
+      "default": "Default Name"
+    }
+  ]
+}
