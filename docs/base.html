@@ -191,8 +191,8 @@ class ComponentBase(ABC, CommonInterface):
         &#34;&#34;&#34;
         if not self.schema_folder_path:
             raise FileNotFoundError(&#34;A schema folder path must be defined in order to create a out table definition &#34;
-                                    &#34;from a schema. If a schema folder path is not defined, the schemas folder must be &#34;
-                                    &#34;located in the &#39;src&#39; directory of a component : src/schemas&#34;)
+                                    &#34;from a schema. If a schema folder path is not defined, the schemas folder must be&#34;
+                                    &#34; located in the &#39;src&#39; directory of a component : src/schemas&#34;)
         table_schema = ts.get_schema_by_name(schema_name, self.schema_folder_path)
         table_metadata = self._generate_table_metadata(table_schema)
         return self.create_out_table_definition(name=table_schema.csv_name,
@@ -425,8 +425,8 @@ validation is done at constructor level</p>
         &#34;&#34;&#34;
         if not self.schema_folder_path:
             raise FileNotFoundError(&#34;A schema folder path must be defined in order to create a out table definition &#34;
-                                    &#34;from a schema. If a schema folder path is not defined, the schemas folder must be &#34;
-                                    &#34;located in the &#39;src&#39; directory of a component : src/schemas&#34;)
+                                    &#34;from a schema. If a schema folder path is not defined, the schemas folder must be&#34;
+                                    &#34; located in the &#39;src&#39; directory of a component : src/schemas&#34;)
         table_schema = ts.get_schema_by_name(schema_name, self.schema_folder_path)
         table_metadata = self._generate_table_metadata(table_schema)
         return self.create_out_table_definition(name=table_schema.csv_name,
@@ -555,8 +555,8 @@ definition.</p>
     &#34;&#34;&#34;
     if not self.schema_folder_path:
         raise FileNotFoundError(&#34;A schema folder path must be defined in order to create a out table definition &#34;
-                                &#34;from a schema. If a schema folder path is not defined, the schemas folder must be &#34;
-                                &#34;located in the &#39;src&#39; directory of a component : src/schemas&#34;)
+                                &#34;from a schema. If a schema folder path is not defined, the schemas folder must be&#34;
+                                &#34; located in the &#39;src&#39; directory of a component : src/schemas&#34;)
     table_schema = ts.get_schema_by_name(schema_name, self.schema_folder_path)
     table_metadata = self._generate_table_metadata(table_schema)
     return self.create_out_table_definition(name=table_schema.csv_name,
