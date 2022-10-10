@@ -1,8 +1,6 @@
 from typing import List, Dict
 from typing import Optional, Union
 from keboola.component.dao import SupportedDataTypes
-import os
-import json
 from dataclasses import dataclass
 
 
@@ -79,4 +77,3 @@ def init_table_schema_from_dict(json_table_schema: Dict) -> TableSchema:
         raise KeyError(
             f"When creating the table schema the definition of the table failed : {type_error}") from type_error
     return ts
-
