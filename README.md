@@ -552,7 +552,8 @@ class Component(ComponentBase):
         super().__init__()
 
     def run(self):
-        product_table = self.create_out_table_definition_from_schema_name("product")
+        product_schema = self.get_table_schema_by_name('product')
+        product_table = self.create_out_table_definition_from_schema(product_schema)
         with open(product_table.full_path, 'w') as outfile:
             writer = csv.DictWriter(outfile, fieldnames=product_table.columns)
             writer.writerows(DUMMY_PRODUCT_DATA)

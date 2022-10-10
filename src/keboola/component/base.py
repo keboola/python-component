@@ -1,10 +1,11 @@
 import logging
 import os
+import json
 from . import dao
 from . import table_schema as ts
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 from .interface import CommonInterface
 
 KEY_DEBUG = 'debug'
@@ -137,19 +138,17 @@ class ComponentBase(ABC, CommonInterface):
             raise AttributeError(f"The defined action {action} is not implemented!") from e
         return action_method()
 
-    def create_out_table_definition_from_schema_name(self, schema_name: str, is_sliced: bool = False,
-                                                     destination: str = '', incremental: bool = None,
-                                                     enclosure: str = '"', delimiter: str = ',',
-                                                     delete_where: dict = None) -> dao.TableDefinition:
+    def create_out_table_definition_from_schema(self, table_schema: ts.TableSchema, is_sliced: bool = False,
+                                                destination: str = '', incremental: bool = None,
+                                                enclosure: str = '"', delimiter: str = ',',
+                                                delete_where: dict = None) -> dao.TableDefinition:
         """
             Creates an out table definition using a defined table schema.
-            The method finds a given table schema based on a given name in a defined schema_folder_path and generates
-            a TableSchema object. From this object, the table metadata is generated and used to populate the table
-            definition.
+            This method uses the given table schema and generates metadata of the table. Along with the additional
+            key word arguments it creates an out table definition.
 
             Args:
-                schema_name : name of the schema in the schema_folder_path. e.g. for schema in 'schemas/output.json'
-                              schema_name is 'output'
+                table_schema : table of the schema for which a table definition will be created
                 is_sliced: True if the full_path points to a folder with sliced tables
                 destination: String name of the table in Storage.
                 incremental: Set to true to enable incremental loading
@@ -161,11 +160,6 @@ class ComponentBase(ABC, CommonInterface):
                 TableDefinition object initialized with all table metadata defined in a schema
 
         """
-        if not self.schema_folder_path:
-            raise FileNotFoundError("A schema folder path must be defined in order to create a out table definition "
-                                    "from a schema. If a schema folder path is not defined, the schemas folder must be"
-                                    " located in the 'src' directory of a component : src/schemas")
-        table_schema = ts.get_schema_by_name(schema_name, self.schema_folder_path)
         table_metadata = self._generate_table_metadata(table_schema)
         return self.create_out_table_definition(name=table_schema.csv_name,
                                                 columns=table_schema.field_names,
@@ -177,6 +171,47 @@ class ComponentBase(ABC, CommonInterface):
                                                 enclosure=enclosure,
                                                 delimiter=delimiter,
                                                 delete_where=delete_where)
+
+    def get_table_schema_by_name(self, schema_name: str,
+                                 schema_folder_path: Optional[str] = None) -> ts.TableSchema:
+        """
+            The method finds a table schema JSON based on it's name in a defined schema_folder_path and generates
+            a TableSchema object.
+
+            Args:
+                schema_name : name of the schema in the schema_folder_path. e.g. for schema in 'src/schemas/order.json'
+                              schema_name is 'order'
+                schema_folder_path : directory path to the schema folder, by default the schema folder is set at
+                                     'src/schemas'
+            Returns:
+                TableSchema object initialized with all available table metadata
+
+
+        """
+        if not schema_folder_path:
+            schema_folder_path = self.schema_folder_path
+        self._validate_schema_folder_path(schema_folder_path)
+        schema_dict = self._load_table_schema_dict(schema_name, schema_folder_path)
+        return ts.init_table_schema_from_dict(schema_dict)
+
+    @staticmethod
+    def _load_table_schema_dict(schema_name: str, schema_folder_path: str) -> Dict:
+        try:
+            with open(os.path.join(schema_folder_path, f"{schema_name}.json"), 'r') as schema_file:
+                json_schema = json.loads(schema_file.read())
+        except FileNotFoundError as file_err:
+            raise FileNotFoundError(
+                f"Schema for corresponding schema name : {schema_name} is not found in the schema directory. "
+                f"Make sure that '{schema_name}'.json "
+                f"exists in the directory '{schema_folder_path}'") from file_err
+        return json_schema
+
+    @staticmethod
+    def _validate_schema_folder_path(schema_folder_path: str):
+        if not schema_folder_path or not os.path.isdir(schema_folder_path):
+            raise FileNotFoundError("A schema folder path must be defined in order to create a out table definition "
+                                    "from a schema. If a schema folder path is not defined, the schemas folder must be"
+                                    " located in the 'src' directory of a component : src/schemas")
 
     def _generate_table_metadata(self, table_schema: ts.TableSchema) -> dao.TableMetadata:
         """

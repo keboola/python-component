@@ -39,7 +39,7 @@ class TableSchema:
         return f"{self.name}.csv"
 
 
-def _init_table_schema_from_dict(json_table_schema: Dict) -> TableSchema:
+def init_table_schema_from_dict(json_table_schema: Dict) -> TableSchema:
     """
     Function to initialize a Table Schema from a dictionary.
     Example of the json_table_schema structure:
@@ -80,14 +80,3 @@ def _init_table_schema_from_dict(json_table_schema: Dict) -> TableSchema:
             f"When creating the table schema the definition of the table failed : {type_error}") from type_error
     return ts
 
-
-def get_schema_by_name(schema_name: str, schema_folder_location: str) -> TableSchema:
-    try:
-        with open(os.path.join(schema_folder_location, f"{schema_name}.json"), 'r') as schema_file:
-            json_schema = json.loads(schema_file.read())
-    except FileNotFoundError as file_err:
-        raise FileNotFoundError(
-            f"Schema for corresponding schema name : {schema_name} is not found in the schema directory. "
-            f"Make sure that '{schema_name}'.json "
-            f"exists in the directory '{schema_folder_location}'") from file_err
-    return _init_table_schema_from_dict(json_schema)
