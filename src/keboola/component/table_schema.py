@@ -36,6 +36,15 @@ class TableSchema:
     def csv_name(self) -> str:
         return f"{self.name}.csv"
 
+    def add_field(self, new_field: FieldSchema) -> None:
+        """
+        Adds extra field to the tableschema.
+        Args:
+            new_field:  FieldSchema to add to the list of fields
+
+        """
+        self.fields.append(new_field)
+
 
 def init_table_schema_from_dict(json_table_schema: Dict) -> TableSchema:
     """
