@@ -1,0 +1,26 @@
+{
+  "name": "order",
+  "description": "this table holds data on orders",
+  "parent_tables": [],
+  "primary_keys": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "base_type": "STRING",
+      "description": "ID of the order",
+      "nullable": false
+    },
+    {
+      "name": "product_id",
+      "base_type": "STRING",
+      "description": "Id of the product in order"
+    },
+    {
+      "name": "quantity",
+      "base_type": "STRING",
+      "description": "Quantity of the product in order"
+    }
+  ]
+}
