@@ -18,7 +18,7 @@ This library provides a Python wrapper over the
  
  ### Links
  
- - API Documentation: [API docs](https://github.com/keboola/python-component/tree/main/docs/api-html/component/interface.html)
+ - API Documentation: [API docs](https://keboola.github.io/python-component/interface.html)
  - Source code: [https://github.com/keboola/python-component](https://github.com/keboola/python-component)
  - PYPI project code: [https://test.pypi.org/project/keboola.component-kds/](https://test.pypi.org/project/keboola.component-kds/)
  - Documentation: [https://developers.keboola.com/extend/component/python-component-library](https://developers.keboola.com/extend/component/)
