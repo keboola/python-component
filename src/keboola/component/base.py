@@ -1,14 +1,65 @@
+import json
 import logging
 import os
-import json
-from . import dao
-from . import table_schema as ts
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional, Dict
+
+from . import dao
+from . import table_schema as ts
 from .interface import CommonInterface
 
 KEY_DEBUG = 'debug'
+
+# Mapping of sync actions "action name":"method_name"
+_SYNC_ACTION_MAPPING = {"run": "run"}
+
+
+def sync_action(action_name: str):
+    def decorate(func):
+        # to allow pythonic names / action name mapping
+        if action_name == 'run':
+            raise UserException('Sync action name "run" is reserved base action! Use different name.')
+        _SYNC_ACTION_MAPPING[action_name] = func.__name__
+
+        @wraps(func)
+        def action_wrapper(self, *args, **kwargs):
+            # override when run as sync action, because it could be also called normally within run
+            is_sync_action = self.configuration.action != 'run'
+
+            # do operations with func
+            if is_sync_action:
+                stdout_redirect = None
+                # mute logging just in case
+                logging.getLogger().setLevel(logging.FATAL)
+            else:
+                stdout_redirect = sys.stdout
+            try:
+                # when success, only specified message can be on output, so redirect stdout before.
+                with contextlib.redirect_stdout(stdout_redirect):
+                    result = func(self, *args, **kwargs)
+
+                if is_sync_action:
+                    # sync action expects valid JSON in stdout on success.
+                    if result:
+                        # expect array or object:
+                        sys.stdout.write(json.dumps(result))
+                    else:
+                        sys.stdout.write(json.dumps({'status': 'success'}))
+
+                return result
+
+            except Exception as e:
+                if is_sync_action:
+                    # sync actions expect stderr
+                    sys.stderr.write(str(e))
+                    exit(1)
+                else:
+                    raise e
+
+        return action_wrapper
+
+    return decorate
 
 
 class ComponentBase(ABC, CommonInterface):
@@ -124,17 +175,18 @@ class ComponentBase(ABC, CommonInterface):
 
     def execute_action(self):
         """
-        Executes action defined in the configuration. The action name must match implemented method.
-        The default action is 'run'.
+        Executes action defined in the configuration.
+        The default action is 'run'. See base._SYNC_ACTION_MAPPING
         """
         action = self.configuration.action
         if not action:
             logging.warning("No action defined in the configuration, using the default run action.")
             action = 'run'
-        logging.info(f"Running action: {action}")
+
         try:
+            action = _SYNC_ACTION_MAPPING[action]
             action_method = getattr(self, action)
-        except AttributeError as e:
+        except (AttributeError, KeyError) as e:
             raise AttributeError(f"The defined action {action} is not implemented!") from e
         return action_method()
 
