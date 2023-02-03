@@ -19,6 +19,57 @@ _SYNC_ACTION_MAPPING = {"run": "run"}
 
 
 def sync_action(action_name: str):
+    """
+    Decorator for marking sync actions method.
+    For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
+
+    Usage:
+
+    ```
+    import csv
+    import logging
+
+    from keboola.component.base import ComponentBase, sync_action
+
+    class Component(ComponentBase):
+
+        def run(self):
+            '''
+            Main execution code
+            '''
+            pass
+
+        # sync action that is executed when configuration.json "action":"testConnection" parameter is present.
+        @sync_action('testConnection')
+        def test_connection(self):
+            connection = self.configuration.parameters.get('test_connection')
+            if connection == "fail":
+                raise UserException("failed")
+            elif connection == "succeed":
+                # this is ignored when run as sync action.
+                logging.info("succeed")
+
+
+    if __name__ == "__main__":
+        try:
+            comp = Component()
+            # this triggers the run method by default and is controlled by the configuration.action parameter
+            comp.execute_action()
+        except UserException as exc:
+            logging.exception(exc)
+            exit(1)
+        except Exception as exc:
+            logging.exception(exc)
+            exit(2)
+    ```
+
+    Args:
+        action_name:
+
+    Returns:
+
+    """
+
     def decorate(func):
         # to allow pythonic names / action name mapping
         if action_name == 'run':
@@ -78,6 +129,8 @@ class ComponentBase(ABC, CommonInterface):
         relative to working directory.
 
         If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
+
+        It executes [Sync actions](https://developers.keboola.com/extend/common-interface/actions/) when "action" is defined in the configuration.json based on the @action_decorator.
 
         Args:
             data_path_override:

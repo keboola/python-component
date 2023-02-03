@@ -401,7 +401,7 @@ logging.info("Info message")
 
 # ComponentBase
 
-[Base class](https://htmlpreview.github.io/?https://raw.githubusercontent.com/keboola/python-component/main/docs/api-html/component/base.html) 
+[Base class](https://keboola.github.io/python-component/base.html) 
 for general Python components. Base your components on this class for simpler debugging.
 
 It performs following tasks by default:
@@ -410,6 +410,7 @@ It performs following tasks by default:
 - For easier debugging the data folder is picked up by default from `../data` path,
         relative to working directory when the `KBC_DATADIR` env variable is not specified.
 - If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
+- Executes sync actions -> `run` by default. See the sync actions section.
 
 **Constructor arguments**:
 - data_path_override: optional path to data folder that overrides the default behaviour 
@@ -424,7 +425,7 @@ import csv
 import logging
 from datetime import datetime
 
-from keboola.component.base import ComponentBase
+from keboola.component.base import ComponentBase, sync_action
 from keboola.component import UserException
 
 # configuration variables
@@ -476,6 +477,16 @@ class Component(ComponentBase):
         self.write_state_file({"some_state_parameter": "value"})
 
         # ####### EXAMPLE TO REMOVE END
+    
+    # sync action that is executed when configuration.json "action":"testConnection" parameter is present.
+    @sync_action('testConnection')
+    def test_connection(self):
+        connection = self.configuration.parameters.get('test_connection')
+        if connection == "fail":
+            raise UserException("failed")
+        elif connection == "succeed":
+            # this is ignored when run as sync action.
+            logging.info("succeed")
 
 
 """
@@ -560,7 +571,57 @@ class Component(ComponentBase):
         self.write_manifest(product_table)
  ```
 
+# Sync Actions
 
+From the documentation [Sync actions](https://developers.keboola.com/extend/common-interface/actions/):
+
+Action provide a way to execute very quick tasks in a single Component, using a single code base. 
+The default component’s action (`run`) executes as a background, asynchronous job. It is queued, has plenty of execution time, and there are cases when you might not want to wait for it. 
+Apart from the default `run`, there can be synchronous actions with limited execution time and you must wait for them. When we refer to **actions**, we mean synchronous actions. Using actions is fully optional.
+
+## Use Case
+
+For example, in our database extractor, the main task (`run` action) is the data extraction itself. But we also want to be able to test the database credentials and list tables available in the database. 
+These tasks would be very helpful in the UI. It is not possible to do these things directly in the browser. 
+Setting up a separate component would bring an overhead of maintaining both the extractor’s Docker image and the new component.
+
+## Sync Action limitations
+
+Data is exchanged via `stdout` or `stderr`.
+
+- All success responses have to output valid JSON string. Meaning nothing can log into the stdout during the action execution
+- For success action the output needs to be always `{"status":"success"}` in stdout.
+- Sync actions need to be registered in the Developer Portal first.
+
+## Framework Support
+
+Decorator `sync_action` was added. It takes one parameter `action_name` that will create mapping between the actual method 
+and the sync action name registered in the Developer Portal.
+
+- Decorated methods can also be called from within the program and return values. 
+- They can log normally -> when run as sync action all logging within the method is muted.
+- When a return value is produced, it is expected to be `dict` or `list` object. These will be printed to stdout at the end.
+- Exceptions can be thrown normally and the message will be propagated to the platform.
+
+
+### Example
+
+```python
+from keboola.component.base import ComponentBase, sync_action
+
+  @sync_action('testConnection')
+    def test_connection(self):
+        # this is ignored when run as sync action.
+        logging.info("Testing Connection")
+        print("test print")
+        params = self.configuration.parameters
+        connection = params.get(KEY_TEST_CONNECTION)
+        if connection == "fail":
+            raise UserException("failed")
+        elif connection == "succeed":
+            # this is ignored when run as sync action.
+            logging.info("succeed")
+```
 
  
 ## License
