@@ -26,17 +26,122 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import logging
-import os
+<pre><code class="python">import contextlib
 import json
-from . import dao
-from . import table_schema as ts
+import logging
+import os
+import sys
 from abc import ABC, abstractmethod
+from functools import wraps
 from pathlib import Path
 from typing import Optional, Dict
+
+from . import dao
+from . import table_schema as ts
 from .interface import CommonInterface
 
 KEY_DEBUG = &#39;debug&#39;
+
+# Mapping of sync actions &#34;action name&#34;:&#34;method_name&#34;
+_SYNC_ACTION_MAPPING = {&#34;run&#34;: &#34;run&#34;}
+
+
+def sync_action(action_name: str):
+    &#34;&#34;&#34;
+    Decorator for marking sync actions method.
+    For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
+
+    Usage:
+
+    ```
+    import csv
+    import logging
+
+    from keboola.component.base import ComponentBase, sync_action
+
+    class Component(ComponentBase):
+
+        def run(self):
+            &#39;&#39;&#39;
+            Main execution code
+            &#39;&#39;&#39;
+            pass
+
+        # sync action that is executed when configuration.json &#34;action&#34;:&#34;testConnection&#34; parameter is present.
+        @sync_action(&#39;testConnection&#39;)
+        def test_connection(self):
+            connection = self.configuration.parameters.get(&#39;test_connection&#39;)
+            if connection == &#34;fail&#34;:
+                raise UserException(&#34;failed&#34;)
+            elif connection == &#34;succeed&#34;:
+                # this is ignored when run as sync action.
+                logging.info(&#34;succeed&#34;)
+
+
+    if __name__ == &#34;__main__&#34;:
+        try:
+            comp = Component()
+            # this triggers the run method by default and is controlled by the configuration.action parameter
+            comp.execute_action()
+        except UserException as exc:
+            logging.exception(exc)
+            exit(1)
+        except Exception as exc:
+            logging.exception(exc)
+            exit(2)
+    ```
+
+    Args:
+        action_name:
+
+    Returns:
+
+    &#34;&#34;&#34;
+
+    def decorate(func):
+        # to allow pythonic names / action name mapping
+        if action_name == &#39;run&#39;:
+            raise ValueError(&#39;Sync action name &#34;run&#34; is reserved base action! Use different name.&#39;)
+        _SYNC_ACTION_MAPPING[action_name] = func.__name__
+
+        @wraps(func)
+        def action_wrapper(self, *args, **kwargs):
+            # override when run as sync action, because it could be also called normally within run
+            is_sync_action = self.configuration.action != &#39;run&#39;
+
+            # do operations with func
+            if is_sync_action:
+                stdout_redirect = None
+                # mute logging just in case
+                logging.getLogger().setLevel(logging.FATAL)
+            else:
+                stdout_redirect = sys.stdout
+            try:
+                # when success, only specified message can be on output, so redirect stdout before.
+                with contextlib.redirect_stdout(stdout_redirect):
+                    result = func(self, *args, **kwargs)
+
+                if is_sync_action:
+                    # sync action expects valid JSON in stdout on success.
+                    if result:
+                        # expect array or object:
+                        sys.stdout.write(json.dumps(result))
+                    else:
+                        sys.stdout.write(json.dumps({&#39;status&#39;: &#39;success&#39;}))
+
+                return result
+
+            except Exception as e:
+                if is_sync_action:
+                    # sync actions expect stderr
+                    sys.stderr.write(str(e))
+                    exit(1)
+                else:
+                    raise e
+
+        return action_wrapper
+
+    return decorate
 
 
 class ComponentBase(ABC, CommonInterface):
@@ -52,6 +157,9 @@ class ComponentBase(ABC, CommonInterface):
         relative to working directory.
 
         If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
+
+        It executes [Sync actions](https://developers.keboola.com/extend/common-interface/actions/)
+        when &#34;action&#34; is defined in the configuration.json based on the @action_decorator.
 
         Args:
             data_path_override:
@@ -152,17 +260,18 @@ class ComponentBase(ABC, CommonInterface):
 
     def execute_action(self):
         &#34;&#34;&#34;
-        Executes action defined in the configuration. The action name must match implemented method.
-        The default action is &#39;run&#39;.
+        Executes action defined in the configuration.
+        The default action is &#39;run&#39;. See base._SYNC_ACTION_MAPPING
         &#34;&#34;&#34;
         action = self.configuration.action
         if not action:
             logging.warning(&#34;No action defined in the configuration, using the default run action.&#34;)
             action = &#39;run&#39;
-        logging.info(f&#34;Running action: {action}&#34;)
+
         try:
+            action = _SYNC_ACTION_MAPPING[action]
             action_method = getattr(self, action)
-        except AttributeError as e:
+        except (AttributeError, KeyError) as e:
             raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e
         return action_method()
 
@@ -275,6 +384,157 @@ class ComponentBase(ABC, CommonInterface):
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="keboola.component.base.sync_action"><code class="name flex">
+<span>def <span class="ident">sync_action</span></span>(<span>action_name: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Decorator for marking sync actions method.
+For more info see <a href="https://developers.keboola.com/extend/common-interface/actions/">Sync actions</a>.</p>
+<p>Usage:</p>
+<pre><code>import csv
+import logging
+
+from keboola.component.base import ComponentBase, sync_action
+
+class Component(ComponentBase):
+
+    def run(self):
+        '''
+        Main execution code
+        '''
+        pass
+
+    # sync action that is executed when configuration.json &quot;action&quot;:&quot;testConnection&quot; parameter is present.
+    @sync_action('testConnection')
+    def test_connection(self):
+        connection = self.configuration.parameters.get('test_connection')
+        if connection == &quot;fail&quot;:
+            raise UserException(&quot;failed&quot;)
+        elif connection == &quot;succeed&quot;:
+            # this is ignored when run as sync action.
+            logging.info(&quot;succeed&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    try:
+        comp = Component()
+        # this triggers the run method by default and is controlled by the configuration.action parameter
+        comp.execute_action()
+    except UserException as exc:
+        logging.exception(exc)
+        exit(1)
+    except Exception as exc:
+        logging.exception(exc)
+        exit(2)
+</code></pre>
+<h2 id="args">Args</h2>
+<p>action_name:
+Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sync_action(action_name: str):
+    &#34;&#34;&#34;
+    Decorator for marking sync actions method.
+    For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
+
+    Usage:
+
+    ```
+    import csv
+    import logging
+
+    from keboola.component.base import ComponentBase, sync_action
+
+    class Component(ComponentBase):
+
+        def run(self):
+            &#39;&#39;&#39;
+            Main execution code
+            &#39;&#39;&#39;
+            pass
+
+        # sync action that is executed when configuration.json &#34;action&#34;:&#34;testConnection&#34; parameter is present.
+        @sync_action(&#39;testConnection&#39;)
+        def test_connection(self):
+            connection = self.configuration.parameters.get(&#39;test_connection&#39;)
+            if connection == &#34;fail&#34;:
+                raise UserException(&#34;failed&#34;)
+            elif connection == &#34;succeed&#34;:
+                # this is ignored when run as sync action.
+                logging.info(&#34;succeed&#34;)
+
+
+    if __name__ == &#34;__main__&#34;:
+        try:
+            comp = Component()
+            # this triggers the run method by default and is controlled by the configuration.action parameter
+            comp.execute_action()
+        except UserException as exc:
+            logging.exception(exc)
+            exit(1)
+        except Exception as exc:
+            logging.exception(exc)
+            exit(2)
+    ```
+
+    Args:
+        action_name:
+
+    Returns:
+
+    &#34;&#34;&#34;
+
+    def decorate(func):
+        # to allow pythonic names / action name mapping
+        if action_name == &#39;run&#39;:
+            raise ValueError(&#39;Sync action name &#34;run&#34; is reserved base action! Use different name.&#39;)
+        _SYNC_ACTION_MAPPING[action_name] = func.__name__
+
+        @wraps(func)
+        def action_wrapper(self, *args, **kwargs):
+            # override when run as sync action, because it could be also called normally within run
+            is_sync_action = self.configuration.action != &#39;run&#39;
+
+            # do operations with func
+            if is_sync_action:
+                stdout_redirect = None
+                # mute logging just in case
+                logging.getLogger().setLevel(logging.FATAL)
+            else:
+                stdout_redirect = sys.stdout
+            try:
+                # when success, only specified message can be on output, so redirect stdout before.
+                with contextlib.redirect_stdout(stdout_redirect):
+                    result = func(self, *args, **kwargs)
+
+                if is_sync_action:
+                    # sync action expects valid JSON in stdout on success.
+                    if result:
+                        # expect array or object:
+                        sys.stdout.write(json.dumps(result))
+                    else:
+                        sys.stdout.write(json.dumps({&#39;status&#39;: &#39;success&#39;}))
+
+                return result
+
+            except Exception as e:
+                if is_sync_action:
+                    # sync actions expect stderr
+                    sys.stderr.write(str(e))
+                    exit(1)
+                else:
+                    raise e
+
+        return action_wrapper
+
+    return decorate</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -291,6 +551,8 @@ and performs configuration validation.</p>
 <p>For easier debugging the data folder is picked up by default from <code>../data</code> path,
 relative to working directory.</p>
 <p>If <code>debug</code> parameter is present in the <code>config.json</code>, the default logger is set to verbose DEBUG mode.</p>
+<p>It executes <a href="https://developers.keboola.com/extend/common-interface/actions/">Sync actions</a>
+when "action" is defined in the configuration.json based on the @action_decorator.</p>
 <h2 id="args">Args</h2>
 <p>data_path_override:
 optional path to data folder that overrides the default behaviour (<code>KBC_DATADIR</code> environment variable).
@@ -320,6 +582,9 @@ validation is done at constructor level</p>
         relative to working directory.
 
         If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
+
+        It executes [Sync actions](https://developers.keboola.com/extend/common-interface/actions/)
+        when &#34;action&#34; is defined in the configuration.json based on the @action_decorator.
 
         Args:
             data_path_override:
@@ -420,17 +685,18 @@ validation is done at constructor level</p>
 
     def execute_action(self):
         &#34;&#34;&#34;
-        Executes action defined in the configuration. The action name must match implemented method.
-        The default action is &#39;run&#39;.
+        Executes action defined in the configuration.
+        The default action is &#39;run&#39;. See base._SYNC_ACTION_MAPPING
         &#34;&#34;&#34;
         action = self.configuration.action
         if not action:
             logging.warning(&#34;No action defined in the configuration, using the default run action.&#34;)
             action = &#39;run&#39;
-        logging.info(f&#34;Running action: {action}&#34;)
+
         try:
+            action = _SYNC_ACTION_MAPPING[action]
             action_method = getattr(self, action)
-        except AttributeError as e:
+        except (AttributeError, KeyError) as e:
             raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e
         return action_method()
 
@@ -635,25 +901,26 @@ key word arguments it creates an out table definition.</p>
 <span>def <span class="ident">execute_action</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Executes action defined in the configuration. The action name must match implemented method.
-The default action is 'run'.</p></div>
+<div class="desc"><p>Executes action defined in the configuration.
+The default action is 'run'. See base._SYNC_ACTION_MAPPING</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def execute_action(self):
     &#34;&#34;&#34;
-    Executes action defined in the configuration. The action name must match implemented method.
-    The default action is &#39;run&#39;.
+    Executes action defined in the configuration.
+    The default action is &#39;run&#39;. See base._SYNC_ACTION_MAPPING
     &#34;&#34;&#34;
     action = self.configuration.action
     if not action:
         logging.warning(&#34;No action defined in the configuration, using the default run action.&#34;)
         action = &#39;run&#39;
-    logging.info(f&#34;Running action: {action}&#34;)
+
     try:
+        action = _SYNC_ACTION_MAPPING[action]
         action_method = getattr(self, action)
-    except AttributeError as e:
+    except (AttributeError, KeyError) as e:
         raise AttributeError(f&#34;The defined action {action} is not implemented!&#34;) from e
     return action_method()</code></pre>
 </details>
@@ -758,6 +1025,11 @@ def run(self):
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="keboola.component" href="index.html">keboola.component</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="keboola.component.base.sync_action" href="#keboola.component.base.sync_action">sync_action</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
