@@ -130,7 +130,8 @@ class ComponentBase(ABC, CommonInterface):
 
         If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
 
-        It executes [Sync actions](https://developers.keboola.com/extend/common-interface/actions/) when "action" is defined in the configuration.json based on the @action_decorator.
+        It executes [Sync actions](https://developers.keboola.com/extend/common-interface/actions/)
+        when "action" is defined in the configuration.json based on the @action_decorator.
 
         Args:
             data_path_override:
