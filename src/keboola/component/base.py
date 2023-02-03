@@ -1,7 +1,10 @@
+import contextlib
 import json
 import logging
 import os
+import sys
 from abc import ABC, abstractmethod
+from functools import wraps
 from pathlib import Path
 from typing import Optional, Dict
 
@@ -19,7 +22,7 @@ def sync_action(action_name: str):
     def decorate(func):
         # to allow pythonic names / action name mapping
         if action_name == 'run':
-            raise UserException('Sync action name "run" is reserved base action! Use different name.')
+            raise ValueError('Sync action name "run" is reserved base action! Use different name.')
         _SYNC_ACTION_MAPPING[action_name] = func.__name__
 
         @wraps(func)

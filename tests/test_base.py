@@ -2,7 +2,7 @@ import os
 import unittest
 
 from keboola.component import UserException
-from keboola.component.base import ComponentBase
+from keboola.component.base import ComponentBase, sync_action
 
 
 class MockComponent(ComponentBase):
@@ -44,9 +44,40 @@ class TestCommonInterface(unittest.TestCase):
     def test_run_action_passes(self):
         self.assertEqual(MockComponent().execute_action(), 'run_executed')
 
+    def test_custom_action_passes(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'data_examples', 'data_custom_action')
+        os.environ["KBC_DATADIR"] = path
+
+        class CustomActionComponent(ComponentBase):
+            def run(self):
+                pass
+
+            @sync_action('custom_action')
+            def test_action(self):
+                return "run_executed"
+
+        self.assertEqual(CustomActionComponent().execute_action(), 'run_executed')
+
     def test_run_action_fails_with_user_error(self):
         with self.assertRaises(UserException):
             MockComponentFail().execute_action()
+
+    def test_system_action_name_fail(self):
+        with self.assertRaises(ValueError):
+            class ComponentInvalidActionName(ComponentBase):
+                def run(self):
+                    pass
+
+                @sync_action('run')
+                def test_action(self):
+                    pass
+
+            path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'data_examples', 'data_custom_action')
+            os.environ["KBC_DATADIR"] = path
+
+            ComponentInvalidActionName().execute_action()
 
 
 if __name__ == '__main__':
