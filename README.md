@@ -589,9 +589,12 @@ Setting up a separate component would bring an overhead of maintaining both the 
 
 Data is exchanged via `stdout` or `stderr`.
 
+- Sync actions need to be registered in the Developer Portal first.
+
+**Following are handled by the decorator automatically**
+
 - All success responses have to output valid JSON string. Meaning nothing can log into the stdout during the action execution
 - For success action the output needs to be always `{"status":"success"}` in stdout.
-- Sync actions need to be registered in the Developer Portal first.
 
 ## Framework Support
 
