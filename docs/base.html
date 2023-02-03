@@ -47,6 +47,57 @@ _SYNC_ACTION_MAPPING = {&#34;run&#34;: &#34;run&#34;}
 
 
 def sync_action(action_name: str):
+    &#34;&#34;&#34;
+    Decorator for marking sync actions method.
+    For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
+
+    Usage:
+
+    ```
+    import csv
+    import logging
+
+    from keboola.component.base import ComponentBase, sync_action
+
+    class Component(ComponentBase):
+
+        def run(self):
+            &#39;&#39;&#39;
+            Main execution code
+            &#39;&#39;&#39;
+            pass
+
+        # sync action that is executed when configuration.json &#34;action&#34;:&#34;testConnection&#34; parameter is present.
+        @sync_action(&#39;testConnection&#39;)
+        def test_connection(self):
+            connection = self.configuration.parameters.get(&#39;test_connection&#39;)
+            if connection == &#34;fail&#34;:
+                raise UserException(&#34;failed&#34;)
+            elif connection == &#34;succeed&#34;:
+                # this is ignored when run as sync action.
+                logging.info(&#34;succeed&#34;)
+
+
+    if __name__ == &#34;__main__&#34;:
+        try:
+            comp = Component()
+            # this triggers the run method by default and is controlled by the configuration.action parameter
+            comp.execute_action()
+        except UserException as exc:
+            logging.exception(exc)
+            exit(1)
+        except Exception as exc:
+            logging.exception(exc)
+            exit(2)
+    ```
+
+    Args:
+        action_name:
+
+    Returns:
+
+    &#34;&#34;&#34;
+
     def decorate(func):
         # to allow pythonic names / action name mapping
         if action_name == &#39;run&#39;:
@@ -106,6 +157,9 @@ class ComponentBase(ABC, CommonInterface):
         relative to working directory.
 
         If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
+
+        It executes [Sync actions](https://developers.keboola.com/extend/common-interface/actions/)
+        when &#34;action&#34; is defined in the configuration.json based on the @action_decorator.
 
         Args:
             data_path_override:
@@ -336,12 +390,104 @@ class ComponentBase(ABC, CommonInterface):
 <span>def <span class="ident">sync_action</span></span>(<span>action_name: str)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Decorator for marking sync actions method.
+For more info see <a href="https://developers.keboola.com/extend/common-interface/actions/">Sync actions</a>.</p>
+<p>Usage:</p>
+<pre><code>import csv
+import logging
+
+from keboola.component.base import ComponentBase, sync_action
+
+class Component(ComponentBase):
+
+    def run(self):
+        '''
+        Main execution code
+        '''
+        pass
+
+    # sync action that is executed when configuration.json &quot;action&quot;:&quot;testConnection&quot; parameter is present.
+    @sync_action('testConnection')
+    def test_connection(self):
+        connection = self.configuration.parameters.get('test_connection')
+        if connection == &quot;fail&quot;:
+            raise UserException(&quot;failed&quot;)
+        elif connection == &quot;succeed&quot;:
+            # this is ignored when run as sync action.
+            logging.info(&quot;succeed&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    try:
+        comp = Component()
+        # this triggers the run method by default and is controlled by the configuration.action parameter
+        comp.execute_action()
+    except UserException as exc:
+        logging.exception(exc)
+        exit(1)
+    except Exception as exc:
+        logging.exception(exc)
+        exit(2)
+</code></pre>
+<h2 id="args">Args</h2>
+<p>action_name:
+Returns:</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def sync_action(action_name: str):
+    &#34;&#34;&#34;
+    Decorator for marking sync actions method.
+    For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
+
+    Usage:
+
+    ```
+    import csv
+    import logging
+
+    from keboola.component.base import ComponentBase, sync_action
+
+    class Component(ComponentBase):
+
+        def run(self):
+            &#39;&#39;&#39;
+            Main execution code
+            &#39;&#39;&#39;
+            pass
+
+        # sync action that is executed when configuration.json &#34;action&#34;:&#34;testConnection&#34; parameter is present.
+        @sync_action(&#39;testConnection&#39;)
+        def test_connection(self):
+            connection = self.configuration.parameters.get(&#39;test_connection&#39;)
+            if connection == &#34;fail&#34;:
+                raise UserException(&#34;failed&#34;)
+            elif connection == &#34;succeed&#34;:
+                # this is ignored when run as sync action.
+                logging.info(&#34;succeed&#34;)
+
+
+    if __name__ == &#34;__main__&#34;:
+        try:
+            comp = Component()
+            # this triggers the run method by default and is controlled by the configuration.action parameter
+            comp.execute_action()
+        except UserException as exc:
+            logging.exception(exc)
+            exit(1)
+        except Exception as exc:
+            logging.exception(exc)
+            exit(2)
+    ```
+
+    Args:
+        action_name:
+
+    Returns:
+
+    &#34;&#34;&#34;
+
     def decorate(func):
         # to allow pythonic names / action name mapping
         if action_name == &#39;run&#39;:
@@ -405,6 +551,8 @@ and performs configuration validation.</p>
 <p>For easier debugging the data folder is picked up by default from <code>../data</code> path,
 relative to working directory.</p>
 <p>If <code>debug</code> parameter is present in the <code>config.json</code>, the default logger is set to verbose DEBUG mode.</p>
+<p>It executes <a href="https://developers.keboola.com/extend/common-interface/actions/">Sync actions</a>
+when "action" is defined in the configuration.json based on the @action_decorator.</p>
 <h2 id="args">Args</h2>
 <p>data_path_override:
 optional path to data folder that overrides the default behaviour (<code>KBC_DATADIR</code> environment variable).
@@ -434,6 +582,9 @@ validation is done at constructor level</p>
         relative to working directory.
 
         If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
+
+        It executes [Sync actions](https://developers.keboola.com/extend/common-interface/actions/)
+        when &#34;action&#34; is defined in the configuration.json based on the @action_decorator.
 
         Args:
             data_path_override:
