@@ -13,7 +13,7 @@ project_urls = {
 
 setuptools.setup(
     name="keboola.component",
-    version="1.3.8",
+    version="1.4.0",
     author="Keboola KDS Team",
     project_urls=project_urls,
     setup_requires=['pytest-runner', 'flake8'],
