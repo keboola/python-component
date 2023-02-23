@@ -39,11 +39,15 @@ def init_environment_variables() -> dao.EnvironmentVariables:
                                     stack_id=os.environ.get('KBC_STACKID', None),
                                     config_id=os.environ.get('KBC_CONFIGID', None),
                                     component_id=os.environ.get('KBC_COMPONENTID', None),
+                                    config_row_id=os.environ.get('KBC_CONFIGROWID', None),
+                                    branch_id=os.environ.get('KBC_BRANCHID', None),
+                                    staging_file_provider=os.environ.get('KBC_STAGING_FILE_PROVIDER', None),
                                     project_name=os.environ.get('KBC_PROJECTNAME', None),
                                     token_id=os.environ.get('KBC_TOKENID', None),
                                     token_desc=os.environ.get('KBC_TOKENDESC', None),
                                     token=os.environ.get('KBC_TOKEN', None),
                                     url=os.environ.get('KBC_URL', None),
+                                    real_user=os.environ.get('KBC_REALUSER', None),
                                     logger_addr=os.environ.get('KBC_LOGGER_ADDR', None),
                                     logger_port=os.environ.get('KBC_LOGGER_PORT', None)
                                     )
