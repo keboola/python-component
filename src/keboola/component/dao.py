@@ -36,11 +36,17 @@ class EnvironmentVariables:
     stack_id: str
     config_id: str
     component_id: str
+    config_row_id: str
+    branch_id: str
+    staging_file_provider: str
+
     project_name: str
     token_id: str
     token_desc: str
     token: str
     url: str
+    real_user: str
+
     logger_addr: str
     logger_port: str
 
