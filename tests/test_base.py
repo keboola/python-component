@@ -1,8 +1,11 @@
 import os
 import unittest
+from io import StringIO
+from unittest.mock import patch
 
 from keboola.component import UserException
 from keboola.component.base import ComponentBase, sync_action
+from keboola.component.sync_actions import SelectElement
 
 
 class MockComponent(ComponentBase):
@@ -55,9 +58,9 @@ class TestCommonInterface(unittest.TestCase):
 
             @sync_action('custom_action')
             def test_action(self):
-                return "run_executed"
+                return [SelectElement("test")]
 
-        self.assertEqual(CustomActionComponent().execute_action(), 'run_executed')
+        self.assertEqual(CustomActionComponent().execute_action(), [SelectElement("test")])
 
     def test_run_action_fails_with_user_error(self):
         with self.assertRaises(UserException):
@@ -78,6 +81,26 @@ class TestCommonInterface(unittest.TestCase):
             os.environ["KBC_DATADIR"] = path
 
             ComponentInvalidActionName().execute_action()
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_sync_action_prints_valid_message(self, stdout):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'data_examples', 'data_custom_action')
+        os.environ["KBC_DATADIR"] = path
+
+        class CustomActionComponent(ComponentBase):
+            def run(self):
+                pass
+
+            @sync_action('custom_action')
+            def get_columns(self):
+                return [SelectElement("value_a", "label_a"),
+                        SelectElement("value_b")
+                        ]
+
+        CustomActionComponent().execute_action()
+        expected = '[{"value": "value_a", "label": "label_a"}, {"value": "value_b", "label": "value_b"}]'
+        self.assertEqual(stdout.getvalue(), expected)
 
 
 if __name__ == '__main__':
