@@ -1,4 +1,4 @@
-name: Build & Deploy Python Package To Test PYPI
+name: Deploy To Test PYPI
 
 on: workflow_dispatch
 
