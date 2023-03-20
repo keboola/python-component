@@ -1,10 +1,10 @@
 name: Build & Deploy Python Package To Test PYPI
 
 on:
-  create:
-    tags:
-      - 0.*a
-      - 1.*a
+  push:
+    branches:
+      - '*'
+      - '!main'
 
 
 jobs:
