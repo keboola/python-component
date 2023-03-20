@@ -1,11 +1,6 @@
 name: Build & Deploy Python Package To Test PYPI
 
-on:
-  push:
-    branches:
-      - '*'
-      - '!main'
-
+on: workflow_dispatch
 
 jobs:
   deploy:
