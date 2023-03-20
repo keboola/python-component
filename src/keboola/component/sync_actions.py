@@ -11,20 +11,6 @@ from enum import Enum
 from typing import Union, List, Optional
 
 
-def _convert_enum_value(obj):
-    """
-    Helper to get Enums value
-    Args:
-        obj:
-
-    Returns:
-
-    """
-    if isinstance(obj, Enum):
-        return obj.value
-    return obj
-
-
 @dataclass
 class SyncActionResult(ABC):
     """
@@ -35,13 +21,13 @@ class SyncActionResult(ABC):
         """
          Right now the status is always success.
         In other cases exception is thrown and printed via stderr.
-        Returns:
 
         """
         self.status = 'success'
 
     def __str__(self):
-        dict_obj = dataclasses.asdict(self, dict_factory=lambda x: {k: _convert_enum_value(v) for (k, v) in x if
+        # the None values / attributes will be ignored.
+        dict_obj = dataclasses.asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if
                                                                     v is not None})
         # hack to add default status
         if self.status:
@@ -49,7 +35,8 @@ class SyncActionResult(ABC):
         return json.dumps(dict_obj)
 
 
-class MessageType(Enum):
+# str base so it is serialised properly
+class MessageType(str, Enum):
     SUCCESS = "success"
     INFO = "info"
     WARNING = "warning"
@@ -72,17 +59,17 @@ class SelectElement(SyncActionResult):
 
     def __post_init__(self):
         self.label = self.label or self.value
-        # special case of element F with no status
+        # special case of element SyncActionResult with no status. (all other must contain {"status":true}
         self.status = None
 
 
-def process_sync_action_result(result: Union[None, dict, SyncActionResult, List[SyncActionResult]]):
+def process_sync_action_result(result: Union[None, dict, SyncActionResult, List[SyncActionResult]]) -> str:
     """
-    Converts Sync Action result into valid string.
+    Converts Sync Action result into valid string (expected by Sync Action).
     Args:
         result: Union[None, SyncActionResult, List[SyncActionResult]]
 
-    Returns:
+    Returns: str: Valid string representation of the Sync action result.
 
     """
     if isinstance(result, SyncActionResult):
