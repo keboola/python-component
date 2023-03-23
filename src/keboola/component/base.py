@@ -3,14 +3,17 @@ import json
 import logging
 import os
 import sys
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 from functools import wraps
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict
+from typing import Union, List, Optional
 
 from . import dao
 from . import table_schema as ts
 from .interface import CommonInterface
+from .sync_actions import SyncActionResult, process_sync_action_result
 
 KEY_DEBUG = 'debug'
 
@@ -20,10 +23,11 @@ _SYNC_ACTION_MAPPING = {"run": "run"}
 
 def sync_action(action_name: str):
     """
-    Decorator for marking sync actions method.
-    For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
 
-    Usage:
+       Decorator for marking sync actions method.
+       For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
+
+        Usage:
 
     ```
     import csv
@@ -64,7 +68,7 @@ def sync_action(action_name: str):
     ```
 
     Args:
-        action_name:
+        action_name: Name of the action registered in Developer Portal
 
     Returns:
 
@@ -88,18 +92,16 @@ def sync_action(action_name: str):
                 logging.getLogger().setLevel(logging.FATAL)
             else:
                 stdout_redirect = sys.stdout
+
             try:
-                # when success, only specified message can be on output, so redirect stdout before.
+                # when success, only supported syntax can be in output / log, so redirect stdout before.
                 with contextlib.redirect_stdout(stdout_redirect):
-                    result = func(self, *args, **kwargs)
+                    result: Union[None, SyncActionResult, List[SyncActionResult]] = func(self, *args, **kwargs)
 
                 if is_sync_action:
                     # sync action expects valid JSON in stdout on success.
-                    if result:
-                        # expect array or object:
-                        sys.stdout.write(json.dumps(result))
-                    else:
-                        sys.stdout.write(json.dumps({'status': 'success'}))
+                    result_str = process_sync_action_result(result)
+                    sys.stdout.write(result_str)
 
                 return result
 
