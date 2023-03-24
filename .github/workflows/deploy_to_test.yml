@@ -1,11 +1,6 @@
-name: Build & Deploy Python Package To Test PYPI
+name: Deploy To Test PYPI
 
-on:
-  create:
-    tags:
-      - 0.*a
-      - 1.*a
-
+on: workflow_dispatch
 
 jobs:
   deploy:
