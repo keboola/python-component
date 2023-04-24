@@ -63,7 +63,7 @@ class SelectElement(SyncActionResult):
         self.status = None
 
 
-def process_sync_action_result(result: Union[None, dict, SyncActionResult, List[SyncActionResult]]) -> str:
+def process_sync_action_result(result: Union[None, List[dict], dict, SyncActionResult, List[SyncActionResult]]) -> str:
     """
     Converts Sync Action result into valid string (expected by Sync Action).
     Args:
@@ -75,7 +75,7 @@ def process_sync_action_result(result: Union[None, dict, SyncActionResult, List[
     if isinstance(result, SyncActionResult):
         result_str = str(result)
     elif isinstance(result, list):
-        result_str = f'[{", ".join([str(r) for r in result])}]'
+        result_str = f'[{", ".join([json.dumps(r) for r in result])}]'
     elif result is None:
         result_str = json.dumps({'status': 'success'})
     elif isinstance(result, dict):
