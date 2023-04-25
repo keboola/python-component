@@ -31,14 +31,17 @@ import json
 import logging
 import os
 import sys
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 from functools import wraps
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict
+from typing import Union, List, Optional
 
 from . import dao
 from . import table_schema as ts
 from .interface import CommonInterface
+from .sync_actions import SyncActionResult, process_sync_action_result
 
 KEY_DEBUG = &#39;debug&#39;
 
@@ -48,10 +51,11 @@ _SYNC_ACTION_MAPPING = {&#34;run&#34;: &#34;run&#34;}
 
 def sync_action(action_name: str):
     &#34;&#34;&#34;
-    Decorator for marking sync actions method.
-    For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
 
-    Usage:
+       Decorator for marking sync actions method.
+       For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
+
+        Usage:
 
     ```
     import csv
@@ -92,7 +96,7 @@ def sync_action(action_name: str):
     ```
 
     Args:
-        action_name:
+        action_name: Name of the action registered in Developer Portal
 
     Returns:
 
@@ -116,18 +120,16 @@ def sync_action(action_name: str):
                 logging.getLogger().setLevel(logging.FATAL)
             else:
                 stdout_redirect = sys.stdout
+
             try:
-                # when success, only specified message can be on output, so redirect stdout before.
+                # when success, only supported syntax can be in output / log, so redirect stdout before.
                 with contextlib.redirect_stdout(stdout_redirect):
-                    result = func(self, *args, **kwargs)
+                    result: Union[None, SyncActionResult, List[SyncActionResult]] = func(self, *args, **kwargs)
 
                 if is_sync_action:
                     # sync action expects valid JSON in stdout on success.
-                    if result:
-                        # expect array or object:
-                        sys.stdout.write(json.dumps(result))
-                    else:
-                        sys.stdout.write(json.dumps({&#39;status&#39;: &#39;success&#39;}))
+                    result_str = process_sync_action_result(result)
+                    sys.stdout.write(result_str)
 
                 return result
 
@@ -392,7 +394,8 @@ class ComponentBase(ABC, CommonInterface):
 <dd>
 <div class="desc"><p>Decorator for marking sync actions method.
 For more info see <a href="https://developers.keboola.com/extend/common-interface/actions/">Sync actions</a>.</p>
-<p>Usage:</p>
+<pre><code>Usage:
+</code></pre>
 <pre><code>import csv
 import logging
 
@@ -430,18 +433,22 @@ if __name__ == &quot;__main__&quot;:
         exit(2)
 </code></pre>
 <h2 id="args">Args</h2>
-<p>action_name:
-Returns:</p></div>
+<dl>
+<dt><strong><code>action_name</code></strong></dt>
+<dd>Name of the action registered in Developer Portal</dd>
+</dl>
+<p>Returns:</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def sync_action(action_name: str):
     &#34;&#34;&#34;
-    Decorator for marking sync actions method.
-    For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
 
-    Usage:
+       Decorator for marking sync actions method.
+       For more info see [Sync actions](https://developers.keboola.com/extend/common-interface/actions/).
+
+        Usage:
 
     ```
     import csv
@@ -482,7 +489,7 @@ Returns:</p></div>
     ```
 
     Args:
-        action_name:
+        action_name: Name of the action registered in Developer Portal
 
     Returns:
 
@@ -506,18 +513,16 @@ Returns:</p></div>
                 logging.getLogger().setLevel(logging.FATAL)
             else:
                 stdout_redirect = sys.stdout
+
             try:
-                # when success, only specified message can be on output, so redirect stdout before.
+                # when success, only supported syntax can be in output / log, so redirect stdout before.
                 with contextlib.redirect_stdout(stdout_redirect):
-                    result = func(self, *args, **kwargs)
+                    result: Union[None, SyncActionResult, List[SyncActionResult]] = func(self, *args, **kwargs)
 
                 if is_sync_action:
                     # sync action expects valid JSON in stdout on success.
-                    if result:
-                        # expect array or object:
-                        sys.stdout.write(json.dumps(result))
-                    else:
-                        sys.stdout.write(json.dumps({&#39;status&#39;: &#39;success&#39;}))
+                    result_str = process_sync_action_result(result)
+                    sys.stdout.write(result_str)
 
                 return result
 
