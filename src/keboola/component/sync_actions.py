@@ -75,7 +75,7 @@ def process_sync_action_result(result: Union[None, List[dict], dict, SyncActionR
     if isinstance(result, SyncActionResult):
         result_str = str(result)
     elif isinstance(result, list):
-        result_str = f'[{", ".join([json.dumps(r) for r in result])}]'
+        result_str = f'[{", ".join([json.dumps(r) if isinstance(r, dict) else str(r) for r in result])}]'
     elif result is None:
         result_str = json.dumps({'status': 'success'})
     elif isinstance(result, dict):
