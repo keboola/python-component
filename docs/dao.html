@@ -64,11 +64,17 @@ class EnvironmentVariables:
     stack_id: str
     config_id: str
     component_id: str
+    config_row_id: str
+    branch_id: str
+    staging_file_provider: str
+
     project_name: str
     token_id: str
     token_desc: str
     token: str
     url: str
+    real_user: str
+
     logger_addr: str
     logger_port: str
 
@@ -1264,7 +1270,7 @@ Returns: dataclass of specified type</p></div>
 <dl>
 <dt id="keboola.component.dao.EnvironmentVariables"><code class="flex name class">
 <span>class <span class="ident">EnvironmentVariables</span></span>
-<span>(</span><span>data_dir: str, run_id: str, project_id: str, stack_id: str, config_id: str, component_id: str, project_name: str, token_id: str, token_desc: str, token: str, url: str, logger_addr: str, logger_port: str)</span>
+<span>(</span><span>data_dir: str, run_id: str, project_id: str, stack_id: str, config_id: str, component_id: str, config_row_id: str, branch_id: str, staging_file_provider: str, project_name: str, token_id: str, token_desc: str, token: str, url: str, real_user: str, logger_addr: str, logger_port: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Dataclass for variables available in the docker environment
@@ -1285,21 +1291,35 @@ class EnvironmentVariables:
     stack_id: str
     config_id: str
     component_id: str
+    config_row_id: str
+    branch_id: str
+    staging_file_provider: str
+
     project_name: str
     token_id: str
     token_desc: str
     token: str
     url: str
+    real_user: str
+
     logger_addr: str
     logger_port: str</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
+<dt id="keboola.component.dao.EnvironmentVariables.branch_id"><code class="name">var <span class="ident">branch_id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="keboola.component.dao.EnvironmentVariables.component_id"><code class="name">var <span class="ident">component_id</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.EnvironmentVariables.config_id"><code class="name">var <span class="ident">config_id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.EnvironmentVariables.config_row_id"><code class="name">var <span class="ident">config_row_id</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1323,11 +1343,19 @@ class EnvironmentVariables:
 <dd>
 <div class="desc"></div>
 </dd>
+<dt id="keboola.component.dao.EnvironmentVariables.real_user"><code class="name">var <span class="ident">real_user</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
 <dt id="keboola.component.dao.EnvironmentVariables.run_id"><code class="name">var <span class="ident">run_id</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.EnvironmentVariables.stack_id"><code class="name">var <span class="ident">stack_id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.EnvironmentVariables.staging_file_provider"><code class="name">var <span class="ident">staging_file_provider</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -4339,16 +4367,20 @@ class TableOutputMapping(SubscriptableDataclass):
 <ul>
 <li>
 <h4><code><a title="keboola.component.dao.EnvironmentVariables" href="#keboola.component.dao.EnvironmentVariables">EnvironmentVariables</a></code></h4>
-<ul class="two-column">
+<ul class="">
+<li><code><a title="keboola.component.dao.EnvironmentVariables.branch_id" href="#keboola.component.dao.EnvironmentVariables.branch_id">branch_id</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.component_id" href="#keboola.component.dao.EnvironmentVariables.component_id">component_id</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.config_id" href="#keboola.component.dao.EnvironmentVariables.config_id">config_id</a></code></li>
+<li><code><a title="keboola.component.dao.EnvironmentVariables.config_row_id" href="#keboola.component.dao.EnvironmentVariables.config_row_id">config_row_id</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.data_dir" href="#keboola.component.dao.EnvironmentVariables.data_dir">data_dir</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.logger_addr" href="#keboola.component.dao.EnvironmentVariables.logger_addr">logger_addr</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.logger_port" href="#keboola.component.dao.EnvironmentVariables.logger_port">logger_port</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.project_id" href="#keboola.component.dao.EnvironmentVariables.project_id">project_id</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.project_name" href="#keboola.component.dao.EnvironmentVariables.project_name">project_name</a></code></li>
+<li><code><a title="keboola.component.dao.EnvironmentVariables.real_user" href="#keboola.component.dao.EnvironmentVariables.real_user">real_user</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.run_id" href="#keboola.component.dao.EnvironmentVariables.run_id">run_id</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.stack_id" href="#keboola.component.dao.EnvironmentVariables.stack_id">stack_id</a></code></li>
+<li><code><a title="keboola.component.dao.EnvironmentVariables.staging_file_provider" href="#keboola.component.dao.EnvironmentVariables.staging_file_provider">staging_file_provider</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.token" href="#keboola.component.dao.EnvironmentVariables.token">token</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.token_desc" href="#keboola.component.dao.EnvironmentVariables.token_desc">token_desc</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.token_id" href="#keboola.component.dao.EnvironmentVariables.token_id">token_id</a></code></li>
