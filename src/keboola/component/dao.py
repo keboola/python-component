@@ -587,6 +587,7 @@ class TableDefinition(IODefinition):
         "columns",
         "incremental",
         "primary_key",
+        "write_always",
         "delimiter",
         "enclosure",
         "metadata",
@@ -608,7 +609,9 @@ class TableDefinition(IODefinition):
                  enclosure: str = '"',
                  delimiter: str = ',',
                  delete_where: dict = None,
-                 stage: str = 'in'):
+                 stage: str = 'in',
+                 write_always: bool = False
+                 ):
         """
 
         Args:
@@ -630,6 +633,8 @@ class TableDefinition(IODefinition):
             delimiter: str: CSV delimiter, by default ,
             delete_where (dict): Dict with settings for deleting rows
             stage: str: Storage Stage 'in' or 'out'
+            write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
         """
         super().__init__(full_path)
         self._name = name
@@ -650,6 +655,7 @@ class TableDefinition(IODefinition):
         self.table_metadata = table_metadata
         self.set_delete_where_from_dict(delete_where)
         self.stage = stage
+        self.write_always = write_always
 
     @classmethod
     def build_from_manifest(cls,
@@ -796,6 +802,15 @@ class TableDefinition(IODefinition):
     def incremental(self, incremental: bool):
         if incremental:
             self._raw_manifest['incremental'] = True
+
+    @property
+    def write_always(self) -> bool:
+        return self._raw_manifest.get('write_always', False)
+
+    @write_always.setter
+    def write_always(self, incremental: bool):
+        if incremental:
+            self._raw_manifest['write_always'] = True
 
     @property
     def primary_key(self) -> List[str]:

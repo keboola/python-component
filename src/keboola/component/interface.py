@@ -327,7 +327,8 @@ class CommonInterface:
                                  table_metadata: dao.TableMetadata = None,
                                  enclosure: str = '"',
                                  delimiter: str = ',',
-                                 delete_where: dict = None) -> dao.TableDefinition:
+                                 delete_where: dict = None,
+                                 write_always: bool = False) -> dao.TableDefinition:
         """
                 Helper method for dao.TableDefinition creation along with the "manifest".
                 It initializes path according to the storage_stage type.
@@ -347,6 +348,8 @@ class CommonInterface:
                     enclosure: str: CSV enclosure, by default "
                     delimiter: str: CSV delimiter, by default ,
                     delete_where: Dict with settings for deleting rows
+                    write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
         """
         if storage_stage == 'in':
             full_path = os.path.join(self.tables_in_path, name)
@@ -366,7 +369,8 @@ class CommonInterface:
                                    enclosure=enclosure,
                                    delimiter=delimiter,
                                    delete_where=delete_where,
-                                   stage=storage_stage)
+                                   stage=storage_stage,
+                                   write_always=write_always)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,
@@ -410,7 +414,8 @@ class CommonInterface:
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = '"',
                                     delimiter: str = ',',
-                                    delete_where: dict = None) -> dao.TableDefinition:
+                                    delete_where: dict = None,
+                                    write_always: bool = False) -> dao.TableDefinition:
         """
                        Helper method for output dao.TableDefinition creation along with the "manifest".
                        It initializes path in data/tables/out/ folder.
@@ -426,6 +431,8 @@ class CommonInterface:
                            enclosure: str: CSV enclosure, by default "
                            delimiter: str: CSV delimiter, by default ,
                            delete_where: Dict with settings for deleting rows
+                           write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
         """
 
         return self._create_table_definition(name=name,
@@ -438,7 +445,8 @@ class CommonInterface:
                                              table_metadata=table_metadata,
                                              enclosure=enclosure,
                                              delimiter=delimiter,
-                                             delete_where=delete_where)
+                                             delete_where=delete_where,
+                                             write_always=write_always)
 
     # # File processing
 

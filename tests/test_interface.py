@@ -157,7 +157,8 @@ class TestCommonInterface(unittest.TestCase):
                                                    incremental=True,
                                                    delete_where={'column': 'lilly',
                                                                  'values': ['a', 'b'],
-                                                                 'operator': 'eq'}
+                                                                 'operator': 'eq'},
+                                                   write_always=True
                                                    )
         out_table.table_metadata.add_table_metadata('bar', 'kochba')
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
@@ -173,6 +174,7 @@ class TestCommonInterface(unittest.TestCase):
                 'columns': ['foo', 'bar'],
                 'primary_key': ['foo'],
                 'incremental': True,
+                'write_always': True,
                 'delimiter': ',',
                 'enclosure': '"',
                 'metadata': [{'key': 'bar', 'value': 'kochba'}],
