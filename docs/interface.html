@@ -355,7 +355,8 @@ class CommonInterface:
                                  table_metadata: dao.TableMetadata = None,
                                  enclosure: str = &#39;&#34;&#39;,
                                  delimiter: str = &#39;,&#39;,
-                                 delete_where: dict = None) -&gt; dao.TableDefinition:
+                                 delete_where: dict = None,
+                                 write_always: bool = False) -&gt; dao.TableDefinition:
         &#34;&#34;&#34;
                 Helper method for dao.TableDefinition creation along with the &#34;manifest&#34;.
                 It initializes path according to the storage_stage type.
@@ -375,6 +376,8 @@ class CommonInterface:
                     enclosure: str: CSV enclosure, by default &#34;
                     delimiter: str: CSV delimiter, by default ,
                     delete_where: Dict with settings for deleting rows
+                    write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
         &#34;&#34;&#34;
         if storage_stage == &#39;in&#39;:
             full_path = os.path.join(self.tables_in_path, name)
@@ -394,7 +397,8 @@ class CommonInterface:
                                    enclosure=enclosure,
                                    delimiter=delimiter,
                                    delete_where=delete_where,
-                                   stage=storage_stage)
+                                   stage=storage_stage,
+                                   write_always=write_always)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,
@@ -438,7 +442,8 @@ class CommonInterface:
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = &#39;&#34;&#39;,
                                     delimiter: str = &#39;,&#39;,
-                                    delete_where: dict = None) -&gt; dao.TableDefinition:
+                                    delete_where: dict = None,
+                                    write_always: bool = False) -&gt; dao.TableDefinition:
         &#34;&#34;&#34;
                        Helper method for output dao.TableDefinition creation along with the &#34;manifest&#34;.
                        It initializes path in data/tables/out/ folder.
@@ -454,6 +459,8 @@ class CommonInterface:
                            enclosure: str: CSV enclosure, by default &#34;
                            delimiter: str: CSV delimiter, by default ,
                            delete_where: Dict with settings for deleting rows
+                           write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
         &#34;&#34;&#34;
 
         return self._create_table_definition(name=name,
@@ -466,7 +473,8 @@ class CommonInterface:
                                              table_metadata=table_metadata,
                                              enclosure=enclosure,
                                              delimiter=delimiter,
-                                             delete_where=delete_where)
+                                             delete_where=delete_where,
+                                             write_always=write_always)
 
     # # File processing
 
@@ -1547,7 +1555,8 @@ is established in following order:</p>
                                  table_metadata: dao.TableMetadata = None,
                                  enclosure: str = &#39;&#34;&#39;,
                                  delimiter: str = &#39;,&#39;,
-                                 delete_where: dict = None) -&gt; dao.TableDefinition:
+                                 delete_where: dict = None,
+                                 write_always: bool = False) -&gt; dao.TableDefinition:
         &#34;&#34;&#34;
                 Helper method for dao.TableDefinition creation along with the &#34;manifest&#34;.
                 It initializes path according to the storage_stage type.
@@ -1567,6 +1576,8 @@ is established in following order:</p>
                     enclosure: str: CSV enclosure, by default &#34;
                     delimiter: str: CSV delimiter, by default ,
                     delete_where: Dict with settings for deleting rows
+                    write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
         &#34;&#34;&#34;
         if storage_stage == &#39;in&#39;:
             full_path = os.path.join(self.tables_in_path, name)
@@ -1586,7 +1597,8 @@ is established in following order:</p>
                                    enclosure=enclosure,
                                    delimiter=delimiter,
                                    delete_where=delete_where,
-                                   stage=storage_stage)
+                                   stage=storage_stage,
+                                   write_always=write_always)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,
@@ -1630,7 +1642,8 @@ is established in following order:</p>
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = &#39;&#34;&#39;,
                                     delimiter: str = &#39;,&#39;,
-                                    delete_where: dict = None) -&gt; dao.TableDefinition:
+                                    delete_where: dict = None,
+                                    write_always: bool = False) -&gt; dao.TableDefinition:
         &#34;&#34;&#34;
                        Helper method for output dao.TableDefinition creation along with the &#34;manifest&#34;.
                        It initializes path in data/tables/out/ folder.
@@ -1646,6 +1659,8 @@ is established in following order:</p>
                            enclosure: str: CSV enclosure, by default &#34;
                            delimiter: str: CSV delimiter, by default ,
                            delete_where: Dict with settings for deleting rows
+                           write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
         &#34;&#34;&#34;
 
         return self._create_table_definition(name=name,
@@ -1658,7 +1673,8 @@ is established in following order:</p>
                                              table_metadata=table_metadata,
                                              enclosure=enclosure,
                                              delimiter=delimiter,
-                                             delete_where=delete_where)
+                                             delete_where=delete_where,
+                                             write_always=write_always)
 
     # # File processing
 
@@ -2813,7 +2829,7 @@ It initializes path in data/files/out/ folder.</p>
 </details>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.create_out_table_definition"><code class="name flex">
-<span>def <span class="ident">create_out_table_definition</span></span>(<span>self, name: str, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, columns: List[str] = None, incremental: bool = None, table_metadata: <a title="keboola.component.dao.TableMetadata" href="dao.html#keboola.component.dao.TableMetadata">TableMetadata</a> = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None) ‑> <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a></span>
+<span>def <span class="ident">create_out_table_definition</span></span>(<span>self, name: str, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, columns: List[str] = None, incremental: bool = None, table_metadata: <a title="keboola.component.dao.TableMetadata" href="dao.html#keboola.component.dao.TableMetadata">TableMetadata</a> = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None, write_always: bool = False) ‑> <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper method for output dao.TableDefinition creation along with the "manifest".
@@ -2840,7 +2856,10 @@ It initializes path in data/tables/out/ folder.</p>
 <dd>str: CSV delimiter, by default ,</dd>
 <dt><strong><code>delete_where</code></strong></dt>
 <dd>Dict with settings for deleting rows</dd>
-</dl></div>
+<dt><strong><code>write_always</code></strong></dt>
+<dd>Bool: If true, the table will be saved to Storage even when the job execution</dd>
+</dl>
+<p>fails.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2854,7 +2873,8 @@ It initializes path in data/tables/out/ folder.</p>
                                 table_metadata: dao.TableMetadata = None,
                                 enclosure: str = &#39;&#34;&#39;,
                                 delimiter: str = &#39;,&#39;,
-                                delete_where: dict = None) -&gt; dao.TableDefinition:
+                                delete_where: dict = None,
+                                write_always: bool = False) -&gt; dao.TableDefinition:
     &#34;&#34;&#34;
                    Helper method for output dao.TableDefinition creation along with the &#34;manifest&#34;.
                    It initializes path in data/tables/out/ folder.
@@ -2870,6 +2890,8 @@ It initializes path in data/tables/out/ folder.</p>
                        enclosure: str: CSV enclosure, by default &#34;
                        delimiter: str: CSV delimiter, by default ,
                        delete_where: Dict with settings for deleting rows
+                       write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                       fails.
     &#34;&#34;&#34;
 
     return self._create_table_definition(name=name,
@@ -2882,7 +2904,8 @@ It initializes path in data/tables/out/ folder.</p>
                                          table_metadata=table_metadata,
                                          enclosure=enclosure,
                                          delimiter=delimiter,
-                                         delete_where=delete_where)</code></pre>
+                                         delete_where=delete_where,
+                                         write_always=write_always)</code></pre>
 </details>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.get_input_file_definitions_grouped_by_name"><code class="name flex">
