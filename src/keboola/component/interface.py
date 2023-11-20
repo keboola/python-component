@@ -4,11 +4,11 @@ import glob
 import json
 import logging
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Union
 
-import sys
 from deprecated import deprecated
 from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
@@ -870,8 +870,20 @@ class CommonInterface:
     def files_in_path(self):
         return os.path.join(self.data_folder_path, 'in', 'files')
 
-    @staticmethod
-    def write_manifest(io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
+    @property
+    def is_legacy_queue(self) -> bool:
+        """
+        Check if the project is running on legacy queue (v1)
+        Returns:
+
+        """
+        features = os.environ.get('KBC_PROJECT_FEATURE_GATES')
+        is_legacy_queue = True
+        if not features or 'queuev2' in features:
+            is_legacy_queue = False
+        return is_legacy_queue
+
+    def write_manifest(self, io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
         """
         Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
 
@@ -903,14 +915,14 @@ class CommonInterface:
         Returns:
 
         """
-        manifest = io_definition.get_manifest_dictionary()
+
+        manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue)
         # make dirs if not exist
         os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
         with open(io_definition.full_path + '.manifest', 'w') as manifest_file:
             json.dump(manifest, manifest_file)
 
-    @staticmethod
-    def write_manifests(io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
+    def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -920,13 +932,12 @@ class CommonInterface:
 
         """
         for io_def in io_definitions:
-            CommonInterface.write_manifest(io_def)
+            self.write_manifest(io_def)
 
     # ############# DEPRECATED METHODS, TODO: remove
 
-    @staticmethod
     @deprecated(version='1.3.0', reason="You should use write_manifest function")
-    def write_filedef_manifest(file_definition: dao.FileDefinition):
+    def write_filedef_manifest(self, file_definition: dao.FileDefinition):
         """
         Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.
 
@@ -950,11 +961,10 @@ class CommonInterface:
         Returns:
 
         """
-        CommonInterface.write_manifest(file_definition)
+        self.write_manifest(file_definition)
 
-    @staticmethod
     @deprecated(version='1.3.0', reason="You should use write_manifests function")
-    def write_filedef_manifests(file_definitions: List[dao.FileDefinition]):
+    def write_filedef_manifests(self, file_definitions: List[dao.FileDefinition]):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -963,11 +973,10 @@ class CommonInterface:
         Returns:
 
         """
-        CommonInterface.write_manifests(file_definitions)
+        self.write_manifests(file_definitions)
 
-    @staticmethod
     @deprecated(version='1.3.0', reason="You should use write_manifest function")
-    def write_tabledef_manifest(table_definition: dao.TableDefinition):
+    def write_tabledef_manifest(self, table_definition: dao.TableDefinition):
         """
         Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.
 
@@ -996,11 +1005,10 @@ class CommonInterface:
         Returns:
 
         """
-        CommonInterface.write_manifest(table_definition)
+        self.write_manifest(table_definition)
 
-    @staticmethod
     @deprecated(version='1.3.0', reason="You should use write_manifests function")
-    def write_tabledef_manifests(table_definitions: List[dao.TableDefinition]):
+    def write_tabledef_manifests(self, table_definitions: List[dao.TableDefinition]):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -1009,7 +1017,7 @@ class CommonInterface:
         Returns:
 
         """
-        CommonInterface.write_manifests(table_definitions)
+        self.write_manifests(table_definitions)
 
 
 # ########## CONFIGURATION

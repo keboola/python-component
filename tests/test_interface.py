@@ -109,6 +109,15 @@ class TestCommonInterface(unittest.TestCase):
         tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'in', 'tables')
         self.assertEqual(tables_out, ci.tables_in_path)
 
+    def test_legacy_queue(self):
+        ci = CommonInterface()
+        # with no env default to v2
+        self.assertEqual(False, ci.is_legacy_queue)
+
+        # otherwise check for queuev2
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queue2;someoterfeature'
+        self.assertEqual(True, ci.is_legacy_queue)
+
     def test_create_and_write_table_manifest_deprecated(self):
         ci = CommonInterface()
         # create table def
@@ -141,7 +150,8 @@ class TestCommonInterface(unittest.TestCase):
                 'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
                 'delete_where_column': 'lilly',
                 'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
+                'delete_where_operator': 'eq',
+                'write_always': False
             },
             config
         )
@@ -220,7 +230,8 @@ class TestCommonInterface(unittest.TestCase):
                 'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
                 'delete_where_column': 'lilly',
                 'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
+                'delete_where_operator': 'eq',
+                'write_always': False
             },
             config
         )
@@ -258,7 +269,8 @@ class TestCommonInterface(unittest.TestCase):
                 'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
                 'delete_where_column': 'lilly',
                 'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
+                'delete_where_operator': 'eq',
+                'write_always': False
             },
             config
         )
