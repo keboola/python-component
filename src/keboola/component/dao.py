@@ -6,7 +6,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import List, Union, Dict, Optional, Literal
+from typing import List, Union, Dict, Optional
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 KBC_DEFAULT_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
