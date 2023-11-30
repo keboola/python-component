@@ -182,142 +182,142 @@ class TestTableDefinition(unittest.TestCase):
             table_def.get_manifest_dictionary('out')
         )
 
-        def test_build_from_table_manifest_metadata_equals(self):
-            raw_manifest = {
-                'destination': 'some-destination',
-                'columns': ['foo', 'bar'],
-                'primary_key': ['foo'],
-                'incremental': True,
-                'metadata': [{'key': 'bar', 'value': 'kochba'}],
-                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
-                'delete_where_column': 'lilly',
-                'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
-            }
+    def test_build_from_table_manifest_metadata_equals(self):
+        raw_manifest = {
+            'destination': 'some-destination',
+            'columns': ['foo', 'bar'],
+            'primary_key': ['foo'],
+            'incremental': True,
+            'metadata': [{'key': 'bar', 'value': 'kochba'}],
+            'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+            'delete_where_column': 'lilly',
+            'delete_where_values': ['a', 'b'],
+            'delete_where_operator': 'eq'
+        }
 
-            manifest_file = os.path.join(tempfile.mkdtemp('kbc-test') + 'table.manifest')
-            with open(manifest_file, 'w') as out_f:
-                json.dump(raw_manifest, out_f)
+        manifest_file = os.path.join(tempfile.mkdtemp('kbc-test') + 'table.manifest')
+        with open(manifest_file, 'w') as out_f:
+            json.dump(raw_manifest, out_f)
 
-            table_def = TableDefinition.build_from_manifest(manifest_file)
+        table_def = TableDefinition.build_from_manifest(manifest_file)
 
-            expected_tmetadata = TableMetadata()
+        expected_tmetadata = TableMetadata()
 
-            expected_tmetadata.add_table_metadata("bar", "kochba")
-            expected_tmetadata.add_column_metadata("bar", "foo", "gogo")
+        expected_tmetadata.add_table_metadata("bar", "kochba")
+        expected_tmetadata.add_column_metadata("bar", "foo", "gogo")
 
-            self.assertEqual(table_def.table_metadata.column_metadata, expected_tmetadata.column_metadata)
-            self.assertEqual(table_def.table_metadata.table_metadata, expected_tmetadata.table_metadata)
+        self.assertEqual(table_def.table_metadata.column_metadata, expected_tmetadata.column_metadata)
+        self.assertEqual(table_def.table_metadata.table_metadata, expected_tmetadata.table_metadata)
 
-            os.remove(manifest_file)
+        os.remove(manifest_file)
 
-        def test_build_from_manifest_matching_table_valid_attributes(self):
-            sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       'data_examples', 'data1', 'in', 'tables')
+    def test_build_from_manifest_matching_table_valid_attributes(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data1', 'in', 'tables')
 
-            table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample.csv.manifest'))
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample.csv.manifest'))
 
-            expected_table_def = TableDefinition(name='sample.csv',
-                                                 full_path=os.path.join(sample_path, 'sample.csv'),
-                                                 is_sliced=False
-                                                 )
+        expected_table_def = TableDefinition(name='sample.csv',
+                                             full_path=os.path.join(sample_path, 'sample.csv'),
+                                             is_sliced=False
+                                             )
 
-            self.assertEqual(expected_table_def.full_path, table_def.full_path)
-            self.assertEqual(expected_table_def.name, table_def.name)
-            self.assertEqual(expected_table_def.is_sliced, table_def.is_sliced)
+        self.assertEqual(expected_table_def.full_path, table_def.full_path)
+        self.assertEqual(expected_table_def.name, table_def.name)
+        self.assertEqual(expected_table_def.is_sliced, table_def.is_sliced)
 
-        def test_build_from_manifest_orphaned_table_valid_attributes(self):
-            sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       'data_examples', 'data1', 'in', 'tables')
+    def test_build_from_manifest_orphaned_table_valid_attributes(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data1', 'in', 'tables')
 
-            table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'orphaned.csv.manifest'))
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'orphaned.csv.manifest'))
 
-            expected_table_def = TableDefinition(name='orphaned.csv',
-                                                 full_path=os.path.join(sample_path, 'orphaned.csv'),
-                                                 is_sliced=False
-                                                 )
+        expected_table_def = TableDefinition(name='orphaned.csv',
+                                             full_path=os.path.join(sample_path, 'orphaned.csv'),
+                                             is_sliced=False
+                                             )
 
-            self.assertEqual(expected_table_def.full_path, table_def.full_path)
-            self.assertEqual(expected_table_def.name, table_def.name)
-            self.assertEqual(expected_table_def.is_sliced, table_def.is_sliced)
-            self.assertEqual(expected_table_def.get_manifest_dictionary(), table_def.get_manifest_dictionary())
+        self.assertEqual(expected_table_def.full_path, table_def.full_path)
+        self.assertEqual(expected_table_def.name, table_def.name)
+        self.assertEqual(expected_table_def.is_sliced, table_def.is_sliced)
+        self.assertEqual(expected_table_def.get_manifest_dictionary(), table_def.get_manifest_dictionary())
 
-        def test_build_from_manifest_sliced_table_valid_attributes(self):
-            sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       'data_examples', 'data1', 'in', 'tables')
+    def test_build_from_manifest_sliced_table_valid_attributes(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data1', 'in', 'tables')
 
-            table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sliced.csv.manifest'))
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sliced.csv.manifest'))
 
-            expected_table_def = TableDefinition(name='sliced.csv',
-                                                 full_path=os.path.join(sample_path, 'sliced.csv'),
-                                                 is_sliced=True
-                                                 )
+        expected_table_def = TableDefinition(name='sliced.csv',
+                                             full_path=os.path.join(sample_path, 'sliced.csv'),
+                                             is_sliced=True
+                                             )
 
-            self.assertEqual(expected_table_def.full_path, table_def.full_path)
-            self.assertEqual(expected_table_def.name, table_def.name)
-            self.assertEqual(expected_table_def.is_sliced, table_def.is_sliced)
+        self.assertEqual(expected_table_def.full_path, table_def.full_path)
+        self.assertEqual(expected_table_def.name, table_def.name)
+        self.assertEqual(expected_table_def.is_sliced, table_def.is_sliced)
 
-        def test_build_from_manifest_orphaned_manifest_valid_attributes(self):
-            sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       'data_examples', 'data1', 'in', 'tables')
+    def test_build_from_manifest_orphaned_manifest_valid_attributes(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data1', 'in', 'tables')
 
-            table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'orphaned_manifest.csv.manifest'))
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'orphaned_manifest.csv.manifest'))
 
-            expected_table_def = TableDefinition(name='orphaned_manifest.csv',
-                                                 full_path=None,
-                                                 is_sliced=False
-                                                 )
+        expected_table_def = TableDefinition(name='orphaned_manifest.csv',
+                                             full_path=None,
+                                             is_sliced=False
+                                             )
 
-            self.assertEqual(expected_table_def.full_path, table_def.full_path)
-            self.assertEqual(expected_table_def.name, table_def.name)
-            self.assertEqual(expected_table_def.is_sliced, table_def.is_sliced)
+        self.assertEqual(expected_table_def.full_path, table_def.full_path)
+        self.assertEqual(expected_table_def.name, table_def.name)
+        self.assertEqual(expected_table_def.is_sliced, table_def.is_sliced)
 
-        def test_table_manifest_error_destination(self):
-            with self.assertRaises(TypeError):
-                TableDefinition("testDef", "somepath", is_sliced=False, destination=['foo', 'bar'])
+    def test_table_manifest_error_destination(self):
+        with self.assertRaises(TypeError):
+            TableDefinition("testDef", "somepath", is_sliced=False, destination=['foo', 'bar'])
 
-        def test_table_manifest_error_primary_key(self):
-            with self.assertRaises(TypeError):
-                TableDefinition("testDef", "somepath", is_sliced=False, primary_key="column")
+    def test_table_manifest_error_primary_key(self):
+        with self.assertRaises(TypeError):
+            TableDefinition("testDef", "somepath", is_sliced=False, primary_key="column")
 
-        def test_table_manifest_error_columns(self):
-            with self.assertRaises(TypeError):
-                TableDefinition("testDef", "somepath", is_sliced=False, columns="column")
+    def test_table_manifest_error_columns(self):
+        with self.assertRaises(TypeError):
+            TableDefinition("testDef", "somepath", is_sliced=False, columns="column")
 
-        def test_table_manifest_error_column_delete_1(self):
-            with self.assertRaises(ValueError):
-                TableDefinition("testDef", "somepath", is_sliced=False, delete_where={"a": "b"})
+    def test_table_manifest_error_column_delete_1(self):
+        with self.assertRaises(ValueError):
+            TableDefinition("testDef", "somepath", is_sliced=False, delete_where={"a": "b"})
 
-        def test_table_manifest_error_column_delete_2(self):
-            with self.assertRaises(TypeError):
-                TableDefinition("testDef", "somepath", is_sliced=False, delete_where={"column": "a",
-                                                                                      "values": "b"})
+    def test_table_manifest_error_column_delete_2(self):
+        with self.assertRaises(TypeError):
+            TableDefinition("testDef", "somepath", is_sliced=False, delete_where={"column": "a",
+                                                                                  "values": "b"})
 
-        def test_table_manifest_error_column_delete_3(self):
-            with self.assertRaises(TypeError):
-                TableDefinition("testDef", "somepath", is_sliced=False, delete_where={"column": "a",
-                                                                                      "values": "b",
-                                                                                      "operator": "c"})
+    def test_table_manifest_error_column_delete_3(self):
+        with self.assertRaises(TypeError):
+            TableDefinition("testDef", "somepath", is_sliced=False, delete_where={"column": "a",
+                                                                                  "values": "b",
+                                                                                  "operator": "c"})
 
-        def test_unsupported_legacy_queue_properties_log(self):
-            with self.assertLogs(level='WARNING') as log:
-                td = TableDefinition("testDef", "somepath",
-                                     write_always=True, stage='out')
-                manifest = td.get_manifest_dictionary(legacy_queue=True)
-                self.assertEqual(len(log.output), 1)
-                self.assertEqual(len(log.records), 1)
-                self.assertIn("WARNING:root:Running on legacy queue "
-                              "some manifest properties will be ignored: ['write_always']",
-                              log.output[0])
-
-        def test_unsupported_legacy_queue_properties_excluded(self):
+    def test_unsupported_legacy_queue_properties_log(self):
+        with self.assertLogs(level='WARNING') as log:
             td = TableDefinition("testDef", "somepath",
                                  write_always=True, stage='out')
             manifest = td.get_manifest_dictionary(legacy_queue=True)
-            self.assertTrue('write_always' not in manifest)
+            self.assertEqual(len(log.output), 1)
+            self.assertEqual(len(log.records), 1)
+            self.assertIn("WARNING:root:Running on legacy queue "
+                          "some manifest properties will be ignored: ['write_always']",
+                          log.output[0])
 
-            manifest = td.get_manifest_dictionary(legacy_queue=False)
-            self.assertTrue('write_always' in manifest)
+    def test_unsupported_legacy_queue_properties_excluded(self):
+        td = TableDefinition("testDef", "somepath",
+                             write_always=True, stage='out')
+        manifest = td.get_manifest_dictionary(legacy_queue=True)
+        self.assertTrue('write_always' not in manifest)
+
+        manifest = td.get_manifest_dictionary(legacy_queue=False)
+        self.assertTrue('write_always' in manifest)
 
     class TestFileDefinition(unittest.TestCase):
 
