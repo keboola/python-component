@@ -629,7 +629,7 @@ class TableDefinition(IODefinition):
         "delete_where_operator"
     ]
 
-    OUTPUT_MANIFEST_QUEUE2_EXCLUDES = [
+    OUTPUT_MANIFEST_LEGACY_EXCLUDES = [
         "write_always"
     ]
 
@@ -749,7 +749,7 @@ class TableDefinition(IODefinition):
     @property
     def _manifest_attributes(self) -> SupportedManifestAttributes:
         return SupportedManifestAttributes(self.MANIFEST_ATTRIBUTES['out'], self.MANIFEST_ATTRIBUTES['in'],
-                                           self.OUTPUT_MANIFEST_QUEUE2_EXCLUDES)
+                                           self.OUTPUT_MANIFEST_LEGACY_EXCLUDES)
 
     # #### Manifest properties
     @property
