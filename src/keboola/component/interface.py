@@ -4,11 +4,11 @@ import glob
 import json
 import logging
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Union
 
-import sys
 from deprecated import deprecated
 from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
@@ -327,7 +327,8 @@ class CommonInterface:
                                  table_metadata: dao.TableMetadata = None,
                                  enclosure: str = '"',
                                  delimiter: str = ',',
-                                 delete_where: dict = None) -> dao.TableDefinition:
+                                 delete_where: dict = None,
+                                 write_always: bool = False) -> dao.TableDefinition:
         """
                 Helper method for dao.TableDefinition creation along with the "manifest".
                 It initializes path according to the storage_stage type.
@@ -347,6 +348,8 @@ class CommonInterface:
                     enclosure: str: CSV enclosure, by default "
                     delimiter: str: CSV delimiter, by default ,
                     delete_where: Dict with settings for deleting rows
+                    write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
         """
         if storage_stage == 'in':
             full_path = os.path.join(self.tables_in_path, name)
@@ -366,7 +369,8 @@ class CommonInterface:
                                    enclosure=enclosure,
                                    delimiter=delimiter,
                                    delete_where=delete_where,
-                                   stage=storage_stage)
+                                   stage=storage_stage,
+                                   write_always=write_always)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,
@@ -410,7 +414,8 @@ class CommonInterface:
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = '"',
                                     delimiter: str = ',',
-                                    delete_where: dict = None) -> dao.TableDefinition:
+                                    delete_where: dict = None,
+                                    write_always: bool = False) -> dao.TableDefinition:
         """
                        Helper method for output dao.TableDefinition creation along with the "manifest".
                        It initializes path in data/tables/out/ folder.
@@ -426,6 +431,8 @@ class CommonInterface:
                            enclosure: str: CSV enclosure, by default "
                            delimiter: str: CSV delimiter, by default ,
                            delete_where: Dict with settings for deleting rows
+                           write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
         """
 
         return self._create_table_definition(name=name,
@@ -438,7 +445,8 @@ class CommonInterface:
                                              table_metadata=table_metadata,
                                              enclosure=enclosure,
                                              delimiter=delimiter,
-                                             delete_where=delete_where)
+                                             delete_where=delete_where,
+                                             write_always=write_always)
 
     # # File processing
 
@@ -862,8 +870,20 @@ class CommonInterface:
     def files_in_path(self):
         return os.path.join(self.data_folder_path, 'in', 'files')
 
-    @staticmethod
-    def write_manifest(io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
+    @property
+    def is_legacy_queue(self) -> bool:
+        """
+        Check if the project is running on legacy queue (v1)
+        Returns:
+
+        """
+        features = os.environ.get('KBC_PROJECT_FEATURE_GATES')
+        is_legacy_queue = True
+        if not features or 'queuev2' in features:
+            is_legacy_queue = False
+        return is_legacy_queue
+
+    def write_manifest(self, io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
         """
         Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
 
@@ -895,14 +915,14 @@ class CommonInterface:
         Returns:
 
         """
-        manifest = io_definition.get_manifest_dictionary()
+
+        manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue)
         # make dirs if not exist
         os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
         with open(io_definition.full_path + '.manifest', 'w') as manifest_file:
             json.dump(manifest, manifest_file)
 
-    @staticmethod
-    def write_manifests(io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
+    def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -912,13 +932,12 @@ class CommonInterface:
 
         """
         for io_def in io_definitions:
-            CommonInterface.write_manifest(io_def)
+            self.write_manifest(io_def)
 
     # ############# DEPRECATED METHODS, TODO: remove
 
-    @staticmethod
     @deprecated(version='1.3.0', reason="You should use write_manifest function")
-    def write_filedef_manifest(file_definition: dao.FileDefinition):
+    def write_filedef_manifest(self, file_definition: dao.FileDefinition):
         """
         Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.
 
@@ -942,11 +961,10 @@ class CommonInterface:
         Returns:
 
         """
-        CommonInterface.write_manifest(file_definition)
+        self.write_manifest(file_definition)
 
-    @staticmethod
     @deprecated(version='1.3.0', reason="You should use write_manifests function")
-    def write_filedef_manifests(file_definitions: List[dao.FileDefinition]):
+    def write_filedef_manifests(self, file_definitions: List[dao.FileDefinition]):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -955,11 +973,10 @@ class CommonInterface:
         Returns:
 
         """
-        CommonInterface.write_manifests(file_definitions)
+        self.write_manifests(file_definitions)
 
-    @staticmethod
     @deprecated(version='1.3.0', reason="You should use write_manifest function")
-    def write_tabledef_manifest(table_definition: dao.TableDefinition):
+    def write_tabledef_manifest(self, table_definition: dao.TableDefinition):
         """
         Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.
 
@@ -988,11 +1005,10 @@ class CommonInterface:
         Returns:
 
         """
-        CommonInterface.write_manifest(table_definition)
+        self.write_manifest(table_definition)
 
-    @staticmethod
     @deprecated(version='1.3.0', reason="You should use write_manifests function")
-    def write_tabledef_manifests(table_definitions: List[dao.TableDefinition]):
+    def write_tabledef_manifests(self, table_definitions: List[dao.TableDefinition]):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -1001,7 +1017,7 @@ class CommonInterface:
         Returns:
 
         """
-        CommonInterface.write_manifests(table_definitions)
+        self.write_manifests(table_definitions)
 
 
 # ########## CONFIGURATION

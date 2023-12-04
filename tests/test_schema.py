@@ -32,6 +32,7 @@ class TestCommonInterface(unittest.TestCase):
         manifest_dict = order_table_definition_from_schema.get_manifest_dictionary()
         expected_manifest = {'primary_key': ['id'], 'columns': ['id', 'product_id', 'quantity'], 'enclosure': '"',
                              'delimiter': ',',
+                             'write_always': False,
                              'metadata': [{'key': 'KBC.description', 'value': 'this table holds data on orders'}],
                              'column_metadata': {'id': [{'key': 'KBC.description', 'value': 'ID of the order'},
                                                         {'key': 'KBC.datatype.basetype', 'value': 'STRING'},

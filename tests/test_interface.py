@@ -109,6 +109,20 @@ class TestCommonInterface(unittest.TestCase):
         tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'in', 'tables')
         self.assertEqual(tables_out, ci.tables_in_path)
 
+    def test_legacy_queue(self):
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = ''
+        ci = CommonInterface()
+        # with no env default to v2
+        self.assertEqual(False, ci.is_legacy_queue)
+
+        # otherwise check for queuev2
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2;someoterfeature'
+        self.assertEqual(False, ci.is_legacy_queue)
+
+        # If feature gates exists but doesn't contain queuev2 it's old queue
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someoterfeature'
+        self.assertEqual(True, ci.is_legacy_queue)
+
     def test_create_and_write_table_manifest_deprecated(self):
         ci = CommonInterface()
         # create table def
@@ -141,7 +155,8 @@ class TestCommonInterface(unittest.TestCase):
                 'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
                 'delete_where_column': 'lilly',
                 'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
+                'delete_where_operator': 'eq',
+                'write_always': False
             },
             config
         )
@@ -155,6 +170,51 @@ class TestCommonInterface(unittest.TestCase):
                                                    destination='some-destination',
                                                    primary_key=['foo'],
                                                    incremental=True,
+                                                   delete_where={'column': 'lilly',
+                                                                 'values': ['a', 'b'],
+                                                                 'operator': 'eq'},
+                                                   write_always=True
+                                                   )
+        out_table.table_metadata.add_table_metadata('bar', 'kochba')
+        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+
+        # write
+        ci.write_manifest(out_table)
+        manifest_filename = out_table.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {
+                'destination': 'some-destination',
+                'columns': ['foo', 'bar'],
+                'primary_key': ['foo'],
+                'incremental': True,
+                'write_always': True,
+                'delimiter': ',',
+                'enclosure': '"',
+                'metadata': [{'key': 'bar', 'value': 'kochba'}],
+                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+                'delete_where_column': 'lilly',
+                'delete_where_values': ['a', 'b'],
+                'delete_where_operator': 'eq'
+            },
+            config
+        )
+        os.remove(manifest_filename)
+
+    def test_create_and_write_table_manifest_old_queue(self):
+        # If feature gates exists but doesn't contain queuev2 it's old queue
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someoterfeature'
+
+        ci = CommonInterface()
+        # create table def
+        out_table = ci.create_out_table_definition('some-table.csv',
+                                                   columns=['foo', 'bar'],
+                                                   destination='some-destination',
+                                                   primary_key=['foo'],
+                                                   incremental=True,
+                                                   # the write_always will then not be present in the manifest even if set
+                                                   write_always=True,
                                                    delete_where={'column': 'lilly',
                                                                  'values': ['a', 'b'],
                                                                  'operator': 'eq'}
@@ -218,7 +278,8 @@ class TestCommonInterface(unittest.TestCase):
                 'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
                 'delete_where_column': 'lilly',
                 'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
+                'delete_where_operator': 'eq',
+                'write_always': False
             },
             config
         )
@@ -256,7 +317,8 @@ class TestCommonInterface(unittest.TestCase):
                 'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
                 'delete_where_column': 'lilly',
                 'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
+                'delete_where_operator': 'eq',
+                'write_always': False
             },
             config
         )

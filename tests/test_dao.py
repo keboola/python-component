@@ -176,7 +176,8 @@ class TestTableDefinition(unittest.TestCase):
                 'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
                 'delete_where_column': 'lilly',
                 'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
+                'delete_where_operator': 'eq',
+                'write_always': False
             },
             table_def.get_manifest_dictionary('out')
         )
@@ -298,124 +299,145 @@ class TestTableDefinition(unittest.TestCase):
                                                                                   "values": "b",
                                                                                   "operator": "c"})
 
+    def test_unsupported_legacy_queue_properties_log(self):
+        with self.assertLogs(level='WARNING') as log:
+            td = TableDefinition("testDef", "somepath",
+                                 write_always=True, stage='out')
+            manifest = td.get_manifest_dictionary(legacy_queue=True)
+            self.assertEqual(len(log.output), 1)
+            self.assertEqual(len(log.records), 1)
+            self.assertIn("WARNING:root:Running on legacy queue "
+                          "some manifest properties will be ignored: ['write_always']",
+                          log.output[0])
 
-class TestFileDefinition(unittest.TestCase):
+    def test_unsupported_legacy_queue_properties_excluded(self):
+        td = TableDefinition("testDef", "somepath",
+                             write_always=True, stage='out')
+        manifest = td.get_manifest_dictionary(legacy_queue=True)
+        self.assertTrue('write_always' not in manifest)
 
-    def setUp(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                            'data_examples', 'data1')
-        os.environ["KBC_DATADIR"] = path
+        manifest = td.get_manifest_dictionary(legacy_queue=False)
+        self.assertTrue('write_always' in manifest)
 
-    def test_file_manifest_minimal(self):
-        file_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
-        file_def = FileDefinition(file_path)
+    class TestFileDefinition(unittest.TestCase):
 
-        self.assertDictEqual(
-            {'tags': [],
-             'is_public': False,
-             'is_permanent': False,
-             'is_encrypted': False,
-             'notify': False},
-            file_def.get_manifest_dictionary()
-        )
+        def setUp(self):
+            path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'data_examples', 'data1')
+            os.environ["KBC_DATADIR"] = path
 
-    def test_file_manifest_full(self):
-        file_def = FileDefinition("123_test_Def", is_permanent=True,
-                                  is_encrypted=True,
-                                  is_public=True,
-                                  tags=['foo', 'bar'],
-                                  notify=True
-                                  )
-        file_def._raw_manifest['id'] = '123'
+        def test_file_manifest_minimal(self):
+            file_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
+            file_def = FileDefinition(file_path)
 
-        self.assertDictEqual(
-            {'tags': ['foo', 'bar'],
-             'is_public': True,
-             'is_permanent': True,
-             'is_encrypted': True,
-             'notify': True},
-            file_def.get_manifest_dictionary('out')
-        )
-        self.assertEqual(file_def.name, 'test_Def')
-        self.assertEqual(file_def.id, '123')
+            self.assertDictEqual(
+                {'tags': [],
+                 'is_public': False,
+                 'is_permanent': False,
+                 'is_encrypted': False,
+                 'notify': False},
+                file_def.get_manifest_dictionary()
+            )
 
-    def test_file_output_manifest_ignores_unrecognized(self):
-        file_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif.manifest')
-        file_def = FileDefinition.build_from_manifest(file_path)
+        def test_file_manifest_full(self):
+            file_def = FileDefinition("123_test_Def", is_permanent=True,
+                                      is_encrypted=True,
+                                      is_public=True,
+                                      tags=['foo', 'bar'],
+                                      notify=True
+                                      )
+            file_def._raw_manifest['id'] = '123'
 
-        # change stage
-        file_def.stage = 'out'
+            self.assertDictEqual(
+                {'tags': ['foo', 'bar'],
+                 'is_public': True,
+                 'is_permanent': True,
+                 'is_encrypted': True,
+                 'notify': True},
+                file_def.get_manifest_dictionary('out')
+            )
+            self.assertEqual(file_def.name, 'test_Def')
+            self.assertEqual(file_def.id, '123')
 
-        self.assertDictEqual(
-            {'tags': ['dilbert'],
-             'is_encrypted': True,
-             'is_public': False
-             },
-            file_def.get_manifest_dictionary()
-        )
+        def test_file_output_manifest_ignores_unrecognized(self):
+            file_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files',
+                                     '151971405_21702.strip.print.gif.manifest')
+            file_def = FileDefinition.build_from_manifest(file_path)
 
-    def test_build_from_manifest_matching_file_valid_attributes(self):
-        sample_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
-        manifest_path = sample_path + '.manifest'
-        file_def = FileDefinition.build_from_manifest(
-            manifest_path)
+            # change stage
+            file_def.stage = 'out'
 
-        expected_manifest = json.load(open(manifest_path))
+            self.assertDictEqual(
+                {'tags': ['dilbert'],
+                 'is_encrypted': True,
+                 'is_public': False
+                 },
+                file_def.get_manifest_dictionary()
+            )
 
-        self.assertEqual(sample_path, file_def.full_path)
-        self.assertEqual(expected_manifest['name'], file_def.name)
-        self.assertEqual(datetime.strptime(expected_manifest['created'], dao.KBC_DEFAULT_TIME_FORMAT), file_def.created)
-        self.assertEqual(expected_manifest['is_public'], file_def.is_public)
-        self.assertEqual(expected_manifest['is_encrypted'], file_def.is_encrypted)
-        self.assertEqual(expected_manifest['tags'], file_def.tags)
-        self.assertEqual(expected_manifest['max_age_days'], file_def.max_age_days)
-        self.assertEqual(expected_manifest['size_bytes'], file_def.size_bytes)
+        def test_build_from_manifest_matching_file_valid_attributes(self):
+            sample_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
+            manifest_path = sample_path + '.manifest'
+            file_def = FileDefinition.build_from_manifest(
+                manifest_path)
 
-    def test_build_from_manifest_nonexistentfile_fails(self):
-        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                   'data_examples', 'data1', 'in', 'files')
+            expected_manifest = json.load(open(manifest_path))
 
-        with self.assertRaises(ValueError):
-            FileDefinition.build_from_manifest(os.path.join(sample_path, 'orphaned.csv.manifest'))
+            self.assertEqual(sample_path, file_def.full_path)
+            self.assertEqual(expected_manifest['name'], file_def.name)
+            self.assertEqual(datetime.strptime(expected_manifest['created'], dao.KBC_DEFAULT_TIME_FORMAT),
+                             file_def.created)
+            self.assertEqual(expected_manifest['is_public'], file_def.is_public)
+            self.assertEqual(expected_manifest['is_encrypted'], file_def.is_encrypted)
+            self.assertEqual(expected_manifest['tags'], file_def.tags)
+            self.assertEqual(expected_manifest['max_age_days'], file_def.max_age_days)
+            self.assertEqual(expected_manifest['size_bytes'], file_def.size_bytes)
 
-    def test_user_tags(self):
-        all_tags = ['foo',
-                    'bar',
-                    'componentId: 1234',
-                    'configurationId: 12345',
-                    'configurationRowId: 12345',
-                    'runId: 22123',
-                    'branchId: 312321'
-                    ]
-        file_def = FileDefinition("123_test_Def", is_permanent=True,
-                                  is_encrypted=True,
-                                  is_public=True,
-                                  tags=all_tags,
-                                  notify=True
-                                  )
+        def test_build_from_manifest_nonexistentfile_fails(self):
+            sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                       'data_examples', 'data1', 'in', 'files')
 
-        self.assertDictEqual(
-            {'tags': all_tags,
-             'is_public': True,
-             'is_permanent': True,
-             'is_encrypted': True,
-             'notify': True},
-            file_def.get_manifest_dictionary()
-        )
+            with self.assertRaises(ValueError):
+                FileDefinition.build_from_manifest(os.path.join(sample_path, 'orphaned.csv.manifest'))
 
-        self.assertEqual(['foo', 'bar'], file_def.user_tags)
+        def test_user_tags(self):
+            all_tags = ['foo',
+                        'bar',
+                        'componentId: 1234',
+                        'configurationId: 12345',
+                        'configurationRowId: 12345',
+                        'runId: 22123',
+                        'branchId: 312321'
+                        ]
+            file_def = FileDefinition("123_test_Def", is_permanent=True,
+                                      is_encrypted=True,
+                                      is_public=True,
+                                      tags=all_tags,
+                                      notify=True
+                                      )
 
-    def test_all_tags(self):
-        all_tags = ['foo',
-                    'bar',
-                    'componentId: 1234',
-                    'configurationId: 12345',
-                    'configurationRowId: 12345',
-                    'runId: 22123',
-                    'branchId: 312321'
-                    ]
-        file_def = FileDefinition("123_test_Def",
-                                  tags=all_tags
-                                  )
+            self.assertDictEqual(
+                {'tags': all_tags,
+                 'is_public': True,
+                 'is_permanent': True,
+                 'is_encrypted': True,
+                 'notify': True},
+                file_def.get_manifest_dictionary()
+            )
 
-        self.assertEqual(all_tags, file_def.tags)
+            self.assertEqual(['foo', 'bar'], file_def.user_tags)
+
+        def test_all_tags(self):
+            all_tags = ['foo',
+                        'bar',
+                        'componentId: 1234',
+                        'configurationId: 12345',
+                        'configurationRowId: 12345',
+                        'runId: 22123',
+                        'branchId: 312321'
+                        ]
+            file_def = FileDefinition("123_test_Def",
+                                      tags=all_tags
+                                      )
+
+            self.assertEqual(all_tags, file_def.tags)

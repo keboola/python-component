@@ -1,11 +1,17 @@
 import dataclasses
 import json
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import List, Union, Dict, Optional
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 KBC_DEFAULT_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
@@ -381,6 +387,30 @@ class TableMetadata:
             raise ValueError(', '.join(errors) + f'\n Supported base types are: [{SupportedDataTypes.list()}]')
 
 
+@dataclass
+class SupportedManifestAttributes(SubscriptableDataclass):
+    out_attributes: List[str]
+    in_attributes: List[str]
+    out_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
+    in_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
+
+    def get_attributes_by_stage(self, stage: Literal["in", "out"], legacy_queue: bool = False) -> List[str]:
+        if stage == 'out':
+            attributes = self.out_attributes
+            exclude = self.out_legacy_exclude
+        elif stage == 'in':
+            attributes = self.in_attributes
+            exclude = self.in_legacy_exclude
+        else:
+            raise ValueError(f"Unsupported stage {stage}")
+
+        if legacy_queue:
+            logging.warning(f"Running on legacy queue some manifest properties will be ignored: {exclude}")
+            attributes = list(set(attributes).difference(exclude))
+
+        return attributes
+
+
 class IODefinition(ABC):
 
     def __init__(self, full_path):
@@ -396,7 +426,7 @@ class IODefinition(ABC):
                             ):
         raise NotImplementedError
 
-    def _filter_attributes_by_manifest_type(self, manifest_type):
+    def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False):
         """
         Filter manifest to contain only supported fields
         Args:
@@ -405,7 +435,8 @@ class IODefinition(ABC):
         Returns:
 
         """
-        supported_fields = self._manifest_attributes.get(manifest_type, [])
+        supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue)
+
         new_dict = self._raw_manifest.copy()
         if supported_fields:
             for attr in self._raw_manifest:
@@ -413,10 +444,10 @@ class IODefinition(ABC):
                     new_dict.pop(attr, None)
         return new_dict
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None) -> dict:
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue=False) -> dict:
         """
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
-        By default returns output manifest.
+        By default, returns output manifest.
              The result keeps only values that are applicable for
              the selected type of the Manifest file. Because although input and output manifests share most of
              the attributes, some are not shared.
@@ -428,6 +459,7 @@ class IODefinition(ABC):
             manifest_type (str): either 'in' or 'out'.
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
+            legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
 
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
@@ -436,7 +468,7 @@ class IODefinition(ABC):
         if not manifest_type:
             manifest_type = self.stage
 
-        return self._filter_attributes_by_manifest_type(manifest_type)
+        return self._filter_attributes_by_manifest_type(manifest_type, legacy_queue)
 
     @property
     def stage(self) -> str:
@@ -453,11 +485,11 @@ class IODefinition(ABC):
 
     @property
     @abstractmethod
-    def _manifest_attributes(self) -> Dict[str, List[str]]:
+    def _manifest_attributes(self) -> SupportedManifestAttributes:
         """
         Manifest attributes
         """
-        return {}
+        return SupportedManifestAttributes([], [])
 
     @property
     @abstractmethod
@@ -587,6 +619,7 @@ class TableDefinition(IODefinition):
         "columns",
         "incremental",
         "primary_key",
+        "write_always",
         "delimiter",
         "enclosure",
         "metadata",
@@ -594,6 +627,10 @@ class TableDefinition(IODefinition):
         "delete_where_column",
         "delete_where_values",
         "delete_where_operator"
+    ]
+
+    OUTPUT_MANIFEST_LEGACY_EXCLUDES = [
+        "write_always"
     ]
 
     MANIFEST_ATTRIBUTES = {'in': INPUT_MANIFEST_ATTRIBUTES,
@@ -608,7 +645,9 @@ class TableDefinition(IODefinition):
                  enclosure: str = '"',
                  delimiter: str = ',',
                  delete_where: dict = None,
-                 stage: str = 'in'):
+                 stage: str = 'in',
+                 write_always: bool = False
+                 ):
         """
 
         Args:
@@ -630,6 +669,8 @@ class TableDefinition(IODefinition):
             delimiter: str: CSV delimiter, by default ,
             delete_where (dict): Dict with settings for deleting rows
             stage: str: Storage Stage 'in' or 'out'
+            write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
         """
         super().__init__(full_path)
         self._name = name
@@ -650,6 +691,7 @@ class TableDefinition(IODefinition):
         self.table_metadata = table_metadata
         self.set_delete_where_from_dict(delete_where)
         self.stage = stage
+        self.write_always = write_always
 
     @classmethod
     def build_from_manifest(cls,
@@ -705,8 +747,9 @@ class TableDefinition(IODefinition):
         return table_def
 
     @property
-    def _manifest_attributes(self) -> Dict[str, List[str]]:
-        return self.MANIFEST_ATTRIBUTES
+    def _manifest_attributes(self) -> SupportedManifestAttributes:
+        return SupportedManifestAttributes(self.MANIFEST_ATTRIBUTES['out'], self.MANIFEST_ATTRIBUTES['in'],
+                                           self.OUTPUT_MANIFEST_LEGACY_EXCLUDES)
 
     # #### Manifest properties
     @property
@@ -798,6 +841,14 @@ class TableDefinition(IODefinition):
             self._raw_manifest['incremental'] = True
 
     @property
+    def write_always(self) -> bool:
+        return self._raw_manifest.get('write_always', False)
+
+    @write_always.setter
+    def write_always(self, write_always: bool):
+        self._raw_manifest['write_always'] = write_always
+
+    @property
     def primary_key(self) -> List[str]:
         return self._raw_manifest.get('primary_key', [])
 
@@ -864,7 +915,7 @@ class TableDefinition(IODefinition):
         self._raw_manifest['metadata'] = table_metadata.get_table_metadata_for_manifest()
         self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
 
-    def get_manifest_dictionary(self, stage_type: Optional[str] = None) -> dict:
+    def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False) -> dict:
         """
 
         Args:
@@ -877,8 +928,8 @@ class TableDefinition(IODefinition):
         """
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
-        self._raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type)
-        return self._raw_manifest
+        raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue)
+        return raw_manifest
 
 
 class FileDefinition(IODefinition):
@@ -1020,8 +1071,8 @@ class FileDefinition(IODefinition):
         return Path(self.full_path).name
 
     @property
-    def _manifest_attributes(self) -> Dict[str, List[str]]:
-        return {'out': self.OUTPUT_MANIFEST_KEYS}
+    def _manifest_attributes(self) -> SupportedManifestAttributes:
+        return SupportedManifestAttributes(self.OUTPUT_MANIFEST_KEYS, [])
 
     # ########### Output manifest properties - R/W
 
