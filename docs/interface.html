@@ -32,11 +32,11 @@ import glob
 import json
 import logging
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Union
 
-import sys
 from deprecated import deprecated
 from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
@@ -898,8 +898,20 @@ class CommonInterface:
     def files_in_path(self):
         return os.path.join(self.data_folder_path, &#39;in&#39;, &#39;files&#39;)
 
-    @staticmethod
-    def write_manifest(io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
+    @property
+    def is_legacy_queue(self) -&gt; bool:
+        &#34;&#34;&#34;
+        Check if the project is running on legacy queue (v1)
+        Returns:
+
+        &#34;&#34;&#34;
+        features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;)
+        is_legacy_queue = True
+        if not features or &#39;queuev2&#39; in features:
+            is_legacy_queue = False
+        return is_legacy_queue
+
+    def write_manifest(self, io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
         &#34;&#34;&#34;
         Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
 
@@ -931,14 +943,14 @@ class CommonInterface:
         Returns:
 
         &#34;&#34;&#34;
-        manifest = io_definition.get_manifest_dictionary()
+
+        manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue)
         # make dirs if not exist
         os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
         with open(io_definition.full_path + &#39;.manifest&#39;, &#39;w&#39;) as manifest_file:
             json.dump(manifest, manifest_file)
 
-    @staticmethod
-    def write_manifests(io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
+    def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
         &#34;&#34;&#34;
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -948,13 +960,12 @@ class CommonInterface:
 
         &#34;&#34;&#34;
         for io_def in io_definitions:
-            CommonInterface.write_manifest(io_def)
+            self.write_manifest(io_def)
 
     # ############# DEPRECATED METHODS, TODO: remove
 
-    @staticmethod
     @deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifest function&#34;)
-    def write_filedef_manifest(file_definition: dao.FileDefinition):
+    def write_filedef_manifest(self, file_definition: dao.FileDefinition):
         &#34;&#34;&#34;
         Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.
 
@@ -978,11 +989,10 @@ class CommonInterface:
         Returns:
 
         &#34;&#34;&#34;
-        CommonInterface.write_manifest(file_definition)
+        self.write_manifest(file_definition)
 
-    @staticmethod
     @deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifests function&#34;)
-    def write_filedef_manifests(file_definitions: List[dao.FileDefinition]):
+    def write_filedef_manifests(self, file_definitions: List[dao.FileDefinition]):
         &#34;&#34;&#34;
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -991,11 +1001,10 @@ class CommonInterface:
         Returns:
 
         &#34;&#34;&#34;
-        CommonInterface.write_manifests(file_definitions)
+        self.write_manifests(file_definitions)
 
-    @staticmethod
     @deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifest function&#34;)
-    def write_tabledef_manifest(table_definition: dao.TableDefinition):
+    def write_tabledef_manifest(self, table_definition: dao.TableDefinition):
         &#34;&#34;&#34;
         Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.
 
@@ -1024,11 +1033,10 @@ class CommonInterface:
         Returns:
 
         &#34;&#34;&#34;
-        CommonInterface.write_manifest(table_definition)
+        self.write_manifest(table_definition)
 
-    @staticmethod
     @deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifests function&#34;)
-    def write_tabledef_manifests(table_definitions: List[dao.TableDefinition]):
+    def write_tabledef_manifests(self, table_definitions: List[dao.TableDefinition]):
         &#34;&#34;&#34;
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -1037,7 +1045,7 @@ class CommonInterface:
         Returns:
 
         &#34;&#34;&#34;
-        CommonInterface.write_manifests(table_definitions)
+        self.write_manifests(table_definitions)
 
 
 # ########## CONFIGURATION
@@ -2098,8 +2106,20 @@ is established in following order:</p>
     def files_in_path(self):
         return os.path.join(self.data_folder_path, &#39;in&#39;, &#39;files&#39;)
 
-    @staticmethod
-    def write_manifest(io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
+    @property
+    def is_legacy_queue(self) -&gt; bool:
+        &#34;&#34;&#34;
+        Check if the project is running on legacy queue (v1)
+        Returns:
+
+        &#34;&#34;&#34;
+        features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;)
+        is_legacy_queue = True
+        if not features or &#39;queuev2&#39; in features:
+            is_legacy_queue = False
+        return is_legacy_queue
+
+    def write_manifest(self, io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
         &#34;&#34;&#34;
         Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
 
@@ -2131,14 +2151,14 @@ is established in following order:</p>
         Returns:
 
         &#34;&#34;&#34;
-        manifest = io_definition.get_manifest_dictionary()
+
+        manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue)
         # make dirs if not exist
         os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
         with open(io_definition.full_path + &#39;.manifest&#39;, &#39;w&#39;) as manifest_file:
             json.dump(manifest, manifest_file)
 
-    @staticmethod
-    def write_manifests(io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
+    def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
         &#34;&#34;&#34;
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -2148,13 +2168,12 @@ is established in following order:</p>
 
         &#34;&#34;&#34;
         for io_def in io_definitions:
-            CommonInterface.write_manifest(io_def)
+            self.write_manifest(io_def)
 
     # ############# DEPRECATED METHODS, TODO: remove
 
-    @staticmethod
     @deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifest function&#34;)
-    def write_filedef_manifest(file_definition: dao.FileDefinition):
+    def write_filedef_manifest(self, file_definition: dao.FileDefinition):
         &#34;&#34;&#34;
         Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.
 
@@ -2178,11 +2197,10 @@ is established in following order:</p>
         Returns:
 
         &#34;&#34;&#34;
-        CommonInterface.write_manifest(file_definition)
+        self.write_manifest(file_definition)
 
-    @staticmethod
     @deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifests function&#34;)
-    def write_filedef_manifests(file_definitions: List[dao.FileDefinition]):
+    def write_filedef_manifests(self, file_definitions: List[dao.FileDefinition]):
         &#34;&#34;&#34;
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -2191,11 +2209,10 @@ is established in following order:</p>
         Returns:
 
         &#34;&#34;&#34;
-        CommonInterface.write_manifests(file_definitions)
+        self.write_manifests(file_definitions)
 
-    @staticmethod
     @deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifest function&#34;)
-    def write_tabledef_manifest(table_definition: dao.TableDefinition):
+    def write_tabledef_manifest(self, table_definition: dao.TableDefinition):
         &#34;&#34;&#34;
         Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.
 
@@ -2224,11 +2241,10 @@ is established in following order:</p>
         Returns:
 
         &#34;&#34;&#34;
-        CommonInterface.write_manifest(table_definition)
+        self.write_manifest(table_definition)
 
-    @staticmethod
     @deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifests function&#34;)
-    def write_tabledef_manifests(table_definitions: List[dao.TableDefinition]):
+    def write_tabledef_manifests(self, table_definitions: List[dao.TableDefinition]):
         &#34;&#34;&#34;
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -2237,7 +2253,7 @@ is established in following order:</p>
         Returns:
 
         &#34;&#34;&#34;
-        CommonInterface.write_manifests(table_definitions)</code></pre>
+        self.write_manifests(table_definitions)</code></pre>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
@@ -2372,272 +2388,6 @@ def set_gelf_logger(log_level: int = logging.INFO, transport_layer=&#39;TCP&#39;
     return logger</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.interface.CommonInterface.write_filedef_manifest"><code class="name flex">
-<span>def <span class="ident">write_filedef_manifest</span></span>(<span>file_definition: <a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.</p>
-<p>** Usage:**</p>
-<pre><code class="language-python">from keboola.component import CommonInterface
-from keboola.component import dao
-
-ci = CommonInterface()
-
-# build table definition
-file_def = ci.create_out_file_definition(name='my_file.xml', tags=['tag', 'tag2'])
-ci.write_filedef_manifest(file_def)
-</code></pre>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>file_definition</code></strong> :&ensp;<code>dao.FileDefinition</code></dt>
-<dd>Initialized dao.FileDefinition object containing manifest.</dd>
-</dl>
-<p>Returns:</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifest function&#34;)
-def write_filedef_manifest(file_definition: dao.FileDefinition):
-    &#34;&#34;&#34;
-    Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.
-
-
-    ** Usage:**
-
-    ```python
-    from keboola.component import CommonInterface
-    from keboola.component import dao
-
-    ci = CommonInterface()
-
-    # build table definition
-    file_def = ci.create_out_file_definition(name=&#39;my_file.xml&#39;, tags=[&#39;tag&#39;, &#39;tag2&#39;])
-    ci.write_filedef_manifest(file_def)
-    ```
-
-    Args:
-        file_definition (dao.FileDefinition): Initialized dao.FileDefinition object containing manifest.
-
-    Returns:
-
-    &#34;&#34;&#34;
-    CommonInterface.write_manifest(file_definition)</code></pre>
-</details>
-</dd>
-<dt id="keboola.component.interface.CommonInterface.write_filedef_manifests"><code class="name flex">
-<span>def <span class="ident">write_filedef_manifests</span></span>(<span>file_definitions: List[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>])</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
-<h2 id="args">Args</h2>
-<p>file_definitions:
-Returns:</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifests function&#34;)
-def write_filedef_manifests(file_definitions: List[dao.FileDefinition]):
-    &#34;&#34;&#34;
-    Process all table definition objects and create appropriate manifest files.
-    Args:
-        file_definitions:
-
-    Returns:
-
-    &#34;&#34;&#34;
-    CommonInterface.write_manifests(file_definitions)</code></pre>
-</details>
-</dd>
-<dt id="keboola.component.interface.CommonInterface.write_manifest"><code class="name flex">
-<span>def <span class="ident">write_manifest</span></span>(<span>io_definition: Union[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>, <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>])</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.</p>
-<p>** Usage:**</p>
-<pre><code class="language-python">from keboola.component import CommonInterface
-from keboola.component import dao
-
-ci = CommonInterface()
-
-# build table definition
-table_def = ci.create_out_table_definition(name='my_new_table', mytable.csv'
-                        , incremental = True
-                        , table_metadata = tm
-                        ))
-ci.write_manifest(table_def)
-
-# build file definition
-file_def = ci.create_out_file_definition(name='my_file.xml', tags=['tag', 'tag2'])
-ci.write_manifest(file_def)
-</code></pre>
-<h2 id="args">Args</h2>
-<p>io_definition Union[dao.FileDefinition, dao.TableDefinition]: Initialized dao.IODefinition
-object containing manifest.
-Returns:</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def write_manifest(io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
-    &#34;&#34;&#34;
-    Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
-
-
-    ** Usage:**
-
-    ```python
-    from keboola.component import CommonInterface
-    from keboola.component import dao
-
-    ci = CommonInterface()
-
-    # build table definition
-    table_def = ci.create_out_table_definition(name=&#39;my_new_table&#39;, mytable.csv&#39;
-                            , incremental = True
-                            , table_metadata = tm
-                            ))
-    ci.write_manifest(table_def)
-
-    # build file definition
-    file_def = ci.create_out_file_definition(name=&#39;my_file.xml&#39;, tags=[&#39;tag&#39;, &#39;tag2&#39;])
-    ci.write_manifest(file_def)
-    ```
-
-    Args:
-        io_definition Union[dao.FileDefinition, dao.TableDefinition]: Initialized dao.IODefinition
-         object containing manifest.
-
-    Returns:
-
-    &#34;&#34;&#34;
-    manifest = io_definition.get_manifest_dictionary()
-    # make dirs if not exist
-    os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
-    with open(io_definition.full_path + &#39;.manifest&#39;, &#39;w&#39;) as manifest_file:
-        json.dump(manifest, manifest_file)</code></pre>
-</details>
-</dd>
-<dt id="keboola.component.interface.CommonInterface.write_manifests"><code class="name flex">
-<span>def <span class="ident">write_manifests</span></span>(<span>io_definitions: List[Union[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>, <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>]])</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
-<h2 id="args">Args</h2>
-<p>io_definitions:
-Returns:</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def write_manifests(io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
-    &#34;&#34;&#34;
-    Process all table definition objects and create appropriate manifest files.
-    Args:
-        io_definitions:
-
-    Returns:
-
-    &#34;&#34;&#34;
-    for io_def in io_definitions:
-        CommonInterface.write_manifest(io_def)</code></pre>
-</details>
-</dd>
-<dt id="keboola.component.interface.CommonInterface.write_tabledef_manifest"><code class="name flex">
-<span>def <span class="ident">write_tabledef_manifest</span></span>(<span>table_definition: <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.</p>
-<p>** Usage:**</p>
-<pre><code class="language-python">from keboola.component import CommonInterface
-from keboola.component import dao
-
-ci = CommonInterface()
-tm = dao.TableMetadata()
-tm.add_table_description(&quot;My new table&quot;)
-
-# build table definition
-table_def = ci.create_out_table_definition(name='my_new_table', mytable.csv'
-                        , incremental = True
-                        , table_metadata = tm
-                        ))
-ci.write_tabledef_manifest(table_def)
-</code></pre>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>table_definition</code></strong> :&ensp;<code>dao.TableDefinition</code></dt>
-<dd>Initialized dao.TableDefinition object containing manifest.</dd>
-</dl>
-<p>Returns:</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifest function&#34;)
-def write_tabledef_manifest(table_definition: dao.TableDefinition):
-    &#34;&#34;&#34;
-    Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.
-
-
-    ** Usage:**
-
-    ```python
-    from keboola.component import CommonInterface
-    from keboola.component import dao
-
-    ci = CommonInterface()
-    tm = dao.TableMetadata()
-    tm.add_table_description(&#34;My new table&#34;)
-
-    # build table definition
-    table_def = ci.create_out_table_definition(name=&#39;my_new_table&#39;, mytable.csv&#39;
-                            , incremental = True
-                            , table_metadata = tm
-                            ))
-    ci.write_tabledef_manifest(table_def)
-    ```
-
-    Args:
-        table_definition (dao.TableDefinition): Initialized dao.TableDefinition object containing manifest.
-
-    Returns:
-
-    &#34;&#34;&#34;
-    CommonInterface.write_manifest(table_definition)</code></pre>
-</details>
-</dd>
-<dt id="keboola.component.interface.CommonInterface.write_tabledef_manifests"><code class="name flex">
-<span>def <span class="ident">write_tabledef_manifests</span></span>(<span>table_definitions: List[<a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>])</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
-<h2 id="args">Args</h2>
-<p>table_definitions:
-Returns:</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifests function&#34;)
-def write_tabledef_manifests(table_definitions: List[dao.TableDefinition]):
-    &#34;&#34;&#34;
-    Process all table definition objects and create appropriate manifest files.
-    Args:
-        table_definitions:
-
-    Returns:
-
-    &#34;&#34;&#34;
-    CommonInterface.write_manifests(table_definitions)</code></pre>
-</details>
-</dd>
 </dl>
 <h3>Instance variables</h3>
 <dl>
@@ -2678,6 +2428,28 @@ def files_in_path(self):
 <pre><code class="python">@property
 def files_out_path(self):
     return os.path.join(self.data_folder_path, &#39;out&#39;, &#39;files&#39;)</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.interface.CommonInterface.is_legacy_queue"><code class="name">var <span class="ident">is_legacy_queue</span> : bool</code></dt>
+<dd>
+<div class="desc"><p>Check if the project is running on legacy queue (v1)
+Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_legacy_queue(self) -&gt; bool:
+    &#34;&#34;&#34;
+    Check if the project is running on legacy queue (v1)
+    Returns:
+
+    &#34;&#34;&#34;
+    features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;)
+    is_legacy_queue = True
+    if not features or &#39;queuev2&#39; in features:
+        is_legacy_queue = False
+    return is_legacy_queue</code></pre>
 </details>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.tables_in_path"><code class="name">var <span class="ident">tables_in_path</span></code></dt>
@@ -3393,6 +3165,179 @@ par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))</p></div>
                                      mandatory_params, &#39;image/stack parameters&#39;)</code></pre>
 </details>
 </dd>
+<dt id="keboola.component.interface.CommonInterface.write_filedef_manifest"><code class="name flex">
+<span>def <span class="ident">write_filedef_manifest</span></span>(<span>self, file_definition: <a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.</p>
+<p>** Usage:**</p>
+<pre><code class="language-python">from keboola.component import CommonInterface
+from keboola.component import dao
+
+ci = CommonInterface()
+
+# build table definition
+file_def = ci.create_out_file_definition(name='my_file.xml', tags=['tag', 'tag2'])
+ci.write_filedef_manifest(file_def)
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_definition</code></strong> :&ensp;<code>dao.FileDefinition</code></dt>
+<dd>Initialized dao.FileDefinition object containing manifest.</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifest function&#34;)
+def write_filedef_manifest(self, file_definition: dao.FileDefinition):
+    &#34;&#34;&#34;
+    Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.
+
+
+    ** Usage:**
+
+    ```python
+    from keboola.component import CommonInterface
+    from keboola.component import dao
+
+    ci = CommonInterface()
+
+    # build table definition
+    file_def = ci.create_out_file_definition(name=&#39;my_file.xml&#39;, tags=[&#39;tag&#39;, &#39;tag2&#39;])
+    ci.write_filedef_manifest(file_def)
+    ```
+
+    Args:
+        file_definition (dao.FileDefinition): Initialized dao.FileDefinition object containing manifest.
+
+    Returns:
+
+    &#34;&#34;&#34;
+    self.write_manifest(file_definition)</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.interface.CommonInterface.write_filedef_manifests"><code class="name flex">
+<span>def <span class="ident">write_filedef_manifests</span></span>(<span>self, file_definitions: List[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
+<h2 id="args">Args</h2>
+<p>file_definitions:
+Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifests function&#34;)
+def write_filedef_manifests(self, file_definitions: List[dao.FileDefinition]):
+    &#34;&#34;&#34;
+    Process all table definition objects and create appropriate manifest files.
+    Args:
+        file_definitions:
+
+    Returns:
+
+    &#34;&#34;&#34;
+    self.write_manifests(file_definitions)</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.interface.CommonInterface.write_manifest"><code class="name flex">
+<span>def <span class="ident">write_manifest</span></span>(<span>self, io_definition: Union[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>, <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.</p>
+<p>** Usage:**</p>
+<pre><code class="language-python">from keboola.component import CommonInterface
+from keboola.component import dao
+
+ci = CommonInterface()
+
+# build table definition
+table_def = ci.create_out_table_definition(name='my_new_table', mytable.csv'
+                        , incremental = True
+                        , table_metadata = tm
+                        ))
+ci.write_manifest(table_def)
+
+# build file definition
+file_def = ci.create_out_file_definition(name='my_file.xml', tags=['tag', 'tag2'])
+ci.write_manifest(file_def)
+</code></pre>
+<h2 id="args">Args</h2>
+<p>io_definition Union[dao.FileDefinition, dao.TableDefinition]: Initialized dao.IODefinition
+object containing manifest.
+Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_manifest(self, io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
+    &#34;&#34;&#34;
+    Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
+
+
+    ** Usage:**
+
+    ```python
+    from keboola.component import CommonInterface
+    from keboola.component import dao
+
+    ci = CommonInterface()
+
+    # build table definition
+    table_def = ci.create_out_table_definition(name=&#39;my_new_table&#39;, mytable.csv&#39;
+                            , incremental = True
+                            , table_metadata = tm
+                            ))
+    ci.write_manifest(table_def)
+
+    # build file definition
+    file_def = ci.create_out_file_definition(name=&#39;my_file.xml&#39;, tags=[&#39;tag&#39;, &#39;tag2&#39;])
+    ci.write_manifest(file_def)
+    ```
+
+    Args:
+        io_definition Union[dao.FileDefinition, dao.TableDefinition]: Initialized dao.IODefinition
+         object containing manifest.
+
+    Returns:
+
+    &#34;&#34;&#34;
+
+    manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue)
+    # make dirs if not exist
+    os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
+    with open(io_definition.full_path + &#39;.manifest&#39;, &#39;w&#39;) as manifest_file:
+        json.dump(manifest, manifest_file)</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.interface.CommonInterface.write_manifests"><code class="name flex">
+<span>def <span class="ident">write_manifests</span></span>(<span>self, io_definitions: List[Union[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>, <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>]])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
+<h2 id="args">Args</h2>
+<p>io_definitions:
+Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
+    &#34;&#34;&#34;
+    Process all table definition objects and create appropriate manifest files.
+    Args:
+        io_definitions:
+
+    Returns:
+
+    &#34;&#34;&#34;
+    for io_def in io_definitions:
+        self.write_manifest(io_def)</code></pre>
+</details>
+</dd>
 <dt id="keboola.component.interface.CommonInterface.write_state_file"><code class="name flex">
 <span>def <span class="ident">write_state_file</span></span>(<span>self, state_dict: dict)</span>
 </code></dt>
@@ -3415,6 +3360,94 @@ par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))</p></div>
 
     with open(os.path.join(self.configuration.data_dir, &#39;out&#39;, &#39;state.json&#39;), &#39;w+&#39;) as state_file:
         json.dump(state_dict, state_file)</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.interface.CommonInterface.write_tabledef_manifest"><code class="name flex">
+<span>def <span class="ident">write_tabledef_manifest</span></span>(<span>self, table_definition: <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.</p>
+<p>** Usage:**</p>
+<pre><code class="language-python">from keboola.component import CommonInterface
+from keboola.component import dao
+
+ci = CommonInterface()
+tm = dao.TableMetadata()
+tm.add_table_description(&quot;My new table&quot;)
+
+# build table definition
+table_def = ci.create_out_table_definition(name='my_new_table', mytable.csv'
+                        , incremental = True
+                        , table_metadata = tm
+                        ))
+ci.write_tabledef_manifest(table_def)
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>table_definition</code></strong> :&ensp;<code>dao.TableDefinition</code></dt>
+<dd>Initialized dao.TableDefinition object containing manifest.</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifest function&#34;)
+def write_tabledef_manifest(self, table_definition: dao.TableDefinition):
+    &#34;&#34;&#34;
+    Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.
+
+
+    ** Usage:**
+
+    ```python
+    from keboola.component import CommonInterface
+    from keboola.component import dao
+
+    ci = CommonInterface()
+    tm = dao.TableMetadata()
+    tm.add_table_description(&#34;My new table&#34;)
+
+    # build table definition
+    table_def = ci.create_out_table_definition(name=&#39;my_new_table&#39;, mytable.csv&#39;
+                            , incremental = True
+                            , table_metadata = tm
+                            ))
+    ci.write_tabledef_manifest(table_def)
+    ```
+
+    Args:
+        table_definition (dao.TableDefinition): Initialized dao.TableDefinition object containing manifest.
+
+    Returns:
+
+    &#34;&#34;&#34;
+    self.write_manifest(table_definition)</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.interface.CommonInterface.write_tabledef_manifests"><code class="name flex">
+<span>def <span class="ident">write_tabledef_manifests</span></span>(<span>self, table_definitions: List[<a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
+<h2 id="args">Args</h2>
+<p>table_definitions:
+Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifests function&#34;)
+def write_tabledef_manifests(self, table_definitions: List[dao.TableDefinition]):
+    &#34;&#34;&#34;
+    Process all table definition objects and create appropriate manifest files.
+    Args:
+        table_definitions:
+
+    Returns:
+
+    &#34;&#34;&#34;
+    self.write_manifests(table_definitions)</code></pre>
 </details>
 </dd>
 </dl>
@@ -3767,6 +3800,7 @@ def tables_output_mapping(self) -&gt; List[dao.TableOutputMapping]:
 <li><code><a title="keboola.component.interface.CommonInterface.get_input_table_definition_by_name" href="#keboola.component.interface.CommonInterface.get_input_table_definition_by_name">get_input_table_definition_by_name</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.get_input_tables_definitions" href="#keboola.component.interface.CommonInterface.get_input_tables_definitions">get_input_tables_definitions</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.get_state_file" href="#keboola.component.interface.CommonInterface.get_state_file">get_state_file</a></code></li>
+<li><code><a title="keboola.component.interface.CommonInterface.is_legacy_queue" href="#keboola.component.interface.CommonInterface.is_legacy_queue">is_legacy_queue</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.set_default_logger" href="#keboola.component.interface.CommonInterface.set_default_logger">set_default_logger</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.set_gelf_logger" href="#keboola.component.interface.CommonInterface.set_gelf_logger">set_gelf_logger</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.tables_in_path" href="#keboola.component.interface.CommonInterface.tables_in_path">tables_in_path</a></code></li>

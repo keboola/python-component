@@ -28,12 +28,18 @@
 </summary>
 <pre><code class="python">import dataclasses
 import json
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import List, Union, Dict, Optional
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 KBC_DEFAULT_TIME_FORMAT = &#39;%Y-%m-%dT%H:%M:%S%z&#39;
 
@@ -409,6 +415,30 @@ class TableMetadata:
             raise ValueError(&#39;, &#39;.join(errors) + f&#39;\n Supported base types are: [{SupportedDataTypes.list()}]&#39;)
 
 
+@dataclass
+class SupportedManifestAttributes(SubscriptableDataclass):
+    out_attributes: List[str]
+    in_attributes: List[str]
+    out_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
+    in_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
+
+    def get_attributes_by_stage(self, stage: Literal[&#34;in&#34;, &#34;out&#34;], legacy_queue: bool = False) -&gt; List[str]:
+        if stage == &#39;out&#39;:
+            attributes = self.out_attributes
+            exclude = self.out_legacy_exclude
+        elif stage == &#39;in&#39;:
+            attributes = self.in_attributes
+            exclude = self.in_legacy_exclude
+        else:
+            raise ValueError(f&#34;Unsupported stage {stage}&#34;)
+
+        if legacy_queue:
+            logging.warning(f&#34;Running on legacy queue some manifest properties will be ignored: {exclude}&#34;)
+            attributes = list(set(attributes).difference(exclude))
+
+        return attributes
+
+
 class IODefinition(ABC):
 
     def __init__(self, full_path):
@@ -424,7 +454,7 @@ class IODefinition(ABC):
                             ):
         raise NotImplementedError
 
-    def _filter_attributes_by_manifest_type(self, manifest_type):
+    def _filter_attributes_by_manifest_type(self, manifest_type: Literal[&#34;in&#34;, &#34;out&#34;], legacy_queue: bool = False):
         &#34;&#34;&#34;
         Filter manifest to contain only supported fields
         Args:
@@ -433,7 +463,8 @@ class IODefinition(ABC):
         Returns:
 
         &#34;&#34;&#34;
-        supported_fields = self._manifest_attributes.get(manifest_type, [])
+        supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue)
+
         new_dict = self._raw_manifest.copy()
         if supported_fields:
             for attr in self._raw_manifest:
@@ -441,10 +472,10 @@ class IODefinition(ABC):
                     new_dict.pop(attr, None)
         return new_dict
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None) -&gt; dict:
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue=False) -&gt; dict:
         &#34;&#34;&#34;
         Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
-        By default returns output manifest.
+        By default, returns output manifest.
              The result keeps only values that are applicable for
              the selected type of the Manifest file. Because although input and output manifests share most of
              the attributes, some are not shared.
@@ -456,6 +487,7 @@ class IODefinition(ABC):
             manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
+            legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
 
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
@@ -464,7 +496,7 @@ class IODefinition(ABC):
         if not manifest_type:
             manifest_type = self.stage
 
-        return self._filter_attributes_by_manifest_type(manifest_type)
+        return self._filter_attributes_by_manifest_type(manifest_type, legacy_queue)
 
     @property
     def stage(self) -&gt; str:
@@ -481,11 +513,11 @@ class IODefinition(ABC):
 
     @property
     @abstractmethod
-    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
+    def _manifest_attributes(self) -&gt; SupportedManifestAttributes:
         &#34;&#34;&#34;
         Manifest attributes
         &#34;&#34;&#34;
-        return {}
+        return SupportedManifestAttributes([], [])
 
     @property
     @abstractmethod
@@ -625,6 +657,10 @@ class TableDefinition(IODefinition):
         &#34;delete_where_operator&#34;
     ]
 
+    OUTPUT_MANIFEST_LEGACY_EXCLUDES = [
+        &#34;write_always&#34;
+    ]
+
     MANIFEST_ATTRIBUTES = {&#39;in&#39;: INPUT_MANIFEST_ATTRIBUTES,
                            &#39;out&#39;: OUTPUT_MANIFEST_ATTRIBUTES}
 
@@ -739,8 +775,9 @@ class TableDefinition(IODefinition):
         return table_def
 
     @property
-    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
-        return self.MANIFEST_ATTRIBUTES
+    def _manifest_attributes(self) -&gt; SupportedManifestAttributes:
+        return SupportedManifestAttributes(self.MANIFEST_ATTRIBUTES[&#39;out&#39;], self.MANIFEST_ATTRIBUTES[&#39;in&#39;],
+                                           self.OUTPUT_MANIFEST_LEGACY_EXCLUDES)
 
     # #### Manifest properties
     @property
@@ -836,9 +873,8 @@ class TableDefinition(IODefinition):
         return self._raw_manifest.get(&#39;write_always&#39;, False)
 
     @write_always.setter
-    def write_always(self, incremental: bool):
-        if incremental:
-            self._raw_manifest[&#39;write_always&#39;] = True
+    def write_always(self, write_always: bool):
+        self._raw_manifest[&#39;write_always&#39;] = write_always
 
     @property
     def primary_key(self) -&gt; List[str]:
@@ -907,7 +943,7 @@ class TableDefinition(IODefinition):
         self._raw_manifest[&#39;metadata&#39;] = table_metadata.get_table_metadata_for_manifest()
         self._raw_manifest[&#39;column_metadata&#39;] = table_metadata.get_column_metadata_for_manifest()
 
-    def get_manifest_dictionary(self, stage_type: Optional[str] = None) -&gt; dict:
+    def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False) -&gt; dict:
         &#34;&#34;&#34;
 
         Args:
@@ -920,8 +956,8 @@ class TableDefinition(IODefinition):
         &#34;&#34;&#34;
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
-        self._raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type)
-        return self._raw_manifest
+        raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue)
+        return raw_manifest
 
 
 class FileDefinition(IODefinition):
@@ -1063,8 +1099,8 @@ class FileDefinition(IODefinition):
         return Path(self.full_path).name
 
     @property
-    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
-        return {&#39;out&#39;: self.OUTPUT_MANIFEST_KEYS}
+    def _manifest_attributes(self) -&gt; SupportedManifestAttributes:
+        return SupportedManifestAttributes(self.OUTPUT_MANIFEST_KEYS, [])
 
     # ########### Output manifest properties - R/W
 
@@ -1585,8 +1621,8 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
         return Path(self.full_path).name
 
     @property
-    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
-        return {&#39;out&#39;: self.OUTPUT_MANIFEST_KEYS}
+    def _manifest_attributes(self) -&gt; SupportedManifestAttributes:
+        return SupportedManifestAttributes(self.OUTPUT_MANIFEST_KEYS, [])
 
     # ########### Output manifest properties - R/W
 
@@ -2027,7 +2063,7 @@ inheritance.</p></div>
                             ):
         raise NotImplementedError
 
-    def _filter_attributes_by_manifest_type(self, manifest_type):
+    def _filter_attributes_by_manifest_type(self, manifest_type: Literal[&#34;in&#34;, &#34;out&#34;], legacy_queue: bool = False):
         &#34;&#34;&#34;
         Filter manifest to contain only supported fields
         Args:
@@ -2036,7 +2072,8 @@ inheritance.</p></div>
         Returns:
 
         &#34;&#34;&#34;
-        supported_fields = self._manifest_attributes.get(manifest_type, [])
+        supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue)
+
         new_dict = self._raw_manifest.copy()
         if supported_fields:
             for attr in self._raw_manifest:
@@ -2044,10 +2081,10 @@ inheritance.</p></div>
                     new_dict.pop(attr, None)
         return new_dict
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None) -&gt; dict:
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue=False) -&gt; dict:
         &#34;&#34;&#34;
         Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
-        By default returns output manifest.
+        By default, returns output manifest.
              The result keeps only values that are applicable for
              the selected type of the Manifest file. Because although input and output manifests share most of
              the attributes, some are not shared.
@@ -2059,6 +2096,7 @@ inheritance.</p></div>
             manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
+            legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
 
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
@@ -2067,7 +2105,7 @@ inheritance.</p></div>
         if not manifest_type:
             manifest_type = self.stage
 
-        return self._filter_attributes_by_manifest_type(manifest_type)
+        return self._filter_attributes_by_manifest_type(manifest_type, legacy_queue)
 
     @property
     def stage(self) -&gt; str:
@@ -2084,11 +2122,11 @@ inheritance.</p></div>
 
     @property
     @abstractmethod
-    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
+    def _manifest_attributes(self) -&gt; SupportedManifestAttributes:
         &#34;&#34;&#34;
         Manifest attributes
         &#34;&#34;&#34;
-        return {}
+        return SupportedManifestAttributes([], [])
 
     @property
     @abstractmethod
@@ -2282,11 +2320,11 @@ def stage(self) -&gt; str:
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.IODefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = None) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = None, legacy_queue=False) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
-By default returns output manifest.
+By default, returns output manifest.
 The result keeps only values that are applicable for
 the selected type of the Manifest file. Because although input and output manifests share most of
 the attributes, some are not shared.</p>
@@ -2297,19 +2335,21 @@ the attributes, some are not shared.</p>
 <dl>
 <dt><strong><code>manifest_type</code></strong> :&ensp;<code>str</code></dt>
 <dd>either 'in' or 'out'.</dd>
+<dt>See <a href="https://developers.keboola.com/extend/common-interface/manifest-files">manifest files</a></dt>
+<dt>for more information.</dt>
+<dt><strong><code>legacy_queue</code></strong> :&ensp;<code>bool</code></dt>
+<dd>optional flag marking project on legacy queue.(some options are not allowed on queue2)</dd>
 </dl>
-<p>See <a href="https://developers.keboola.com/extend/common-interface/manifest-files">manifest files</a>
-for more information.</p>
 <h2 id="returns">Returns</h2>
 <p>dict representation of the manifest file in a format expected / produced by the Keboola Connection</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_manifest_dictionary(self, manifest_type: Optional[str] = None) -&gt; dict:
+<pre><code class="python">def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue=False) -&gt; dict:
     &#34;&#34;&#34;
     Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
-    By default returns output manifest.
+    By default, returns output manifest.
          The result keeps only values that are applicable for
          the selected type of the Manifest file. Because although input and output manifests share most of
          the attributes, some are not shared.
@@ -2321,6 +2361,7 @@ for more information.</p>
         manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
          See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
          for more information.
+        legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
 
     Returns:
         dict representation of the manifest file in a format expected / produced by the Keboola Connection
@@ -2329,7 +2370,7 @@ for more information.</p>
     if not manifest_type:
         manifest_type = self.stage
 
-    return self._filter_attributes_by_manifest_type(manifest_type)</code></pre>
+    return self._filter_attributes_by_manifest_type(manifest_type, legacy_queue)</code></pre>
 </details>
 </dd>
 </dl>
@@ -2528,6 +2569,7 @@ class SubscriptableDataclass:
 <li><a title="keboola.component.dao.FileInputMapping" href="#keboola.component.dao.FileInputMapping">FileInputMapping</a></li>
 <li><a title="keboola.component.dao.FileOutputMapping" href="#keboola.component.dao.FileOutputMapping">FileOutputMapping</a></li>
 <li><a title="keboola.component.dao.OauthCredentials" href="#keboola.component.dao.OauthCredentials">OauthCredentials</a></li>
+<li><a title="keboola.component.dao.SupportedManifestAttributes" href="#keboola.component.dao.SupportedManifestAttributes">SupportedManifestAttributes</a></li>
 <li><a title="keboola.component.dao.TableColumnTypes" href="#keboola.component.dao.TableColumnTypes">TableColumnTypes</a></li>
 <li><a title="keboola.component.dao.TableInputMapping" href="#keboola.component.dao.TableInputMapping">TableInputMapping</a></li>
 <li><a title="keboola.component.dao.TableOutputMapping" href="#keboola.component.dao.TableOutputMapping">TableOutputMapping</a></li>
@@ -2626,6 +2668,92 @@ def is_valid_type(cls, data_type: str):
 <pre><code class="python">@classmethod
 def list(cls):
     return list(map(lambda c: c.value, cls))</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="keboola.component.dao.SupportedManifestAttributes"><code class="flex name class">
+<span>class <span class="ident">SupportedManifestAttributes</span></span>
+<span>(</span><span>out_attributes: List[str], in_attributes: List[str], out_legacy_exclude: List[str] = &lt;factory&gt;, in_legacy_exclude: List[str] = &lt;factory&gt;)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>SupportedManifestAttributes(out_attributes: List[str], in_attributes: List[str], out_legacy_exclude: List[str] = <factory>, in_legacy_exclude: List[str] = <factory>)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class SupportedManifestAttributes(SubscriptableDataclass):
+    out_attributes: List[str]
+    in_attributes: List[str]
+    out_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
+    in_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
+
+    def get_attributes_by_stage(self, stage: Literal[&#34;in&#34;, &#34;out&#34;], legacy_queue: bool = False) -&gt; List[str]:
+        if stage == &#39;out&#39;:
+            attributes = self.out_attributes
+            exclude = self.out_legacy_exclude
+        elif stage == &#39;in&#39;:
+            attributes = self.in_attributes
+            exclude = self.in_legacy_exclude
+        else:
+            raise ValueError(f&#34;Unsupported stage {stage}&#34;)
+
+        if legacy_queue:
+            logging.warning(f&#34;Running on legacy queue some manifest properties will be ignored: {exclude}&#34;)
+            attributes = list(set(attributes).difference(exclude))
+
+        return attributes</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="keboola.component.dao.SubscriptableDataclass" href="#keboola.component.dao.SubscriptableDataclass">SubscriptableDataclass</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="keboola.component.dao.SupportedManifestAttributes.in_attributes"><code class="name">var <span class="ident">in_attributes</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.SupportedManifestAttributes.in_legacy_exclude"><code class="name">var <span class="ident">in_legacy_exclude</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.SupportedManifestAttributes.out_attributes"><code class="name">var <span class="ident">out_attributes</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.SupportedManifestAttributes.out_legacy_exclude"><code class="name">var <span class="ident">out_legacy_exclude</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="keboola.component.dao.SupportedManifestAttributes.get_attributes_by_stage"><code class="name flex">
+<span>def <span class="ident">get_attributes_by_stage</span></span>(<span>self, stage: Literal['in', 'out'], legacy_queue: bool = False) ‑> List[str]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_attributes_by_stage(self, stage: Literal[&#34;in&#34;, &#34;out&#34;], legacy_queue: bool = False) -&gt; List[str]:
+    if stage == &#39;out&#39;:
+        attributes = self.out_attributes
+        exclude = self.out_legacy_exclude
+    elif stage == &#39;in&#39;:
+        attributes = self.in_attributes
+        exclude = self.in_legacy_exclude
+    else:
+        raise ValueError(f&#34;Unsupported stage {stage}&#34;)
+
+    if legacy_queue:
+        logging.warning(f&#34;Running on legacy queue some manifest properties will be ignored: {exclude}&#34;)
+        attributes = list(set(attributes).difference(exclude))
+
+    return attributes</code></pre>
 </details>
 </dd>
 </dl>
@@ -2838,6 +2966,10 @@ fails.</dd>
         &#34;delete_where_operator&#34;
     ]
 
+    OUTPUT_MANIFEST_LEGACY_EXCLUDES = [
+        &#34;write_always&#34;
+    ]
+
     MANIFEST_ATTRIBUTES = {&#39;in&#39;: INPUT_MANIFEST_ATTRIBUTES,
                            &#39;out&#39;: OUTPUT_MANIFEST_ATTRIBUTES}
 
@@ -2952,8 +3084,9 @@ fails.</dd>
         return table_def
 
     @property
-    def _manifest_attributes(self) -&gt; Dict[str, List[str]]:
-        return self.MANIFEST_ATTRIBUTES
+    def _manifest_attributes(self) -&gt; SupportedManifestAttributes:
+        return SupportedManifestAttributes(self.MANIFEST_ATTRIBUTES[&#39;out&#39;], self.MANIFEST_ATTRIBUTES[&#39;in&#39;],
+                                           self.OUTPUT_MANIFEST_LEGACY_EXCLUDES)
 
     # #### Manifest properties
     @property
@@ -3049,9 +3182,8 @@ fails.</dd>
         return self._raw_manifest.get(&#39;write_always&#39;, False)
 
     @write_always.setter
-    def write_always(self, incremental: bool):
-        if incremental:
-            self._raw_manifest[&#39;write_always&#39;] = True
+    def write_always(self, write_always: bool):
+        self._raw_manifest[&#39;write_always&#39;] = write_always
 
     @property
     def primary_key(self) -&gt; List[str]:
@@ -3120,7 +3252,7 @@ fails.</dd>
         self._raw_manifest[&#39;metadata&#39;] = table_metadata.get_table_metadata_for_manifest()
         self._raw_manifest[&#39;column_metadata&#39;] = table_metadata.get_column_metadata_for_manifest()
 
-    def get_manifest_dictionary(self, stage_type: Optional[str] = None) -&gt; dict:
+    def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False) -&gt; dict:
         &#34;&#34;&#34;
 
         Args:
@@ -3133,8 +3265,8 @@ fails.</dd>
         &#34;&#34;&#34;
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
-        self._raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type)
-        return self._raw_manifest</code></pre>
+        raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue)
+        return raw_manifest</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -3152,6 +3284,10 @@ fails.</dd>
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.OUTPUT_MANIFEST_ATTRIBUTES"><code class="name">var <span class="ident">OUTPUT_MANIFEST_ATTRIBUTES</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.TableDefinition.OUTPUT_MANIFEST_LEGACY_EXCLUDES"><code class="name">var <span class="ident">OUTPUT_MANIFEST_LEGACY_EXCLUDES</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -3381,7 +3517,7 @@ def write_always(self) -&gt; bool:
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.TableDefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, stage_type: Optional[str] = None) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, stage_type: Optional[str] = None, legacy_queue=False) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
@@ -3393,7 +3529,7 @@ for more information.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_manifest_dictionary(self, stage_type: Optional[str] = None) -&gt; dict:
+<pre><code class="python">def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False) -&gt; dict:
     &#34;&#34;&#34;
 
     Args:
@@ -3406,8 +3542,8 @@ for more information.</p>
     &#34;&#34;&#34;
     # in case the table_metadata is out of sync, e.g. the object was modified in-place
     self._set_table_metadata_to_manifest(self._table_metadata)
-    self._raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type)
-    return self._raw_manifest</code></pre>
+    raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue)
+    return raw_manifest</code></pre>
 </details>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.set_delete_where_from_dict"><code class="name flex">
@@ -4529,6 +4665,16 @@ class TableOutputMapping(SubscriptableDataclass):
 </ul>
 </li>
 <li>
+<h4><code><a title="keboola.component.dao.SupportedManifestAttributes" href="#keboola.component.dao.SupportedManifestAttributes">SupportedManifestAttributes</a></code></h4>
+<ul class="">
+<li><code><a title="keboola.component.dao.SupportedManifestAttributes.get_attributes_by_stage" href="#keboola.component.dao.SupportedManifestAttributes.get_attributes_by_stage">get_attributes_by_stage</a></code></li>
+<li><code><a title="keboola.component.dao.SupportedManifestAttributes.in_attributes" href="#keboola.component.dao.SupportedManifestAttributes.in_attributes">in_attributes</a></code></li>
+<li><code><a title="keboola.component.dao.SupportedManifestAttributes.in_legacy_exclude" href="#keboola.component.dao.SupportedManifestAttributes.in_legacy_exclude">in_legacy_exclude</a></code></li>
+<li><code><a title="keboola.component.dao.SupportedManifestAttributes.out_attributes" href="#keboola.component.dao.SupportedManifestAttributes.out_attributes">out_attributes</a></code></li>
+<li><code><a title="keboola.component.dao.SupportedManifestAttributes.out_legacy_exclude" href="#keboola.component.dao.SupportedManifestAttributes.out_legacy_exclude">out_legacy_exclude</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="keboola.component.dao.TableColumnTypes" href="#keboola.component.dao.TableColumnTypes">TableColumnTypes</a></code></h4>
 <ul class="">
 <li><code><a title="keboola.component.dao.TableColumnTypes.convert_empty_values_to_null" href="#keboola.component.dao.TableColumnTypes.convert_empty_values_to_null">convert_empty_values_to_null</a></code></li>
@@ -4545,6 +4691,7 @@ class TableOutputMapping(SubscriptableDataclass):
 <li><code><a title="keboola.component.dao.TableDefinition.INPUT_MANIFEST_ATTRIBUTES" href="#keboola.component.dao.TableDefinition.INPUT_MANIFEST_ATTRIBUTES">INPUT_MANIFEST_ATTRIBUTES</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.MANIFEST_ATTRIBUTES" href="#keboola.component.dao.TableDefinition.MANIFEST_ATTRIBUTES">MANIFEST_ATTRIBUTES</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.OUTPUT_MANIFEST_ATTRIBUTES" href="#keboola.component.dao.TableDefinition.OUTPUT_MANIFEST_ATTRIBUTES">OUTPUT_MANIFEST_ATTRIBUTES</a></code></li>
+<li><code><a title="keboola.component.dao.TableDefinition.OUTPUT_MANIFEST_LEGACY_EXCLUDES" href="#keboola.component.dao.TableDefinition.OUTPUT_MANIFEST_LEGACY_EXCLUDES">OUTPUT_MANIFEST_LEGACY_EXCLUDES</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.build_from_manifest" href="#keboola.component.dao.TableDefinition.build_from_manifest">build_from_manifest</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.columns" href="#keboola.component.dao.TableDefinition.columns">columns</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.data_size_bytes" href="#keboola.component.dao.TableDefinition.data_size_bytes">data_size_bytes</a></code></li>
