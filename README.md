@@ -44,7 +44,7 @@ pip install keboola.component
 
 ## Core structure & functionality
 
-The package contains two core modules:
+The package contains three core modules:
 
 - `keboola.component.interface` - Core methods and class to initialize and handle
   the [Keboola Common Interface](https://developers.keboola.com/extend/common-interface/) tasks
@@ -688,6 +688,175 @@ class Component(ComponentBase):
         elif connection == "succeed":
             # this is ignored when run as sync action.
             logging.info("succeed")
+```
+
+# Configuration
+
+The ConfigurationBase class in keboola.component.configuration enables the definition of configurations in code. Leading
+to a clear manipulation of the configuration file.
+
+## Note
+
+All encrypted values that are in the config.json with # symbol should have the prefix "pswd_" in the configuration
+dataclass.
+For example, "#api_token" should be "pswd_api_token" in the Configuration class.
+
+## Use case (simple)
+
+In the case of a simple configuration, with "#api_token" and "endpoint", create a new python file configuration.py that
+utilizes the keboola.component.configuration as:
+
+```python
+from keboola.component.configuration import ConfigurationBase
+from dataclasses import dataclass
+from enum import Enum
+
+
+class Endpoint(str, Enum):
+    PRODUCT = "product"
+    ORDER = "order"
+
+
+@dataclass
+class Configuration(ConfigurationBase):
+    pswd_api_token: str
+    endpoint: Endpoint
+```
+
+Then utilize the configuration.py in the component code.
+
+ ```python
+import logging
+from keboola.component.base import ComponentBase
+
+from configuration import Configuration
+
+
+class Component(ComponentBase):
+
+    def __init__(self):
+        super().__init__()
+        self._configuration: Configuration
+
+    def _init_configuration(self) -> None:
+        self.validate_configuration_parameters(Configuration.get_dataclass_required_parameters())
+        self._configuration: Configuration = Configuration.load_from_dict(self.configuration.parameters)
+
+    def run(self):
+        self._init_configuration()
+
+        logging.info(f"Fetching {self._configuration.endpoint}.")
+
+
+
+```
+
+## Use case (nested configuration)
+
+In the case of a more complex configuration, you can have multiple dataclasses for the nested dictionaries, as seen
+below. With the following config.json:
+
+```json
+{
+  "parameters": {
+    "authentication": {
+      "#api_token": "API_TOKEN"
+    },
+    "fetching_settings": {
+      "endpoint": "product",
+      "fetch_mode": "incremental_load",
+      "date_from": "1 week ago",
+      "date_to": "today"
+    },
+    "destination_settings": {
+      "output_table_name": "store_xy_products",
+      "load_type": "incremental_load"
+    }
+  },
+  "action": "run"
+}
+
+```
+
+Create a configuration.py as follows:
+
+```python
+from keboola.component.configuration import ConfigurationBase
+from dataclasses import dataclass
+from enum import Enum
+
+
+@dataclass
+class Authentication(ConfigurationBase):
+    pswd_api_token: str
+
+
+class Endpoint(str, Enum):
+    PRODUCT = "product"
+    ORDER = "order"
+
+
+class FetchMode(str, Enum):
+    FULL_FETCH = "full_fetch"
+    INCREMENTAL_FETCH = "incremental_fetch"
+
+
+@dataclass
+class FetchingSettings(ConfigurationBase):
+    endpoint: Endpoint
+    fetch_mode: FetchMode = FetchMode.FULL_FETCH
+    date_from: str = None
+    date_to: str = None
+
+
+class LoadType(str, Enum):
+    FULL_LOAD = "full_load"
+    INCREMENTAL_LOAD = "incremental_load"
+
+
+@dataclass
+class DestinationSettings(ConfigurationBase):
+    output_table_name: str
+    load_type: LoadType = LoadType.INCREMENTAL_LOAD
+
+
+@dataclass
+class Configuration(ConfigurationBase):
+    authentication: Authentication
+    fetching_settings: FetchingSettings
+    destination_settings: DestinationSettings
+```
+
+Then utilize the configuration.py in the component code.
+
+ ```python
+import logging
+from keboola.component.base import ComponentBase
+
+from configuration import Configuration
+
+
+class Component(ComponentBase):
+
+    def __init__(self):
+        super().__init__()
+        self._configuration: Configuration
+
+    def _init_configuration(self) -> None:
+        self.validate_configuration_parameters(Configuration.get_dataclass_required_parameters())
+        self._configuration: Configuration = Configuration.load_from_dict(self.configuration.parameters)
+
+    def run(self):
+        self._init_configuration()
+
+        logging.info(f"Fetching {self._configuration.fetching_settings.endpoint}.")
+
+        # do stuff
+
+        logging.info(f"Saving to {self._configuration.destination_settings.output_table_name}.")
+
+
+
 ```
 
 ## License
