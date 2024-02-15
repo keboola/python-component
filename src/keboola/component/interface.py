@@ -877,9 +877,12 @@ class CommonInterface:
         Returns:
 
         """
-        features = os.environ.get('KBC_PROJECT_FEATURE_GATES')
+        features = os.environ.get('KBC_PROJECT_FEATURE_GATES', '')
         is_legacy_queue = True
-        if not features or 'queuev2' in features:
+        # checking for runId which should always be present when run in the platform to determine
+        # if the project is running locally
+        # so the user does not have to set the feature gate
+        if 'queuev2' in features or (not features and not os.environ.get('KBC_RUNID')):
             is_legacy_queue = False
         return is_legacy_queue
 
