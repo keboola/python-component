@@ -905,9 +905,12 @@ class CommonInterface:
         Returns:
 
         &#34;&#34;&#34;
-        features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;)
+        features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;, &#39;&#39;)
         is_legacy_queue = True
-        if not features or &#39;queuev2&#39; in features:
+        # checking for runId which should always be present when run in the platform to determine
+        # if the project is running locally
+        # so the user does not have to set the feature gate
+        if &#39;queuev2&#39; in features or (not features and not os.environ.get(&#39;KBC_RUNID&#39;)):
             is_legacy_queue = False
         return is_legacy_queue
 
@@ -2113,9 +2116,12 @@ is established in following order:</p>
         Returns:
 
         &#34;&#34;&#34;
-        features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;)
+        features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;, &#39;&#39;)
         is_legacy_queue = True
-        if not features or &#39;queuev2&#39; in features:
+        # checking for runId which should always be present when run in the platform to determine
+        # if the project is running locally
+        # so the user does not have to set the feature gate
+        if &#39;queuev2&#39; in features or (not features and not os.environ.get(&#39;KBC_RUNID&#39;)):
             is_legacy_queue = False
         return is_legacy_queue
 
@@ -2445,9 +2451,12 @@ def is_legacy_queue(self) -&gt; bool:
     Returns:
 
     &#34;&#34;&#34;
-    features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;)
+    features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;, &#39;&#39;)
     is_legacy_queue = True
-    if not features or &#39;queuev2&#39; in features:
+    # checking for runId which should always be present when run in the platform to determine
+    # if the project is running locally
+    # so the user does not have to set the feature gate
+    if &#39;queuev2&#39; in features or (not features and not os.environ.get(&#39;KBC_RUNID&#39;)):
         is_legacy_queue = False
     return is_legacy_queue</code></pre>
 </details>
