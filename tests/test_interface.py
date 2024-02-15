@@ -12,7 +12,11 @@ class TestCommonInterface(unittest.TestCase):
                             'data_examples', 'data1')
         os.environ["KBC_DATADIR"] = path
 
+        # default to queue2
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2'
+
     def test_all_env_variables_initialized(self):
+        env_copy = os.environ.copy()
         # set all variables
         os.environ['KBC_RUNID'] = 'KBC_RUNID'
         os.environ['KBC_PROJECTID'] = 'KBC_PROJECTID'
@@ -41,6 +45,9 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(ci.environment_variables.url, 'KBC_URL')
         self.assertEqual(ci.environment_variables.logger_addr, 'KBC_LOGGER_ADDR')
         self.assertEqual(ci.environment_variables.logger_port, 'KBC_LOGGER_PORT')
+
+        # return back environ
+        os.environ = env_copy
 
     def test_empty_required_params_pass(self):
         c = CommonInterface
@@ -110,10 +117,12 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(tables_out, ci.tables_in_path)
 
     def test_legacy_queue(self):
+        env_copy = os.environ.copy()
         os.environ['KBC_PROJECT_FEATURE_GATES'] = ''
+        os.environ['KBC_RUNID'] = '3333'
         ci = CommonInterface()
         # with no env default to v2
-        self.assertEqual(False, ci.is_legacy_queue)
+        self.assertEqual(True, ci.is_legacy_queue)
 
         # otherwise check for queuev2
         os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2;someoterfeature'
@@ -122,6 +131,14 @@ class TestCommonInterface(unittest.TestCase):
         # If feature gates exists but doesn't contain queuev2 it's old queue
         os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someoterfeature'
         self.assertEqual(True, ci.is_legacy_queue)
+
+        # If run locally the env variables do not need to be set
+        run_id = os.environ.pop('KBC_RUNID', '')
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = ''
+        self.assertEqual(False, ci.is_legacy_queue)
+
+        # reset back
+        os.environ = env_copy
 
     def test_create_and_write_table_manifest_deprecated(self):
         ci = CommonInterface()
