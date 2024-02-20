@@ -101,7 +101,11 @@ def sync_action(action_name: str):
                 if is_sync_action:
                     # sync action expects valid JSON in stdout on success.
                     result_str = process_sync_action_result(result)
-                    sys.stdout.write(result_str)
+                    # handle cases, when there is sync action called from another sync_action
+                    try:
+                        sys.stdout.write(result_str)
+                    except AttributeError:
+                        pass
 
                 return result
 
