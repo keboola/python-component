@@ -7,6 +7,10 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import List, Union, Dict, Optional
+from .exceptions import UserException
+
+from deprecated import deprecated
+
 
 try:
     from typing import Literal
@@ -56,6 +60,8 @@ class EnvironmentVariables:
     logger_addr: str
     logger_port: str
 
+    data_type_support: str
+
 
 class SupportedDataTypes(Enum):
     """
@@ -95,6 +101,7 @@ class KBCMetadataKeys(Enum):
     # it will be used when the bucket is shared
 
 
+@deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
 class TableMetadata:
     """
     Abstraction of metadata and table_metadata than can be provided within the manifest file. This is useful for
@@ -153,14 +160,20 @@ class TableMetadata:
         Returns:TableMetadata
 
         """
-        # column metadata
-        for column, metadata_list in manifest.get('column_metadata', {}).items():
-            for metadata in metadata_list:
-                if not metadata.get('key') and metadata.get('value'):
-                    continue
-                key = metadata['key']
-                value = metadata['value']
-                self.add_column_metadata(column, key, value)
+
+        if manifest.get('schema') and (manifest.get('metadata') or manifest.get('column_metadata') or manifest.get('columns')): # noqa
+            raise UserException("Manifest can't contain new 'schema' and old 'metadata'/'column_metadata'/'columns'")
+
+        if not manifest.get('schema'):
+
+            # column metadata
+            for column, metadata_list in manifest.get('column_metadata', {}).items():
+                for metadata in metadata_list:
+                    if not metadata.get('key') and metadata.get('value'):
+                        continue
+                    key = metadata['key']
+                    value = metadata['value']
+                    self.add_column_metadata(column, key, value)
 
         # table metadata
         for metadata in manifest.get('metadata', []):
@@ -324,6 +337,8 @@ class TableMetadata:
             self._validate_data_types({column: data_type})
             base_type = data_type
 
+        # TODO changes table_metadata to schema structure
+
         self.add_column_metadata(column, KBCMetadataKeys.base_data_type.value, base_type)
         self.add_column_metadata(column, KBCMetadataKeys.data_type_nullable.value, nullable)
 
@@ -351,7 +366,7 @@ class TableMetadata:
         """
         self.table_metadata = {**self.table_metadata, **{key: value}}
 
-    def add_column_metadata(self, column: str, key: str, value: Union[str, bool, int]):
+    def add_column_metadata(self, column: str, key: str, value: Union[str, bool, int], backend="base"):
         """
         Add/Updates column metadata and ensures the Key is unique.
         Args:
@@ -361,6 +376,8 @@ class TableMetadata:
             self.column_metadata[column] = dict()
 
         self.column_metadata[column][key] = value
+
+        # self.schema = [ColumnDefinition(name=column, data_type={backend: DataType(type=value)})]
 
     def add_multiple_column_metadata(self, column_metadata: Dict[str, List[dict]]):
         """
@@ -388,13 +405,70 @@ class TableMetadata:
 
 
 @dataclass
+class DataType:
+    type: str
+    length: Optional[int] = None
+    default: Optional[str] = None
+
+
+@dataclass
+class ColumnDefinition:
+    name: str
+    data_type: Optional[Union[Dict[str, DataType], DataType]] = None
+    nullable: Optional[bool] = True
+    primary_key: Optional[bool] = False
+    description: Optional[str] = None
+    metadata: Optional[Dict[str, str]] = None
+
+    def __post_init__(self):
+        if self.data_type:
+            self.data_type = self.normalize_data_type(self.data_type)
+
+            base_type = self.data_type.get('base')
+            if base_type and base_type.type not in SupportedDataTypes.__members__:
+                raise ValueError(f"Invalid base type: {base_type.type}."
+                                 f" Must be one of {list(SupportedDataTypes.__members__.keys())}")
+        else:
+            self.data_type = {"base": DataType(type="STRING")}
+
+    def normalize_data_type(self, data_type: Optional[Union[Dict[str, DataType], DataType]]) \
+            -> Optional[Dict[str, DataType]]:
+        if isinstance(data_type, DataType):
+            return {"base": data_type}
+        return data_type
+
+    def update_properties(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise AttributeError(f"{key} is not a valid attribute of {self.__class__.__name__}")
+
+    def to_dict(self):
+        result = {
+            'name': self.name,
+            'data_type': {outer_key: {inner_key: value for inner_key, value in vars(outer_value).items() if value}
+                          for outer_key, outer_value in self.data_type.items()} if self.data_type else None,
+            'nullable': self.nullable,
+            'primary_key': self.primary_key,
+            'description': self.description,
+            'metadata': self.metadata
+        }
+
+        filtered = {k: v for k, v in result.items() if v not in [None, False]}
+
+        return filtered
+
+
+@dataclass
 class SupportedManifestAttributes(SubscriptableDataclass):
     out_attributes: List[str]
     in_attributes: List[str]
     out_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
     in_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
 
-    def get_attributes_by_stage(self, stage: Literal["in", "out"], legacy_queue: bool = False) -> List[str]:
+    def get_attributes_by_stage(self, stage: Literal["in", "out"], legacy_queue: bool = False,
+                                native_types: bool = False) -> List[str]:
         if stage == 'out':
             attributes = self.out_attributes
             exclude = self.out_legacy_exclude
@@ -407,6 +481,13 @@ class SupportedManifestAttributes(SubscriptableDataclass):
         if legacy_queue:
             logging.warning(f"Running on legacy queue some manifest properties will be ignored: {exclude}")
             attributes = list(set(attributes).difference(exclude))
+
+        if native_types:
+            to_remove = ['primary_key', 'columns', 'distribution_key', 'metadata', 'column_metadata']
+            attributes = list(set(attributes).difference(to_remove))
+
+            to_add = ["manifest_type", "has_header", "description", "table_metadata", "schema"]
+            attributes.extend(to_add)
 
         return attributes
 
@@ -426,7 +507,8 @@ class IODefinition(ABC):
                             ):
         raise NotImplementedError
 
-    def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False):
+    def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
+                                            native_types: bool = False):
         """
         Filter manifest to contain only supported fields
         Args:
@@ -435,16 +517,64 @@ class IODefinition(ABC):
         Returns:
 
         """
-        supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue)
+        supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue, native_types)
 
-        new_dict = self._raw_manifest.copy()
+        if isinstance(self, TableDefinition):
+            fields = {
+                # TODO: add input manifest attributes
+                # 'id': None,
+                # 'uri': None,
+                # 'name': self.name,
+                # 'created': None,
+                # 'last_change_date': None,
+                # 'last_import_date': None,
+                'destination': self.destination,
+                'columns': self.columns if native_types else self.legacy_columns,
+                'incremental': self.incremental,
+                'primary_key': self.primary_key,
+                'write_always': self.write_always,
+                'delimiter': self.delimiter,
+                'enclosure': self.enclosure,
+                'metadata': self.table_metadata.get_table_metadata_for_manifest() if self.table_metadata else None,
+                'column_metadata': self.table_metadata.get_column_metadata_for_manifest() if self.table_metadata else None, # noqa
+                'manifest_type': manifest_type,
+                'has_header': self._has_header_in_file(manifest_type),
+                'description': None,
+                'table_metadata': None,
+                'delete_where_column': self.delete_where_column,
+                'delete_where_values': self.delete_where_values,
+                'delete_where_operator': self.delete_where_operator,
+                'schema': [col.to_dict() for col in self.schema] if self.schema else []
+            }
+        else:
+            fields = {
+                "tags": self.tags,
+                "is_public": self.is_public,
+                "is_permanent": self.is_permanent,
+                "is_encrypted": self.is_encrypted,
+                "notify": self.notify
+            }
+
+        new_dict = fields.copy()
+
         if supported_fields:
-            for attr in self._raw_manifest:
+            for attr in fields:
                 if attr not in supported_fields:
                     new_dict.pop(attr, None)
         return new_dict
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue=False) -> dict:
+    def _has_header_in_file(self, manifest_type):
+        has_header = True
+        if self.is_sliced:
+            has_header = False
+        elif self.columns and not manifest_type == 'in':
+            has_header = False
+        else:
+            has_header = True
+        return has_header
+
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
+                                native_types: bool = False) -> dict:
         """
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
         By default, returns output manifest.
@@ -460,6 +590,7 @@ class IODefinition(ABC):
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
             legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
+            native_types (bool): optional flag marking if the manifest should be new, default to False - legacy format
 
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
@@ -468,7 +599,7 @@ class IODefinition(ABC):
         if not manifest_type:
             manifest_type = self.stage
 
-        return self._filter_attributes_by_manifest_type(manifest_type, legacy_queue)
+        return self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
 
     @property
     def stage(self) -> str:
@@ -611,7 +742,7 @@ class TableDefinition(IODefinition):
         "last_import_date",
         "columns",
         "metadata",
-        "column_metadata"
+        "column_metadata",
     ]
 
     OUTPUT_MANIFEST_ATTRIBUTES = [
@@ -626,7 +757,7 @@ class TableDefinition(IODefinition):
         "column_metadata",
         "delete_where_column",
         "delete_where_values",
-        "delete_where_operator"
+        "delete_where_operator",
     ]
 
     OUTPUT_MANIFEST_LEGACY_EXCLUDES = [
@@ -646,7 +777,8 @@ class TableDefinition(IODefinition):
                  delimiter: str = ',',
                  delete_where: dict = None,
                  stage: str = 'in',
-                 write_always: bool = False
+                 write_always: bool = False,
+                 schema: List[ColumnDefinition] = None,
                  ):
         """
 
@@ -675,12 +807,13 @@ class TableDefinition(IODefinition):
         super().__init__(full_path)
         self._name = name
         self.is_sliced = is_sliced
-        self._raw_manifest = dict()
+
+        self.schema = schema
 
         # initialize manifest properties
         self.destination = destination
-        self.primary_key = primary_key
         self.columns = columns
+        self.primary_key = primary_key
         self.incremental = incremental
 
         self.enclosure = enclosure
@@ -689,9 +822,62 @@ class TableDefinition(IODefinition):
         if not table_metadata:
             table_metadata = TableMetadata()
         self.table_metadata = table_metadata
+
+        self.delete_where_values = None
+        self.delete_where_column = None
+        self.delete_where_operator = None
+
         self.set_delete_where_from_dict(delete_where)
         self.stage = stage
         self.write_always = write_always
+        self.legacy_columns = columns
+
+    @classmethod
+    def convert_to_column_definition(cls, column_name, column_metadata, primary_key=False):
+        data_type = {'base': DataType(type='STRING')}
+        nullable = True
+        for item in column_metadata:
+            if item['key'] == 'KBC.datatype.basetype':
+                data_type = {'base': DataType(type=item['value'])}
+            elif item['key'] == 'KBC.datatype.nullable':
+                nullable = item['value']
+        return ColumnDefinition(name=column_name, data_type=data_type, nullable=nullable, primary_key=primary_key)
+
+    @classmethod
+    def return_schema_from_manifest(cls, json_data):
+        if TableDefinition.is_new_manifest(json_data):
+            schema = []
+            for col in json_data.get('schema'):
+                schema.append(ColumnDefinition(
+                    name=col.get('name'),
+                    data_type={key: DataType(type=v.get('type'), default=v.get('default'), length=v.get('length'))
+                               for key, v in col.get('data_type', {}).items()},
+                    nullable=col.get('nullable'),
+                    primary_key=col.get('primary_key'),
+                    description=col.get('description'),
+                    metadata=col.get('metadata')))
+            return schema
+
+        columns_metadata = json_data.get('column_metadata', {})
+        primary_key = json_data.get('primary_key', [])
+        columns = json_data.get('columns', [])
+
+        # all_columns = set(primary_key + columns) # TODO promyslet jak se bude chovat když PK nebude v columns
+        all_columns = columns
+        schema = []
+
+        for col in all_columns:
+            pk = col in primary_key
+            if col in columns_metadata:
+                schema.append(cls.convert_to_column_definition(col, columns_metadata[col], primary_key=pk))
+            else:
+                schema.append(ColumnDefinition(name=col, data_type={"base": DataType(type="STRING")}, primary_key=pk))
+
+        return schema
+
+    @classmethod
+    def is_new_manifest(cls, json_data):
+        return json_data.get('schema')
 
     @classmethod
     def build_from_manifest(cls,
@@ -740,11 +926,26 @@ class TableDefinition(IODefinition):
             name = Path(manifest_file_path).stem
 
         table_def = cls(name=name, full_path=full_path,
-                        is_sliced=is_sliced, table_metadata=TableMetadata(manifest))
+                        is_sliced=is_sliced, table_metadata=TableMetadata(manifest),
+                        schema=cls.return_schema_from_manifest(manifest),
+                        columns=manifest.get('columns')
+                        )
         # build manifest definition
         table_def._raw_manifest = manifest
 
         return table_def
+
+    @property
+    def schema(self):
+        return self._schema
+
+    @schema.setter
+    def schema(self, value):
+        self._schema = []
+        if value:
+            if any(not isinstance(v, ColumnDefinition) for v in value):
+                raise ValueError("Schema must be an instance of ColumnDefinition")
+            self._schema = value
 
     @property
     def _manifest_attributes(self) -> SupportedManifestAttributes:
@@ -821,13 +1022,19 @@ class TableDefinition(IODefinition):
 
     @property
     def columns(self) -> List[str]:
-        return self._raw_manifest.get('columns', [])
+        if self.schema:
+            return [col.name for col in self.schema]
+        else:
+            return []
 
     @columns.setter
     def columns(self, val: List[str]):
         if val:
             if isinstance(val, list):
-                self._raw_manifest['columns'] = val
+                for col in val:
+                    if col not in self.columns:
+                        self.schema.append(ColumnDefinition(name=col))
+                # self._raw_manifest['columns'] = val
             else:
                 raise TypeError("Columns must by a list")
 
@@ -850,13 +1057,24 @@ class TableDefinition(IODefinition):
 
     @property
     def primary_key(self) -> List[str]:
-        return self._raw_manifest.get('primary_key', [])
+        if self.schema:
+            return [col.name for col in self.schema if col.primary_key]
+        else:
+            return []
 
     @primary_key.setter
     def primary_key(self, primary_key: List[str]):
         if primary_key:
             if isinstance(primary_key, list):
-                self._raw_manifest['primary_key'] = primary_key
+                for col in primary_key:
+                    if col in self.columns:
+                        for c in self.schema:
+                            if c.name == col:
+                                c.primary_key = True
+                    else:
+                        self.schema.append(ColumnDefinition(name=col, primary_key=True))
+
+                # self._raw_manifest['primary_key'] = primary_key
             else:
                 raise TypeError("Primary key must be a list")
 
@@ -885,6 +1103,51 @@ class TableDefinition(IODefinition):
         self._table_metadata = table_metadata
         self._set_table_metadata_to_manifest(table_metadata)
 
+    def add_column(self, column: Union[str, ColumnDefinition]):
+        if isinstance(column, str):
+            column = ColumnDefinition(name=column)
+        if not isinstance(column, ColumnDefinition):
+            raise ValueError("New column must be an instance of ColumnDefinition or a string")
+
+        if any(existing_column.name == column.name for existing_column in self._schema):
+            raise ValueError(f"Column with name '{column.name}' already exists")
+
+        self._schema.append(column)
+
+    def update_column(self, column: ColumnDefinition):
+        if not isinstance(column, ColumnDefinition):
+            raise ValueError("New column must be an instance of ColumnDefinition")
+
+        for idx, old_column in enumerate(self._schema):
+            if old_column.name == column.name:
+                self._schema[idx] = column
+                return
+
+        raise ValueError(f"Column with name {column.name} not found")
+
+    def delete_column(self, column_name: Union[str, ColumnDefinition]):
+
+        if isinstance(column_name, ColumnDefinition):
+            column_name = column_name.name
+
+        for idx, column in enumerate(self._schema):
+            if column.name == column_name:
+                del self._schema[idx]
+                return
+        raise ValueError(f"Column with name {column_name} not found")
+
+    def add_columns(self, columns: List[Union[str, ColumnDefinition]]):
+        for column in columns:
+            self.add_column(column)
+
+    def update_columns(self, columns: List[ColumnDefinition]):
+        for column in columns:
+            self.update_column(column)
+
+    def delete_columns(self, columns: List[Union[str, ColumnDefinition]]):
+        for column in columns:
+            self.delete_column(column)
+
     def set_delete_where_from_dict(self, delete_where):
         """
         Process metadata as dictionary and returns modified manifest
@@ -904,9 +1167,9 @@ class TableDefinition(IODefinition):
                 op = delete_where['operator'] or 'eq'
                 if (not op == 'eq') and (not op == 'ne'):
                     raise ValueError("Delete operator must be 'eq' or 'ne'")
-                self._raw_manifest['delete_where_values'] = delete_where['values']
-                self._raw_manifest['delete_where_column'] = delete_where['column']
-                self._raw_manifest['delete_where_operator'] = op
+                self.delete_where_values = delete_where['values']
+                self.delete_where_column = delete_where['column']
+                self.delete_where_operator = op
             else:
                 raise ValueError("Delete where specification must contain "
                                  "keys 'column' and 'values'")
@@ -915,12 +1178,14 @@ class TableDefinition(IODefinition):
         self._raw_manifest['metadata'] = table_metadata.get_table_metadata_for_manifest()
         self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
 
-    def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False) -> dict:
+    def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False,
+                                native_types: bool = False) -> dict:
         """
 
         Args:
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
+
 
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
@@ -928,7 +1193,13 @@ class TableDefinition(IODefinition):
         """
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
-        raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue)
+        raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue, native_types)
+        raw_manifest = {k: v for k, v in raw_manifest.items() if v not in [None]}
+
+        # TODO bez toho neprochází test test_schema.py", line 49, in test_created_manifest_against_schema
+        raw_manifest = {k: v for k, v in raw_manifest.items() if
+                        not ((k == "incremental" and v is False) or (k == "destination" and v == ""))}
+
         return raw_manifest
 
 

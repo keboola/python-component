@@ -140,7 +140,7 @@ class TestTableDefinition(unittest.TestCase):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
                                     primary_key=['foo', 'bar']
                                     )
-
+# defaultne je manifest typu input src/keboola/component/dao.py:598 a podle src/keboola/component/dao.py:734 by měl být name v manifestu
         self.assertEqual(
             {
                 'primary_key': ['foo', 'bar'],
@@ -318,6 +318,87 @@ class TestTableDefinition(unittest.TestCase):
 
         manifest = td.get_manifest_dictionary(legacy_queue=False)
         self.assertTrue('write_always' in manifest)
+
+    def test_new_manifest(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    columns=['foo', 'bar'],
+                                    destination='some-destination',
+                                    primary_key=['foo'],
+                                    incremental=True,
+                                    delete_where={'column': 'lilly',
+                                                  'values': ['a', 'b'],
+                                                  'operator': 'eq'}
+                                    )
+        # add metadata
+        table_def.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        table_def.table_metadata.add_table_metadata('bar', 'kochba')
+
+        self.assertDictEqual({
+            'destination': 'some-destination',
+            'incremental': True,
+            'write_always': False,
+            'delimiter': ',',
+            'enclosure': '"',
+            'manifest_type': 'out', 'has_header': False,
+            'delete_where_column': 'lilly',
+            'delete_where_values': ['a', 'b'],
+            'delete_where_operator': 'eq',
+            'schema': [
+                {'name': 'foo', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
+                {'name': 'bar', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
+        },
+            table_def.get_manifest_dictionary('out', native_types=True)
+        )
+
+    def test_new_manifest_native_types(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    columns=['foo', 'bar'],
+                                    destination='some-destination',
+                                    primary_key=['foo'],
+                                    incremental=True,
+                                    delete_where={'column': 'lilly',
+                                                  'values': ['a', 'b'],
+                                                  'operator': 'eq'}
+                                    )
+        # update column
+        table_def.update_column(ColumnDefinition('foo', data_type=DataType(type="INTEGER", length=20)))
+
+        # add new columns
+        table_def.add_column(ColumnDefinition('note', nullable=False))
+        table_def.add_column('test1')
+        table_def.add_columns(['test2', 'test3', 'test4'])
+
+        # add new typed column
+        table_def.add_column(ColumnDefinition('id', primary_key=True, data_type=DataType(type="INTEGER", length=200)))
+
+        table_def.add_columns([ColumnDefinition('new2', data_type=DataType(type="INTEGER", length=200)),
+                               ColumnDefinition('new3', data_type=DataType(type="STRING", length=200))])
+
+        # delete columns
+        table_def.delete_column('bar')
+        table_def.delete_columns(['test2', 'test3'])
+
+        self.assertDictEqual({
+            'destination': 'some-destination',
+            'incremental': True,
+            'write_always': False,
+            'delimiter': ',',
+            'enclosure': '"',
+            'manifest_type': 'out',
+            'has_header': False,
+            'delete_where_column': 'lilly',
+            'delete_where_values': ['a', 'b'],
+            'delete_where_operator': 'eq',
+            'schema': [{'name': 'foo', 'data_type': {'base': {'type': 'INTEGER', 'length': 20}}, 'nullable': True},
+                       {'name': 'note', 'data_type': {'base': {'type': 'STRING'}}},
+                       {'name': 'test1', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'test4', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'id', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True, 'primary_key': True},
+                       {'name': 'new2', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True},
+                       {'name': 'new3', 'data_type': {'base': {'type': 'STRING', 'length': 200}}, 'nullable': True}
+                       ]},
+            table_def.get_manifest_dictionary('out', native_types=True)
+        )
 
     class TestFileDefinition(unittest.TestCase):
 

@@ -15,6 +15,7 @@ from pytz import utc
 
 from . import dao
 from .exceptions import UserException
+from .dao import ColumnDefinition
 
 
 def register_csv_dialect():
@@ -49,7 +50,8 @@ def init_environment_variables() -> dao.EnvironmentVariables:
                                     url=os.environ.get('KBC_URL', None),
                                     real_user=os.environ.get('KBC_REALUSER', None),
                                     logger_addr=os.environ.get('KBC_LOGGER_ADDR', None),
-                                    logger_port=os.environ.get('KBC_LOGGER_PORT', None)
+                                    logger_port=os.environ.get('KBC_LOGGER_PORT', None),
+                                    data_type_support=os.environ.get('KBC_DATA_TYPE_SUPPORT', None)
                                     )
 
 
@@ -328,7 +330,8 @@ class CommonInterface:
                                  enclosure: str = '"',
                                  delimiter: str = ',',
                                  delete_where: dict = None,
-                                 write_always: bool = False) -> dao.TableDefinition:
+                                 write_always: bool = False,
+                                 schema: List[ColumnDefinition] = None) -> dao.TableDefinition:
         """
                 Helper method for dao.TableDefinition creation along with the "manifest".
                 It initializes path according to the storage_stage type.
@@ -370,7 +373,8 @@ class CommonInterface:
                                    delimiter=delimiter,
                                    delete_where=delete_where,
                                    stage=storage_stage,
-                                   write_always=write_always)
+                                   write_always=write_always,
+                                   schema=schema)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,
@@ -379,7 +383,8 @@ class CommonInterface:
                                    columns: List[str] = None,
                                    incremental: bool = None,
                                    table_metadata: dao.TableMetadata = None,
-                                   delete_where: str = None) -> dao.TableDefinition:
+                                   delete_where: str = None,
+                                   schema: List[ColumnDefinition] = None) -> dao.TableDefinition:
         """
                        Helper method for input dao.TableDefinition creation along with the "manifest".
                        It initializes path in data/tables/in/ folder.
@@ -393,6 +398,7 @@ class CommonInterface:
                            incremental: Set to true to enable incremental loading
                            table_metadata: <.dao.TableMetadata> object containing column and table metadata
                            delete_where: Dict with settings for deleting rows
+                           schema: Table schema
         """
 
         return self._create_table_definition(name=name,
@@ -403,7 +409,8 @@ class CommonInterface:
                                              columns=columns,
                                              incremental=incremental,
                                              table_metadata=table_metadata,
-                                             delete_where=delete_where)
+                                             delete_where=delete_where,
+                                             schema=schema)
 
     def create_out_table_definition(self, name: str,
                                     is_sliced: bool = False,
@@ -415,7 +422,8 @@ class CommonInterface:
                                     enclosure: str = '"',
                                     delimiter: str = ',',
                                     delete_where: dict = None,
-                                    write_always: bool = False) -> dao.TableDefinition:
+                                    write_always: bool = False,
+                                    schema: List[ColumnDefinition] = False) -> dao.TableDefinition:
         """
                        Helper method for output dao.TableDefinition creation along with the "manifest".
                        It initializes path in data/tables/out/ folder.
@@ -446,7 +454,8 @@ class CommonInterface:
                                              enclosure=enclosure,
                                              delimiter=delimiter,
                                              delete_where=delete_where,
-                                             write_always=write_always)
+                                             write_always=write_always,
+                                             schema=schema)
 
     # # File processing
 
@@ -883,7 +892,8 @@ class CommonInterface:
             is_legacy_queue = False
         return is_legacy_queue
 
-    def write_manifest(self, io_definition: Union[dao.FileDefinition, dao.TableDefinition]):
+    def write_manifest(self, io_definition: Union[dao.FileDefinition, dao.TableDefinition],
+                       native_types: bool = False):
         """
         Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
 
@@ -916,23 +926,25 @@ class CommonInterface:
 
         """
 
-        manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue)
+        manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue, native_types=native_types)
         # make dirs if not exist
         os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
         with open(io_definition.full_path + '.manifest', 'w') as manifest_file:
             json.dump(manifest, manifest_file)
 
-    def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]]):
+    def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]],
+                        native_types: bool = False):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
             io_definitions:
+            native_types: If True, native types are used in the manifest
 
         Returns:
 
         """
         for io_def in io_definitions:
-            self.write_manifest(io_def)
+            self.write_manifest(io_def, native_types=native_types)
 
     # ############# DEPRECATED METHODS, TODO: remove
 

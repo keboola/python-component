@@ -324,6 +324,45 @@ class TestCommonInterface(unittest.TestCase):
         )
         os.remove(manifest_filename)
 
+    def test_create_and_write_table_manifest_new(self):
+        ci = CommonInterface()
+        # create table def
+        out_table = ci.create_out_table_definition('some-table.csv',
+                                                   columns=['foo', 'bar'],
+                                                   destination='some-destination',
+                                                   primary_key=['foo'],
+                                                   incremental=True,
+                                                   delete_where={'column': 'lilly',
+                                                                 'values': ['a', 'b'],
+                                                                 'operator': 'eq'}
+                                                   )
+        out_table.table_metadata.add_table_metadata('bar', 'kochba')
+        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+
+        # write
+        ci.write_manifests([out_table])
+        manifest_filename = out_table.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {
+                'destination': 'some-destination',
+                'columns': ['foo', 'bar'],
+                'primary_key': ['foo'],
+                'incremental': True,
+                'metadata': [{'key': 'bar', 'value': 'kochba'}],
+                'delimiter': ',',
+                'enclosure': '"',
+                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+                'delete_where_column': 'lilly',
+                'delete_where_values': ['a', 'b'],
+                'delete_where_operator': 'eq',
+                'write_always': False
+            },
+            config
+        )
+        os.remove(manifest_filename)
+
     def test_get_input_tables_definition(self):
         ci = CommonInterface()
 
@@ -562,6 +601,54 @@ class TestCommonInterface(unittest.TestCase):
             self.assertEqual(file.max_age_days, 0)
             self.assertEqual(file.size_bytes, 0)
             self.assertEqual(file.created, None)
+
+    def test_convert_old_to_new_manifest(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data4')
+        os.environ["KBC_DATADIR"] = path
+
+        ci = CommonInterface()
+        tables = ci.get_input_tables_definitions()
+
+        new_manifest = tables[0].get_manifest_dictionary('out', native_types=True)
+
+        self.assertEqual({
+            'write_always': False,
+            'delimiter': ',',
+            'enclosure': '"',
+            'manifest_type': 'out',
+            'has_header': False,
+            'schema': [{'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Sales', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'CompPrice', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Income', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Advertising', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Population', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Price', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'ShelveLoc', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Age', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Education', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Urban', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'US', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
+        }, new_manifest)
+
+    def test_convert_new_to_old_manifest(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data_new_manifest')
+        os.environ["KBC_DATADIR"] = path
+
+        ci = CommonInterface()
+        tables = ci.get_input_tables_definitions()
+
+        old_manifest = tables[0].get_manifest_dictionary('out')
+
+        self.assertEqual({
+            'column_metadata': {},
+            'delimiter': ',',
+            'enclosure': '"',
+            'metadata': [],
+            'primary_key': [],
+            'write_always': False
+        }, old_manifest)
 
 
 class TestConfiguration(unittest.TestCase):
