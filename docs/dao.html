@@ -75,6 +75,7 @@ class ColumnDefinition:
             if base_type and base_type.type not in SupportedDataTypes.__members__:
                 raise ValueError(f&#34;Invalid base type: {base_type.type}.&#34;
                                  f&#34; Must be one of {list(SupportedDataTypes.__members__.keys())}&#34;)
+
         else:
             self.data_type = {&#34;base&#34;: DataType(type=&#34;STRING&#34;)}
 
@@ -157,19 +158,23 @@ class ColumnDefinition:
 </dd>
 <dt id="keboola.component.dao.DataType"><code class="flex name class">
 <span>class <span class="ident">DataType</span></span>
-<span>(</span><span>type: str, length: Optional[int] = None, default: Optional[str] = None)</span>
+<span>(</span><span>type: Union[<a title="keboola.component.dao.SupportedDataTypes" href="#keboola.component.dao.SupportedDataTypes">SupportedDataTypes</a>, str], length: Optional[int] = None, default: Optional[str] = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>DataType(type: str, length: Optional[int] = None, default: Optional[str] = None)</p></div>
+<div class="desc"><p>DataType(type: Union[keboola.component.dao.SupportedDataTypes, str], length: Optional[int] = None, default: Optional[str] = None)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@dataclass
 class DataType:
-    type: str
+    type: Union[SupportedDataTypes, str]
     length: Optional[int] = None
-    default: Optional[str] = None</code></pre>
+    default: Optional[str] = None
+
+    def __post_init__(self):
+        if isinstance(self.type, SupportedDataTypes):
+            self.type = self.type.value</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -181,7 +186,7 @@ class DataType:
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="keboola.component.dao.DataType.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dt id="keboola.component.dao.DataType.type"><code class="name">var <span class="ident">type</span> : Union[<a title="keboola.component.dao.SupportedDataTypes" href="#keboola.component.dao.SupportedDataTypes">SupportedDataTypes</a>, str]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -894,10 +899,18 @@ inheritance.</p></div>
         Returns:
 
         &#34;&#34;&#34;
-        supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue, native_types)
 
         if isinstance(self, TableDefinition):
+            supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue,
+                                                                                 native_types)
             fields = {
+                # TODO: add input manifest attributes
+                # &#39;id&#39;: None,
+                # &#39;uri&#39;: None,
+                # &#39;name&#39;: self.name,
+                # &#39;created&#39;: None,
+                # &#39;last_change_date&#39;: None,
+                # &#39;last_import_date&#39;: None,
                 &#39;destination&#39;: self.destination,
                 &#39;columns&#39;: self.columns if native_types else self.legacy_columns,
                 &#39;incremental&#39;: self.incremental,
@@ -916,22 +929,23 @@ inheritance.</p></div>
                 &#39;delete_where_operator&#39;: self.delete_where_operator,
                 &#39;schema&#39;: [col.to_dict() for col in self.schema] if self.schema else []
             }
+
+            new_dict = fields.copy()
+
+            if supported_fields:
+                for attr in fields:
+                    if attr not in supported_fields:
+                        new_dict.pop(attr, None)
+            return new_dict
+
         else:
-            fields = {
+            return {
                 &#34;tags&#34;: self.tags,
                 &#34;is_public&#34;: self.is_public,
                 &#34;is_permanent&#34;: self.is_permanent,
                 &#34;is_encrypted&#34;: self.is_encrypted,
                 &#34;notify&#34;: self.notify
             }
-
-        new_dict = fields.copy()
-
-        if supported_fields:
-            for attr in fields:
-                if attr not in supported_fields:
-                    new_dict.pop(attr, None)
-        return new_dict
 
     def _has_header_in_file(self, manifest_type):
         has_header = True
@@ -1515,7 +1529,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
             attributes = list(set(attributes).difference(exclude))
 
         if native_types:
-            to_remove = [&#39;primary_key&#39;, &#39;columns&#39;, &#39;distribution_key&#39;, &#39;metadata&#39;, &#39;column_metadata&#39;]
+            to_remove = [&#39;primary_key&#39;, &#39;columns&#39;, &#39;distribution_key&#39;, &#39;column_metadata&#39;]
             attributes = list(set(attributes).difference(to_remove))
 
             to_add = [&#34;manifest_type&#34;, &#34;has_header&#34;, &#34;description&#34;, &#34;table_metadata&#34;, &#34;schema&#34;]
@@ -1849,7 +1863,7 @@ fails.</dd>
 
     @classmethod
     def return_schema_from_manifest(cls, json_data):
-        if json_data.get(&#39;schema&#39;):
+        if TableDefinition.is_new_manifest(json_data):
             schema = []
             for col in json_data.get(&#39;schema&#39;):
                 schema.append(ColumnDefinition(
@@ -1866,7 +1880,6 @@ fails.</dd>
         primary_key = json_data.get(&#39;primary_key&#39;, [])
         columns = json_data.get(&#39;columns&#39;, [])
 
-        # all_columns = set(primary_key + columns) # TODO promyslet jak se bude chovat když PK nebude v columns
         all_columns = columns
         schema = []
 
@@ -1878,6 +1891,10 @@ fails.</dd>
                 schema.append(ColumnDefinition(name=col, data_type={&#34;base&#34;: DataType(type=&#34;STRING&#34;)}, primary_key=pk))
 
         return schema
+
+    @classmethod
+    def is_new_manifest(cls, json_data):
+        return json_data.get(&#39;schema&#39;)
 
     @classmethod
     def build_from_manifest(cls,
@@ -2034,7 +2051,6 @@ fails.</dd>
                 for col in val:
                     if col not in self.columns:
                         self.schema.append(ColumnDefinition(name=col))
-                # self._raw_manifest[&#39;columns&#39;] = val
             else:
                 raise TypeError(&#34;Columns must by a list&#34;)
 
@@ -2072,9 +2088,8 @@ fails.</dd>
                             if c.name == col:
                                 c.primary_key = True
                     else:
-                        self.schema.append(ColumnDefinition(name=col, primary_key=True))
+                        raise UserException(f&#34;Primary key column {col} not found in columns&#34;)
 
-                # self._raw_manifest[&#39;primary_key&#39;] = primary_key
             else:
                 raise TypeError(&#34;Primary key must be a list&#34;)
 
@@ -2179,7 +2194,7 @@ fails.</dd>
         self._raw_manifest[&#39;column_metadata&#39;] = table_metadata.get_column_metadata_for_manifest()
 
     def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False,
-                                native_types: bool = False) -&gt; dict:
+                                native_types: bool = True) -&gt; dict:
         &#34;&#34;&#34;
 
         Args:
@@ -2194,7 +2209,7 @@ fails.</dd>
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
         raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue, native_types)
-        raw_manifest = {k: v for k, v in raw_manifest.items() if v not in [None]}
+        raw_manifest = {k: v for k, v in raw_manifest.items() if v not in [None, [], {}]}
 
         # TODO bez toho neprochází test test_schema.py&#34;, line 49, in test_created_manifest_against_schema
         raw_manifest = {k: v for k, v in raw_manifest.items() if
@@ -2245,6 +2260,12 @@ table with no input manifest.</p></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.convert_to_column_definition"><code class="name flex">
 <span>def <span class="ident">convert_to_column_definition</span></span>(<span>column_name, column_metadata, primary_key=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.TableDefinition.is_new_manifest"><code class="name flex">
+<span>def <span class="ident">is_new_manifest</span></span>(<span>json_data)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2448,7 +2469,7 @@ def write_always(self) -&gt; bool:
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, stage_type: Optional[str] = None, legacy_queue=False, native_types: bool = False) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, stage_type: Optional[str] = None, legacy_queue=False, native_types: bool = True) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
@@ -2607,8 +2628,7 @@ manifest['column_metadata'] = tm.get_column_metadata_for_manifest()
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@deprecated(version=&#39;1.3.0&#39;, reason=&#34;Please use schema instead of Table Metadata&#34;)
-class TableMetadata:
+<pre><code class="python">class TableMetadata:
     &#34;&#34;&#34;
     Abstraction of metadata and table_metadata than can be provided within the manifest file. This is useful for
     creation
@@ -2708,6 +2728,7 @@ class TableMetadata:
 
         return final_metadata_list
 
+    @deprecated(version=&#39;1.3.0&#39;, reason=&#34;Please use schema instead of Table Metadata&#34;)
     def get_column_metadata_for_manifest(self) -&gt; dict:
         &#34;&#34;&#34;
                 Returns column metadata dict as required by the
@@ -2747,6 +2768,7 @@ class TableMetadata:
         return self.table_metadata.get(KBCMetadataKeys.description.value)
 
     @property
+    @deprecated(version=&#39;1.3.0&#39;, reason=&#34;Please use schema instead of Table Metadata&#34;)
     def column_datatypes(self) -&gt; dict:
         &#34;&#34;&#34;
         Return dictionary of column base datatypes
@@ -2759,6 +2781,7 @@ class TableMetadata:
         return self.get_columns_metadata_by_key(KBCMetadataKeys.base_data_type.value)
 
     @property
+    @deprecated(version=&#39;1.3.0&#39;, reason=&#34;Please use schema instead of Table Metadata&#34;)
     def column_descriptions(self) -&gt; dict:
         &#34;&#34;&#34;
         Return dictionary of column descriptions
@@ -2770,6 +2793,7 @@ class TableMetadata:
 
         return self.get_columns_metadata_by_key(KBCMetadataKeys.description.value)
 
+    @deprecated(version=&#39;1.3.0&#39;, reason=&#34;Please use schema instead of Table Metadata&#34;)
     def get_columns_metadata_by_key(self, metadata_key) -&gt; dict:
         &#34;&#34;&#34;
         Returns all columns with specified metadata_key as dictionary of column:metadata_key pairs
@@ -2796,6 +2820,7 @@ class TableMetadata:
         for col in column_descriptions:
             self.add_column_metadata(col, KBCMetadataKeys.description.value, column_descriptions[col])
 
+    @deprecated(version=&#39;1.3.0&#39;, reason=&#34;Please use schema instead of Table Metadata&#34;)
     def add_column_data_types(self, column_types: Dict[str, Union[SupportedDataTypes, str]]):
         &#34;&#34;&#34;
         Add column types metadata. Note that only supported datatypes
@@ -2812,6 +2837,7 @@ class TableMetadata:
         for col in column_types:
             self.add_column_data_type(col, column_types[col])
 
+    @deprecated(version=&#39;1.3.0&#39;, reason=&#34;Please use schema instead of Table Metadata&#34;)
     def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str],
                              source_data_type: str = None,
                              nullable: bool = False,
@@ -2843,7 +2869,7 @@ class TableMetadata:
             self._validate_data_types({column: data_type})
             base_type = data_type
 
-        # TODO changes table_metadata to schema structure
+
 
         self.add_column_metadata(column, KBCMetadataKeys.base_data_type.value, base_type)
         self.add_column_metadata(column, KBCMetadataKeys.data_type_nullable.value, nullable)
@@ -2921,6 +2947,7 @@ e.g. {"col1name":"basetype"}</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
+@deprecated(version=&#39;1.3.0&#39;, reason=&#34;Please use schema instead of Table Metadata&#34;)
 def column_datatypes(self) -&gt; dict:
     &#34;&#34;&#34;
     Return dictionary of column base datatypes
@@ -2943,6 +2970,7 @@ e.g. {"col1name":"desc"}</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
+@deprecated(version=&#39;1.3.0&#39;, reason=&#34;Please use schema instead of Table Metadata&#34;)
 def column_descriptions(self) -&gt; dict:
     &#34;&#34;&#34;
     Return dictionary of column descriptions
@@ -3389,6 +3417,7 @@ class TableOutputMapping(SubscriptableDataclass):
 <li><code><a title="keboola.component.dao.TableDefinition.get_manifest_dictionary" href="#keboola.component.dao.TableDefinition.get_manifest_dictionary">get_manifest_dictionary</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.id" href="#keboola.component.dao.TableDefinition.id">id</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.incremental" href="#keboola.component.dao.TableDefinition.incremental">incremental</a></code></li>
+<li><code><a title="keboola.component.dao.TableDefinition.is_new_manifest" href="#keboola.component.dao.TableDefinition.is_new_manifest">is_new_manifest</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.primary_key" href="#keboola.component.dao.TableDefinition.primary_key">primary_key</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.return_schema_from_manifest" href="#keboola.component.dao.TableDefinition.return_schema_from_manifest">return_schema_from_manifest</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.rows_count" href="#keboola.component.dao.TableDefinition.rows_count">rows_count</a></code></li>

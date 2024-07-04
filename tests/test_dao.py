@@ -138,17 +138,23 @@ class TestTableDefinition(unittest.TestCase):
 
     def test_table_manifest_minimal(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    columns=['foo', 'bar'],
                                     primary_key=['foo', 'bar']
                                     )
-# defaultne je manifest typu input src/keboola/component/dao.py:598 a podle src/keboola/component/dao.py:734 by měl být name v manifestu
         self.assertEqual(
             {
-                'primary_key': ['foo', 'bar'],
-                'column_metadata': {},
-                'metadata': []
+                'columns': ['foo', 'bar'],
+                'primary_key': ['foo', 'bar']
             },
-            table_def.get_manifest_dictionary()
+            table_def.get_manifest_dictionary(native_types=False)
         )
+
+    def test_table_manifest_missing_key(self):
+        with self.assertRaises(UserException) as e:
+            table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                        primary_key=['foo', 'bar'])
+
+        self.assertEqual(str(e.exception), "Primary key column foo not found in columns")
 
     def test_table_manifest_full(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
@@ -179,7 +185,7 @@ class TestTableDefinition(unittest.TestCase):
                 'delete_where_operator': 'eq',
                 'write_always': False
             },
-            table_def.get_manifest_dictionary('out')
+            table_def.get_manifest_dictionary('out', native_types=False)
         )
 
     def test_build_from_table_manifest_metadata_equals(self):
@@ -343,11 +349,12 @@ class TestTableDefinition(unittest.TestCase):
             'delete_where_column': 'lilly',
             'delete_where_values': ['a', 'b'],
             'delete_where_operator': 'eq',
+            'metadata': [{'key': 'bar', 'value': 'kochba'}],
             'schema': [
                 {'name': 'foo', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
                 {'name': 'bar', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
         },
-            table_def.get_manifest_dictionary('out', native_types=True)
+            table_def.get_manifest_dictionary('out')
         )
 
     def test_new_manifest_native_types(self):

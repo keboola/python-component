@@ -893,7 +893,7 @@ class CommonInterface:
         return is_legacy_queue
 
     def write_manifest(self, io_definition: Union[dao.FileDefinition, dao.TableDefinition],
-                       native_types: bool = False):
+                       native_types: bool = True):
         """
         Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
 
@@ -933,7 +933,7 @@ class CommonInterface:
             json.dump(manifest, manifest_file)
 
     def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]],
-                        native_types: bool = False):
+                        native_types: bool = True):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -1017,7 +1017,7 @@ class CommonInterface:
         Returns:
 
         """
-        self.write_manifest(table_definition)
+        self.write_manifest(table_definition, native_types=False)
 
     @deprecated(version='1.3.0', reason="You should use write_manifests function")
     def write_tabledef_manifests(self, table_definitions: List[dao.TableDefinition]):
@@ -1029,7 +1029,7 @@ class CommonInterface:
         Returns:
 
         """
-        self.write_manifests(table_definitions)
+        self.write_manifests(table_definitions, native_types=False)
 
 
 # ########## CONFIGURATION

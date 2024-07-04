@@ -101,7 +101,6 @@ class KBCMetadataKeys(Enum):
     # it will be used when the bucket is shared
 
 
-@deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
 class TableMetadata:
     """
     Abstraction of metadata and table_metadata than can be provided within the manifest file. This is useful for
@@ -202,6 +201,7 @@ class TableMetadata:
 
         return final_metadata_list
 
+    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
     def get_column_metadata_for_manifest(self) -> dict:
         """
                 Returns column metadata dict as required by the
@@ -241,6 +241,7 @@ class TableMetadata:
         return self.table_metadata.get(KBCMetadataKeys.description.value)
 
     @property
+    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
     def column_datatypes(self) -> dict:
         """
         Return dictionary of column base datatypes
@@ -253,6 +254,7 @@ class TableMetadata:
         return self.get_columns_metadata_by_key(KBCMetadataKeys.base_data_type.value)
 
     @property
+    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
     def column_descriptions(self) -> dict:
         """
         Return dictionary of column descriptions
@@ -264,6 +266,7 @@ class TableMetadata:
 
         return self.get_columns_metadata_by_key(KBCMetadataKeys.description.value)
 
+    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
     def get_columns_metadata_by_key(self, metadata_key) -> dict:
         """
         Returns all columns with specified metadata_key as dictionary of column:metadata_key pairs
@@ -290,6 +293,7 @@ class TableMetadata:
         for col in column_descriptions:
             self.add_column_metadata(col, KBCMetadataKeys.description.value, column_descriptions[col])
 
+    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
     def add_column_data_types(self, column_types: Dict[str, Union[SupportedDataTypes, str]]):
         """
         Add column types metadata. Note that only supported datatypes
@@ -306,6 +310,7 @@ class TableMetadata:
         for col in column_types:
             self.add_column_data_type(col, column_types[col])
 
+    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
     def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str],
                              source_data_type: str = None,
                              nullable: bool = False,
@@ -336,8 +341,6 @@ class TableMetadata:
         else:
             self._validate_data_types({column: data_type})
             base_type = data_type
-
-        # TODO changes table_metadata to schema structure
 
         self.add_column_metadata(column, KBCMetadataKeys.base_data_type.value, base_type)
         self.add_column_metadata(column, KBCMetadataKeys.data_type_nullable.value, nullable)
@@ -406,9 +409,13 @@ class TableMetadata:
 
 @dataclass
 class DataType:
-    type: str
+    type: Union[SupportedDataTypes, str]
     length: Optional[int] = None
     default: Optional[str] = None
+
+    def __post_init__(self):
+        if isinstance(self.type, SupportedDataTypes):
+            self.type = self.type.value
 
 
 @dataclass
@@ -428,6 +435,7 @@ class ColumnDefinition:
             if base_type and base_type.type not in SupportedDataTypes.__members__:
                 raise ValueError(f"Invalid base type: {base_type.type}."
                                  f" Must be one of {list(SupportedDataTypes.__members__.keys())}")
+
         else:
             self.data_type = {"base": DataType(type="STRING")}
 
@@ -483,7 +491,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
             attributes = list(set(attributes).difference(exclude))
 
         if native_types:
-            to_remove = ['primary_key', 'columns', 'distribution_key', 'metadata', 'column_metadata']
+            to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata']
             attributes = list(set(attributes).difference(to_remove))
 
             to_add = ["manifest_type", "has_header", "description", "table_metadata", "schema"]
@@ -517,9 +525,10 @@ class IODefinition(ABC):
         Returns:
 
         """
-        supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue, native_types)
 
         if isinstance(self, TableDefinition):
+            supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue,
+                                                                                 native_types)
             fields = {
                 # TODO: add input manifest attributes
                 # 'id': None,
@@ -546,22 +555,23 @@ class IODefinition(ABC):
                 'delete_where_operator': self.delete_where_operator,
                 'schema': [col.to_dict() for col in self.schema] if self.schema else []
             }
+
+            new_dict = fields.copy()
+
+            if supported_fields:
+                for attr in fields:
+                    if attr not in supported_fields:
+                        new_dict.pop(attr, None)
+            return new_dict
+
         else:
-            fields = {
+            return {
                 "tags": self.tags,
                 "is_public": self.is_public,
                 "is_permanent": self.is_permanent,
                 "is_encrypted": self.is_encrypted,
                 "notify": self.notify
             }
-
-        new_dict = fields.copy()
-
-        if supported_fields:
-            for attr in fields:
-                if attr not in supported_fields:
-                    new_dict.pop(attr, None)
-        return new_dict
 
     def _has_header_in_file(self, manifest_type):
         has_header = True
@@ -862,7 +872,6 @@ class TableDefinition(IODefinition):
         primary_key = json_data.get('primary_key', [])
         columns = json_data.get('columns', [])
 
-        # all_columns = set(primary_key + columns) # TODO promyslet jak se bude chovat když PK nebude v columns
         all_columns = columns
         schema = []
 
@@ -1034,7 +1043,6 @@ class TableDefinition(IODefinition):
                 for col in val:
                     if col not in self.columns:
                         self.schema.append(ColumnDefinition(name=col))
-                # self._raw_manifest['columns'] = val
             else:
                 raise TypeError("Columns must by a list")
 
@@ -1072,9 +1080,8 @@ class TableDefinition(IODefinition):
                             if c.name == col:
                                 c.primary_key = True
                     else:
-                        self.schema.append(ColumnDefinition(name=col, primary_key=True))
+                        raise UserException(f"Primary key column {col} not found in columns")
 
-                # self._raw_manifest['primary_key'] = primary_key
             else:
                 raise TypeError("Primary key must be a list")
 
@@ -1179,7 +1186,7 @@ class TableDefinition(IODefinition):
         self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
 
     def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False,
-                                native_types: bool = False) -> dict:
+                                native_types: bool = True) -> dict:
         """
 
         Args:
@@ -1194,7 +1201,7 @@ class TableDefinition(IODefinition):
         # in case the table_metadata is out of sync, e.g. the object was modified in-place
         self._set_table_metadata_to_manifest(self._table_metadata)
         raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue, native_types)
-        raw_manifest = {k: v for k, v in raw_manifest.items() if v not in [None]}
+        raw_manifest = {k: v for k, v in raw_manifest.items() if v not in [None, [], {}]}
 
         # TODO bez toho neprochází test test_schema.py", line 49, in test_created_manifest_against_schema
         raw_manifest = {k: v for k, v in raw_manifest.items() if

@@ -29,7 +29,7 @@ class TestCommonInterface(unittest.TestCase):
         comp = MockComponent(schema_path_override=schema_path)
         order_schema = comp.get_table_schema_by_name(schema_name="order")
         order_table_definition_from_schema = comp.create_out_table_definition_from_schema(order_schema)
-        manifest_dict = order_table_definition_from_schema.get_manifest_dictionary()
+        manifest_dict = order_table_definition_from_schema.get_manifest_dictionary(native_types=False)
         expected_manifest = {'primary_key': ['id'], 'columns': ['id', 'product_id', 'quantity'], 'enclosure': '"',
                              'delimiter': ',',
                              'write_always': False,

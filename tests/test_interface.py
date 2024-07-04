@@ -179,7 +179,7 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
-        ci.write_manifest(out_table)
+        ci.write_manifest(out_table, native_types=False)
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -223,7 +223,7 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
-        ci.write_manifest(out_table)
+        ci.write_manifest(out_table, native_types=False)
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -301,7 +301,7 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
-        ci.write_manifests([out_table])
+        ci.write_manifests([out_table], native_types=False)
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -345,20 +345,24 @@ class TestCommonInterface(unittest.TestCase):
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
-            {
-                'destination': 'some-destination',
-                'columns': ['foo', 'bar'],
-                'primary_key': ['foo'],
-                'incremental': True,
-                'metadata': [{'key': 'bar', 'value': 'kochba'}],
-                'delimiter': ',',
-                'enclosure': '"',
-                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
-                'delete_where_column': 'lilly',
-                'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq',
-                'write_always': False
-            },
+            {'delete_where_column': 'lilly',
+             'delete_where_operator': 'eq',
+             'delete_where_values': ['a', 'b'],
+             'delimiter': ',',
+             'destination': 'some-destination',
+             'enclosure': '"',
+             'has_header': False,
+             'incremental': True,
+             'manifest_type': 'out',
+             'metadata': [{'key': 'bar', 'value': 'kochba'}],
+             'schema': [{'data_type': {'base': {'type': 'STRING'}},
+                         'name': 'foo',
+                         'nullable': True,
+                         'primary_key': True},
+                        {'data_type': {'base': {'type': 'STRING'}},
+                         'name': 'bar',
+                         'nullable': True}],
+             'write_always': False},
             config
         )
         os.remove(manifest_filename)
@@ -639,14 +643,11 @@ class TestCommonInterface(unittest.TestCase):
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
-        old_manifest = tables[0].get_manifest_dictionary('out')
+        old_manifest = tables[0].get_manifest_dictionary('out', native_types=False)
 
         self.assertEqual({
-            'column_metadata': {},
             'delimiter': ',',
             'enclosure': '"',
-            'metadata': [],
-            'primary_key': [],
             'write_always': False
         }, old_manifest)
 
