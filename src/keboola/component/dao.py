@@ -182,7 +182,7 @@ class TableMetadata:
             value = metadata['value']
             self.add_table_metadata(key, value)
 
-    def get_table_metadata_for_manifest(self) -> List[dict]:
+    def get_table_metadata_for_manifest(self, new_manifest: bool = False) -> List[dict]:
         """
         Returns table metadata list as required by the
         [manifest format]
@@ -195,13 +195,17 @@ class TableMetadata:
         Returns: List[dict]
 
         """
-        final_metadata_list = [{'key': key,
-                                'value': self.table_metadata[key]}
-                               for key in self.table_metadata]
+        if new_manifest:
+            final_metadata_list = [{key: self.table_metadata[key]}
+                                   for key in self.table_metadata]
+        else:
+            final_metadata_list = [{'key': key,
+                                    'value': self.table_metadata[key]}
+                                   for key in self.table_metadata]
 
         return final_metadata_list
 
-    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
+    @deprecated(version='1.5.1', reason="Please use schema instead of Table Metadata")
     def get_column_metadata_for_manifest(self) -> dict:
         """
                 Returns column metadata dict as required by the
@@ -241,7 +245,8 @@ class TableMetadata:
         return self.table_metadata.get(KBCMetadataKeys.description.value)
 
     @property
-    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
+    @deprecated(version='1.5.1', reason="Column datatypes were moved to dao.TableDefinition.schema property."
+                                        "Please use the dao.ColumnDefinition objects")
     def column_datatypes(self) -> dict:
         """
         Return dictionary of column base datatypes
@@ -254,7 +259,8 @@ class TableMetadata:
         return self.get_columns_metadata_by_key(KBCMetadataKeys.base_data_type.value)
 
     @property
-    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
+    @deprecated(version='1.5.1', reason="Column datatypes were moved to dao.TableDefinition.schema property."
+                                        " Please use the dao.ColumnDefinition objects")
     def column_descriptions(self) -> dict:
         """
         Return dictionary of column descriptions
@@ -266,7 +272,7 @@ class TableMetadata:
 
         return self.get_columns_metadata_by_key(KBCMetadataKeys.description.value)
 
-    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
+    @deprecated(version='1.5.1', reason="Please use schema instead of Table Metadata")
     def get_columns_metadata_by_key(self, metadata_key) -> dict:
         """
         Returns all columns with specified metadata_key as dictionary of column:metadata_key pairs
@@ -293,7 +299,10 @@ class TableMetadata:
         for col in column_descriptions:
             self.add_column_metadata(col, KBCMetadataKeys.description.value, column_descriptions[col])
 
-    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
+    @deprecated(version='1.5.1', reason="Column datatypes were moved to dao.TableDefinition.schema property."
+                                        "Please use the dao.ColumnDefinition objects and associated"
+                                        "dao.TableDefinition methods to define columns. e.g."
+                                        "dao.TableDefinition.add_columns()")
     def add_column_data_types(self, column_types: Dict[str, Union[SupportedDataTypes, str]]):
         """
         Add column types metadata. Note that only supported datatypes
@@ -310,7 +319,10 @@ class TableMetadata:
         for col in column_types:
             self.add_column_data_type(col, column_types[col])
 
-    @deprecated(version='1.3.0', reason="Please use schema instead of Table Metadata")
+    @deprecated(version='1.5.1', reason="Column datatypes were moved to dao.TableDefinition.schema property."
+                                        "Please use the dao.ColumnDefinition objects and associated"
+                                        "dao.TableDefinition methods to define columns. e.g."
+                                        "dao.TableDefinition.add_column()")
     def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str],
                              source_data_type: str = None,
                              nullable: bool = False,
@@ -418,6 +430,10 @@ class DataType:
             self.type = self.type.value
 
 
+class BaseType(DataType):
+    pass
+
+
 @dataclass
 class ColumnDefinition:
     name: str
@@ -432,15 +448,14 @@ class ColumnDefinition:
             self.data_type = self.normalize_data_type(self.data_type)
 
             base_type = self.data_type.get('base')
-            if base_type and base_type.type not in SupportedDataTypes.__members__:
-                raise ValueError(f"Invalid base type: {base_type.type}."
-                                 f" Must be one of {list(SupportedDataTypes.__members__.keys())}")
+            if base_type and not SupportedDataTypes.is_valid_type(base_type.type):
+                raise ValueError(f'Datatype "{base_type.type}" is not valid KBC Basetype!'
+                                 f'\n Supported base types are: [{SupportedDataTypes.list()}]')
 
         else:
             self.data_type = {"base": DataType(type="STRING")}
 
-    def normalize_data_type(self, data_type: Optional[Union[Dict[str, DataType], DataType]]) \
-            -> Optional[Dict[str, DataType]]:
+    def normalize_data_type(self, data_type: Union[Dict[str, DataType], DataType]) -> Dict[str, DataType]:
         if isinstance(data_type, DataType):
             return {"base": data_type}
         return data_type
@@ -491,7 +506,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
             attributes = list(set(attributes).difference(exclude))
 
         if native_types:
-            to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata']
+            to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata', 'metadata']
             attributes = list(set(attributes).difference(to_remove))
 
             to_add = ["manifest_type", "has_header", "description", "table_metadata", "schema"]
@@ -544,12 +559,12 @@ class IODefinition(ABC):
                 'write_always': self.write_always,
                 'delimiter': self.delimiter,
                 'enclosure': self.enclosure,
-                'metadata': self.table_metadata.get_table_metadata_for_manifest() if self.table_metadata else None,
-                'column_metadata': self.table_metadata.get_column_metadata_for_manifest() if self.table_metadata else None, # noqa
+                'metadata': self.table_metadata.get_table_metadata_for_manifest(),
+                'column_metadata': self.table_metadata.get_column_metadata_for_manifest(),
                 'manifest_type': manifest_type,
                 'has_header': self._has_header_in_file(manifest_type),
                 'description': None,
-                'table_metadata': None,
+                'table_metadata': self.table_metadata.get_table_metadata_for_manifest(new_manifest=True),
                 'delete_where_column': self.delete_where_column,
                 'delete_where_values': self.delete_where_values,
                 'delete_where_operator': self.delete_where_operator,
@@ -866,21 +881,22 @@ class TableDefinition(IODefinition):
                     primary_key=col.get('primary_key'),
                     description=col.get('description'),
                     metadata=col.get('metadata')))
-            return schema
 
-        columns_metadata = json_data.get('column_metadata', {})
-        primary_key = json_data.get('primary_key', [])
-        columns = json_data.get('columns', [])
+        else:
+            columns_metadata = json_data.get('column_metadata', {})
+            primary_key = json_data.get('primary_key', [])
+            columns = json_data.get('columns', [])
 
-        all_columns = columns
-        schema = []
+            all_columns = columns
+            schema = []
 
-        for col in all_columns:
-            pk = col in primary_key
-            if col in columns_metadata:
-                schema.append(cls.convert_to_column_definition(col, columns_metadata[col], primary_key=pk))
-            else:
-                schema.append(ColumnDefinition(name=col, data_type={"base": DataType(type="STRING")}, primary_key=pk))
+            for col in all_columns:
+                pk = col in primary_key
+                if col in columns_metadata:
+                    schema.append(cls.convert_to_column_definition(col, columns_metadata[col], primary_key=pk))
+                else:
+                    schema.append(ColumnDefinition(name=col, data_type={"base": DataType(type="STRING")},
+                                                   primary_key=pk))
 
         return schema
 
@@ -1067,23 +1083,22 @@ class TableDefinition(IODefinition):
     def primary_key(self) -> List[str]:
         if self.schema:
             return [col.name for col in self.schema if col.primary_key]
-        else:
-            return []
 
     @primary_key.setter
     def primary_key(self, primary_key: List[str]):
-        if primary_key:
-            if isinstance(primary_key, list):
-                for col in primary_key:
-                    if col in self.columns:
-                        for c in self.schema:
-                            if c.name == col:
-                                c.primary_key = True
-                    else:
-                        raise UserException(f"Primary key column {col} not found in columns")
+        if not primary_key:
+            return
 
-            else:
-                raise TypeError("Primary key must be a list")
+        if not isinstance(primary_key, list):
+            raise TypeError("Primary key must be a list")
+
+        for col in primary_key:
+            if col not in self.columns:
+                raise UserException(f"Primary key column {col} not found in columns")
+
+            for c in self.schema:
+                if c.name == col:
+                    c.primary_key = True
 
     @property
     def delimiter(self) -> str:
@@ -1111,6 +1126,10 @@ class TableDefinition(IODefinition):
         self._set_table_metadata_to_manifest(table_metadata)
 
     def add_column(self, column: Union[str, ColumnDefinition]):
+        """
+        Add column definition, accepts either ColumnDefinition or a string
+        (in which case the base type STRING will be used).
+        """
         if isinstance(column, str):
             column = ColumnDefinition(name=column)
         if not isinstance(column, ColumnDefinition):

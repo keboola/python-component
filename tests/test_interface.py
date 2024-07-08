@@ -354,7 +354,6 @@ class TestCommonInterface(unittest.TestCase):
              'has_header': False,
              'incremental': True,
              'manifest_type': 'out',
-             'metadata': [{'key': 'bar', 'value': 'kochba'}],
              'schema': [{'data_type': {'base': {'type': 'STRING'}},
                          'name': 'foo',
                          'nullable': True,
@@ -362,6 +361,7 @@ class TestCommonInterface(unittest.TestCase):
                         {'data_type': {'base': {'type': 'STRING'}},
                          'name': 'bar',
                          'nullable': True}],
+             'table_metadata': [{'bar': 'kochba'}],
              'write_always': False},
             config
         )

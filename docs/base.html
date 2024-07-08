@@ -325,7 +325,7 @@ validation is done at constructor level</p>
                                     &#34;from a schema. If a schema folder path is not defined, the schemas folder must be&#34;
                                     &#34; located in the &#39;src&#39; directory of a component : src/schemas&#34;)
 
-    def _generate_table_metadata(self, table_schema: ts.TableSchema) -&gt; List[dao.ColumnDefinition]:
+    def _generate_table_metadata(self, table_schema: ts.TableSchema) -&gt; dao.TableMetadata:
         &#34;&#34;&#34;
             Generates a TableMetadata object for the table definition using a TableSchema object.
 

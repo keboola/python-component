@@ -324,7 +324,7 @@ class ComponentBase(ABC, CommonInterface):
                                     "from a schema. If a schema folder path is not defined, the schemas folder must be"
                                     " located in the 'src' directory of a component : src/schemas")
 
-    def _generate_table_metadata(self, table_schema: ts.TableSchema) -> List[dao.ColumnDefinition]:
+    def _generate_table_metadata(self, table_schema: ts.TableSchema) -> dao.TableMetadata:
         """
             Generates a TableMetadata object for the table definition using a TableSchema object.
 
