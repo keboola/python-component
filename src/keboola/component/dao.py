@@ -502,7 +502,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
     out_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
     in_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
 
-    def get_attributes_by_stage(self, stage: Literal["in", "out"], legacy_queue: bool = False,
+    def get_attributes_by_stage(self, stage: Literal['in', 'out'], legacy_queue: bool = False,
                                 native_types: bool = False) -> List[str]:
         if stage == 'out':
             attributes = self.out_attributes
@@ -512,17 +512,17 @@ class SupportedManifestAttributes(SubscriptableDataclass):
                 to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata', 'metadata']
                 attributes = list(set(attributes).difference(to_remove))
 
-                to_add = ["manifest_type", "has_header", "description", "table_metadata", "schema"]
+                to_add = ['manifest_type', 'has_header', 'description', 'table_metadata', 'schema']
                 attributes.extend(to_add)
 
         elif stage == 'in':
             attributes = self.in_attributes
             exclude = self.in_legacy_exclude
         else:
-            raise ValueError(f"Unsupported stage {stage}")
+            raise ValueError(f'Unsupported stage {stage}')
 
         if legacy_queue:
-            logging.warning(f"Running on legacy queue some manifest properties will be ignored: {exclude}")
+            logging.warning(f'Running on legacy queue some manifest properties will be ignored: {exclude}')
             attributes = list(set(attributes).difference(exclude))
 
         return attributes
@@ -596,20 +596,19 @@ class IODefinition(ABC):
 
         else:
             return {
-                "id": self.id,
-                "created": self.created.strftime('%Y-%m-%dT%H:%M:%S%z') if self.created else None,
-                "is_public": self.is_public,
-                "is_encrypted": self.is_encrypted,
-                "name": self.name,
-                "size_bytes": self.size_bytes,
-                "tags": self.tags,
-                "notify": self.notify,
-                "max_age_days": self.max_age_days,
-                "is_permanent": self.is_permanent,
+                'id': self.id,
+                'created': self.created.strftime('%Y-%m-%dT%H:%M:%S%z') if self.created else None,
+                'is_public': self.is_public,
+                'is_encrypted': self.is_encrypted,
+                'name': self.name,
+                'size_bytes': self.size_bytes,
+                'tags': self.tags,
+                'notify': self.notify,
+                'max_age_days': self.max_age_days,
+                'is_permanent': self.is_permanent,
             }
 
     def _has_header_in_file(self):
-        has_header = True
         if self.is_sliced:
             has_header = False
         elif self.columns and not self.stage == 'in':
@@ -1080,15 +1079,16 @@ class TableDefinition(IODefinition):
     @deprecated(version='1.5.1', reason="Columns can be set by add_columns method")
     def columns(self, val: List[str]):
         if len(self.schema) > 0:
-            warnings.warn("Columns are already set, please use add_columns method to add new columns")
+            warnings.warn("Columns are already set. Use 'add_columns' to add new columns.")
+            return
 
         if val:
-            if isinstance(val, list):
-                for col in val:
-                    if col not in self.columns:
-                        self.schema.append(ColumnDefinition(name=col))
-            else:
-                raise TypeError("Columns must by a list")
+            if not isinstance(val, list):
+                raise TypeError("Columns must be a list")
+
+            for col in val:
+                if col not in self.columns:
+                    self.schema.append(ColumnDefinition(name=col))
 
     @property
     def column_names(self) -> List[str]:
@@ -1158,7 +1158,6 @@ class TableDefinition(IODefinition):
     @table_metadata.setter
     def table_metadata(self, table_metadata: TableMetadata):
         self._table_metadata = table_metadata
-        self._set_table_metadata_to_manifest(table_metadata)
 
     @property
     def created(self) -> Union[datetime, None]:  # Created timestamp  in the KBC Storage (read only input attribute)
@@ -1242,11 +1241,6 @@ class TableDefinition(IODefinition):
                 raise ValueError("Delete where specification must contain "
                                  "keys 'column' and 'values'")
 
-    def _set_table_metadata_to_manifest(self, table_metadata: TableMetadata):
-        # self._raw_manifest['metadata'] = table_metadata.get_table_metadata_for_manifest()
-        # self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
-        pass
-
     def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False,
                                 native_types: bool = True) -> dict:
         """
@@ -1260,8 +1254,6 @@ class TableDefinition(IODefinition):
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
 
         """
-        # in case the table_metadata is out of sync, e.g. the object was modified in-place
-        self._set_table_metadata_to_manifest(self._table_metadata)
         raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue, native_types)
         raw_manifest = {k: v for k, v in raw_manifest.items() if v not in [None, [], {}]}
 

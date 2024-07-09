@@ -2207,7 +2207,6 @@ fails.</dd>
     @table_metadata.setter
     def table_metadata(self, table_metadata: TableMetadata):
         self._table_metadata = table_metadata
-        self._set_table_metadata_to_manifest(table_metadata)
 
     @property
     def created(self) -&gt; Union[datetime, None]:  # Created timestamp  in the KBC Storage (read only input attribute)
@@ -2291,11 +2290,6 @@ fails.</dd>
                 raise ValueError(&#34;Delete where specification must contain &#34;
                                  &#34;keys &#39;column&#39; and &#39;values&#39;&#34;)
 
-    def _set_table_metadata_to_manifest(self, table_metadata: TableMetadata):
-        # self._raw_manifest[&#39;metadata&#39;] = table_metadata.get_table_metadata_for_manifest()
-        # self._raw_manifest[&#39;column_metadata&#39;] = table_metadata.get_column_metadata_for_manifest()
-        pass
-
     def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False,
                                 native_types: bool = True) -&gt; dict:
         &#34;&#34;&#34;
@@ -2309,8 +2303,6 @@ fails.</dd>
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
 
         &#34;&#34;&#34;
-        # in case the table_metadata is out of sync, e.g. the object was modified in-place
-        self._set_table_metadata_to_manifest(self._table_metadata)
         raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue, native_types)
         raw_manifest = {k: v for k, v in raw_manifest.items() if v not in [None, [], {}]}
 
