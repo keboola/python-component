@@ -483,6 +483,7 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(
             {'tags': ['foo', 'bar'],
              'is_public': True,
+             'name': 'some-file.jpg',
              'is_permanent': True,
              'is_encrypted': True,
              'notify': True},
@@ -509,6 +510,7 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(
             {'tags': ['foo', 'bar'],
              'is_public': True,
+             'name': 'some-file.jpg',
              'is_permanent': True,
              'is_encrypted': True,
              'notify': True},
@@ -620,7 +622,7 @@ class TestCommonInterface(unittest.TestCase):
             'delimiter': ',',
             'enclosure': '"',
             'manifest_type': 'out',
-            'has_header': False,
+            'has_header': True,
             'schema': [{'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
                        {'name': 'Sales', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
                        {'name': 'CompPrice', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},

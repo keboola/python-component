@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import logging
+import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
@@ -63,7 +64,7 @@ class EnvironmentVariables:
     data_type_support: str
 
 
-class SupportedDataTypes(Enum):
+class SupportedDataTypes(str, Enum):
     """
     Enum of [supported datatypes](https://help.keboola.com/storage/tables/data-types/)
     """
@@ -430,14 +431,15 @@ class DataType:
             self.type = self.type.value
 
 
+@dataclass
 class BaseType(DataType):
     pass
 
 
 @dataclass
 class ColumnDefinition:
-    name: str
-    data_type: Optional[Union[Dict[str, DataType], DataType]] = None
+    name: Optional[str] = None
+    data_type: Optional[Union[Dict[str, DataType], BaseType]] = None
     nullable: Optional[bool] = True
     primary_key: Optional[bool] = False
     description: Optional[str] = None
@@ -455,7 +457,7 @@ class ColumnDefinition:
         else:
             self.data_type = {"base": DataType(type="STRING")}
 
-    def normalize_data_type(self, data_type: Union[Dict[str, DataType], DataType]) -> Dict[str, DataType]:
+    def normalize_data_type(self, data_type: Union[Dict[str, DataType], BaseType]) -> Dict[str, DataType]:
         if isinstance(data_type, DataType):
             return {"base": data_type}
         return data_type
@@ -466,6 +468,16 @@ class ColumnDefinition:
                 setattr(self, key, value)
             else:
                 raise AttributeError(f"{key} is not a valid attribute of {self.__class__.__name__}")
+
+    def from_dict(self, col: dict):
+        return ColumnDefinition(
+            name=col.get('name'),
+            data_type={key: DataType(type=v.get('type'), default=v.get('default'), length=v.get('length'))
+                       for key, v in col.get('data_type', {}).items()},
+            nullable=col.get('nullable'),
+            primary_key=col.get('primary_key'),
+            description=col.get('description'),
+            metadata=col.get('metadata'))
 
     def to_dict(self):
         result = {
@@ -495,6 +507,14 @@ class SupportedManifestAttributes(SubscriptableDataclass):
         if stage == 'out':
             attributes = self.out_attributes
             exclude = self.out_legacy_exclude
+
+            if native_types:
+                to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata', 'metadata']
+                attributes = list(set(attributes).difference(to_remove))
+
+                to_add = ["manifest_type", "has_header", "description", "table_metadata", "schema"]
+                attributes.extend(to_add)
+
         elif stage == 'in':
             attributes = self.in_attributes
             exclude = self.in_legacy_exclude
@@ -505,20 +525,12 @@ class SupportedManifestAttributes(SubscriptableDataclass):
             logging.warning(f"Running on legacy queue some manifest properties will be ignored: {exclude}")
             attributes = list(set(attributes).difference(exclude))
 
-        if native_types:
-            to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata', 'metadata']
-            attributes = list(set(attributes).difference(to_remove))
-
-            to_add = ["manifest_type", "has_header", "description", "table_metadata", "schema"]
-            attributes.extend(to_add)
-
         return attributes
 
 
 class IODefinition(ABC):
 
     def __init__(self, full_path):
-        self._raw_manifest: dict = dict()
         self.full_path = full_path
 
         # infer stage by default
@@ -545,13 +557,16 @@ class IODefinition(ABC):
             supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue,
                                                                                  native_types)
             fields = {
-                # TODO: add input manifest attributes
-                # 'id': None,
-                # 'uri': None,
-                # 'name': self.name,
-                # 'created': None,
-                # 'last_change_date': None,
-                # 'last_import_date': None,
+                'id': self.id,
+                'uri': self._uri,
+                'name': self.name,
+                'created': self._created,
+                'last_change_date': self._last_change_date,
+                'last_import_date': self._last_import_date,
+                'rows_count': self._rows_count,
+                'data_size_bytes': self._data_size_bytes,
+                'is_alias': self._is_alias,
+
                 'destination': self.destination,
                 'columns': self.columns if native_types else self.legacy_columns,
                 'incremental': self.incremental,
@@ -562,7 +577,7 @@ class IODefinition(ABC):
                 'metadata': self.table_metadata.get_table_metadata_for_manifest(),
                 'column_metadata': self.table_metadata.get_column_metadata_for_manifest(),
                 'manifest_type': manifest_type,
-                'has_header': self._has_header_in_file(manifest_type),
+                'has_header': self._has_header_in_file(),
                 'description': None,
                 'table_metadata': self.table_metadata.get_table_metadata_for_manifest(new_manifest=True),
                 'delete_where_column': self.delete_where_column,
@@ -581,18 +596,23 @@ class IODefinition(ABC):
 
         else:
             return {
-                "tags": self.tags,
+                "id": self.id,
+                "created": self.created.strftime('%Y-%m-%dT%H:%M:%S%z') if self.created else None,
                 "is_public": self.is_public,
-                "is_permanent": self.is_permanent,
                 "is_encrypted": self.is_encrypted,
-                "notify": self.notify
+                "name": self.name,
+                "size_bytes": self.size_bytes,
+                "tags": self.tags,
+                "notify": self.notify,
+                "max_age_days": self.max_age_days,
+                "is_permanent": self.is_permanent,
             }
 
-    def _has_header_in_file(self, manifest_type):
+    def _has_header_in_file(self):
         has_header = True
         if self.is_sliced:
             has_header = False
-        elif self.columns and not manifest_type == 'in':
+        elif self.columns and not self.stage == 'in':
             has_header = False
         else:
             has_header = True
@@ -624,7 +644,11 @@ class IODefinition(ABC):
         if not manifest_type:
             manifest_type = self.stage
 
-        return self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
+        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
+
+        filtered_dictionary = {k: v for k, v in dictionary.items() if v is not None and v != [] and v != ""}
+
+        return filtered_dictionary
 
     @property
     def stage(self) -> str:
@@ -689,7 +713,7 @@ class IODefinition(ABC):
 
     @property
     def s3_staging(self) -> Union[S3Staging, None]:
-        s3 = self._raw_manifest.get('s3')
+        s3 = self._s3
         if s3:
             return IODefinition.S3Staging(is_sliced=s3['isSliced'],
                                           region=s3['region'],
@@ -704,7 +728,7 @@ class IODefinition(ABC):
 
     @property
     def abs_staging(self) -> Union[ABSStaging, None]:
-        _abs = self._raw_manifest.get('abs')
+        _abs = self._abs
         if _abs:
             return IODefinition.ABSStaging(is_sliced=_abs['is_sliced'],
                                            region=_abs['region'],
@@ -792,7 +816,10 @@ class TableDefinition(IODefinition):
     MANIFEST_ATTRIBUTES = {'in': INPUT_MANIFEST_ATTRIBUTES,
                            'out': OUTPUT_MANIFEST_ATTRIBUTES}
 
-    def __init__(self, name: str, full_path: Union[str, None] = None, is_sliced: bool = False,
+    def __init__(self, name: str,
+                 full_path: Union[str, None] = None,
+                 is_sliced: bool = False,
+                 id: str = '',
                  destination: str = '',
                  primary_key: List[str] = None,
                  columns: List[str] = None,
@@ -804,6 +831,13 @@ class TableDefinition(IODefinition):
                  stage: str = 'in',
                  write_always: bool = False,
                  schema: List[ColumnDefinition] = None,
+                 uri: str = None,
+                 created: str = None,
+                 last_change_date: str = None,
+                 last_import_date: str = None,
+                 rows_count: int = None,
+                 data_size_bytes: int = None,
+                 is_alias: bool = False
                  ):
         """
 
@@ -836,10 +870,11 @@ class TableDefinition(IODefinition):
         self.schema = schema
 
         # initialize manifest properties
+        self._destination = None
         self.destination = destination
         self.columns = columns
         self.primary_key = primary_key
-        self.incremental = incremental
+        self._incremental = incremental
 
         self.enclosure = enclosure
         self.delimiter = delimiter
@@ -857,6 +892,17 @@ class TableDefinition(IODefinition):
         self.write_always = write_always
         self.legacy_columns = columns
 
+        self._id = id
+
+        self._uri = uri
+
+        self._created = created
+        self._last_change_date = last_change_date
+        self._last_import_date = last_import_date
+        self._rows_count = rows_count
+        self._data_size_bytes = data_size_bytes
+        self._is_alias = is_alias
+
     @classmethod
     def convert_to_column_definition(cls, column_name, column_metadata, primary_key=False):
         data_type = {'base': DataType(type='STRING')}
@@ -873,14 +919,7 @@ class TableDefinition(IODefinition):
         if TableDefinition.is_new_manifest(json_data):
             schema = []
             for col in json_data.get('schema'):
-                schema.append(ColumnDefinition(
-                    name=col.get('name'),
-                    data_type={key: DataType(type=v.get('type'), default=v.get('default'), length=v.get('length'))
-                               for key, v in col.get('data_type', {}).items()},
-                    nullable=col.get('nullable'),
-                    primary_key=col.get('primary_key'),
-                    description=col.get('description'),
-                    metadata=col.get('metadata')))
+                schema.append(ColumnDefinition().from_dict(col))
 
         else:
             columns_metadata = json_data.get('column_metadata', {})
@@ -950,13 +989,21 @@ class TableDefinition(IODefinition):
         else:
             name = Path(manifest_file_path).stem
 
-        table_def = cls(name=name, full_path=full_path,
-                        is_sliced=is_sliced, table_metadata=TableMetadata(manifest),
+        table_def = cls(name=name,
+                        full_path=full_path,
+                        is_sliced=is_sliced,
+                        id=manifest.get('id'),
+                        table_metadata=TableMetadata(manifest),
                         schema=cls.return_schema_from_manifest(manifest),
-                        columns=manifest.get('columns')
+                        columns=manifest.get('columns'),
+                        uri=manifest.get('uri'),
+                        created=manifest.get('created'),
+                        last_change_date=manifest.get('last_change_date'),
+                        last_import_date=manifest.get('last_import_date'),
+                        rows_count=manifest.get('rows_count'),
+                        data_size_bytes=manifest.get('data_size_bytes'),
+                        is_alias=manifest.get('is_alias')
                         )
-        # build manifest definition
-        table_def._raw_manifest = manifest
 
         return table_def
 
@@ -980,13 +1027,13 @@ class TableDefinition(IODefinition):
     # #### Manifest properties
     @property
     def destination(self) -> str:
-        return self._raw_manifest.get('destination', '')
+        return self._destination
 
     @destination.setter
     def destination(self, val: str):
         if val:
             if isinstance(val, str):
-                self._raw_manifest['destination'] = val
+                self._destination = val
             else:
                 raise TypeError("Destination must be a string")
 
@@ -996,15 +1043,7 @@ class TableDefinition(IODefinition):
         str: id property used in input manifest. Contains Keboola Storage ID, e.g. in.c-bucket.table
 
         """
-        return self._raw_manifest.get('id', '')
-
-    @id.setter
-    def id(self, val: str):
-        if val:
-            if isinstance(val, str):
-                self._raw_manifest['id'] = val
-            else:
-                raise TypeError("ID must be a string")
+        return self._id
 
     @property
     def name(self) -> str:
@@ -1019,15 +1058,7 @@ class TableDefinition(IODefinition):
                 int: rows_count property used in input manifest.
 
         """
-        return self._raw_manifest.get('rows_count', '')
-
-    @rows_count.setter
-    def rows_count(self, val: int):
-        if val:
-            if isinstance(val, int):
-                self._raw_manifest['rows_count'] = val
-            else:
-                raise TypeError("ID must be a int")
+        return self._rows_count
 
     @property
     def data_size_bytes(self) -> int:
@@ -1035,17 +1066,10 @@ class TableDefinition(IODefinition):
                 int: data_size_bytes property used in input manifest.
 
         """
-        return self._raw_manifest.get('data_size_bytes', '')
-
-    @data_size_bytes.setter
-    def data_size_bytes(self, val: int):
-        if val:
-            if isinstance(val, int):
-                self._raw_manifest['data_size_bytes'] = val
-            else:
-                raise TypeError("data_size_bytes must be a int")
+        return self._data_size_bytes
 
     @property
+    @deprecated(version='1.5.1', reason="Please use new column_names method instead of columns property")
     def columns(self) -> List[str]:
         if self.schema:
             return [col.name for col in self.schema]
@@ -1053,7 +1077,11 @@ class TableDefinition(IODefinition):
             return []
 
     @columns.setter
+    @deprecated(version='1.5.1', reason="Columns can be set by add_columns method")
     def columns(self, val: List[str]):
+        if len(self.schema) > 0:
+            warnings.warn("Columns are already set, please use add_columns method to add new columns")
+
         if val:
             if isinstance(val, list):
                 for col in val:
@@ -1063,21 +1091,28 @@ class TableDefinition(IODefinition):
                 raise TypeError("Columns must by a list")
 
     @property
+    def column_names(self) -> List[str]:
+        if self.schema:
+            return [col.name for col in self.schema]
+        else:
+            return []
+
+    @property
     def incremental(self) -> bool:
-        return self._raw_manifest.get('incremental', False)
+        return self._incremental
 
     @incremental.setter
     def incremental(self, incremental: bool):
         if incremental:
-            self._raw_manifest['incremental'] = True
+            self._incremental = True
 
     @property
     def write_always(self) -> bool:
-        return self._raw_manifest.get('write_always', False)
+        return self._write_always
 
     @write_always.setter
     def write_always(self, write_always: bool):
-        self._raw_manifest['write_always'] = write_always
+        self._write_always = write_always
 
     @property
     def primary_key(self) -> List[str]:
@@ -1102,19 +1137,19 @@ class TableDefinition(IODefinition):
 
     @property
     def delimiter(self) -> str:
-        return self._raw_manifest.get('delimiter', ',')
+        return self._delimiter
 
     @delimiter.setter
-    def delimiter(self, delimiter):
-        self._raw_manifest['delimiter'] = delimiter
+    def delimiter(self, delimiter: str):
+        self._delimiter = delimiter
 
     @property
     def enclosure(self) -> str:
-        return self._raw_manifest.get('enclosure', '"')
+        return self._enclosure
 
     @enclosure.setter
-    def enclosure(self, enclosure):
-        self._raw_manifest['enclosure'] = enclosure
+    def enclosure(self, enclosure: str):
+        self._enclosure = enclosure
 
     @property
     def table_metadata(self) -> TableMetadata:
@@ -1124,6 +1159,13 @@ class TableDefinition(IODefinition):
     def table_metadata(self, table_metadata: TableMetadata):
         self._table_metadata = table_metadata
         self._set_table_metadata_to_manifest(table_metadata)
+
+    @property
+    def created(self) -> Union[datetime, None]:  # Created timestamp  in the KBC Storage (read only input attribute)
+        if self._created:
+            return datetime.strptime(self._created, KBC_DEFAULT_TIME_FORMAT)
+        else:
+            return None
 
     def add_column(self, column: Union[str, ColumnDefinition]):
         """
@@ -1201,8 +1243,9 @@ class TableDefinition(IODefinition):
                                  "keys 'column' and 'values'")
 
     def _set_table_metadata_to_manifest(self, table_metadata: TableMetadata):
-        self._raw_manifest['metadata'] = table_metadata.get_table_metadata_for_manifest()
-        self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
+        # self._raw_manifest['metadata'] = table_metadata.get_table_metadata_for_manifest()
+        # self._raw_manifest['column_metadata'] = table_metadata.get_column_metadata_for_manifest()
+        pass
 
     def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False,
                                 native_types: bool = True) -> dict:
@@ -1280,7 +1323,16 @@ class FileDefinition(IODefinition):
                  is_public: bool = False,
                  is_permanent: bool = False,
                  is_encrypted: bool = False,
-                 notify: bool = False):
+                 notify: bool = False,
+                 id: str = None,
+                 s3: dict = None,
+                 abs: dict = None,
+                 rows_count: int = None,
+                 data_size_bytes: int = None,
+                 created: str = None,
+                 size_bytes: int = None,
+                 max_age_days: int = None
+                 ):
         """
 
         Args:
@@ -1300,6 +1352,15 @@ class FileDefinition(IODefinition):
         self.is_permanent = is_permanent
         self.is_encrypted = is_encrypted
         self.notify = notify
+
+        self._id = id
+        self._s3 = s3
+        self._abs = abs
+        self._rows_count = rows_count
+        self._data_size_bytes = data_size_bytes
+        self._created = created
+        self._size_bytes = size_bytes
+        self._max_age_days = max_age_days
 
     @classmethod
     def build_from_manifest(cls,
@@ -1333,9 +1394,20 @@ class FileDefinition(IODefinition):
 
         full_path = str(file_path)
 
-        file_def = cls(full_path=full_path)
-        # build manifest definition
-        file_def._raw_manifest = manifest
+        file_def = cls(full_path=full_path,
+                       tags=manifest.get('tags', []),
+                       is_public=manifest.get('is_public', False),
+                       is_permanent=manifest.get('is_permanent', False),
+                       is_encrypted=manifest.get('is_encrypted', False),
+                       id=manifest.get('id', ''),
+                       s3=manifest.get('s3'),
+                       abs=manifest.get('abs'),
+                       rows_count=manifest.get('rows_count'),
+                       data_size_bytes=manifest.get('data_size_bytes', ''),
+                       created=manifest.get('created'),
+                       size_bytes=manifest.get('size_bytes', 0),
+                       max_age_days=manifest.get('max_age_days', 0)
+                       )
 
         return file_def
 
@@ -1353,10 +1425,10 @@ class FileDefinition(IODefinition):
         """
         # separate id from name
         file_name = Path(self.full_path).name
-        if self._raw_manifest.get('id'):
+        if self._id:
             fsplit = file_name.split('_', 1)
             if len(fsplit) > 1:
-                self._raw_manifest['id'] = fsplit[0]
+                self._id = fsplit[0]
                 file_name = fsplit[1]
         return file_name
 
@@ -1379,7 +1451,7 @@ class FileDefinition(IODefinition):
         User defined tags excluding the system tags
         """
         # filter system tags
-        tags: List[str] = [tag for tag in self._raw_manifest.get('tags', []) if not self.is_system_tag(tag)]
+        tags: List[str] = [tag for tag in self._tags if not self.is_system_tag(tag)]
         return tags
 
     @property
@@ -1387,65 +1459,65 @@ class FileDefinition(IODefinition):
         """
         All tags specified on the file
         """
-        return self._raw_manifest.get('tags', [])
+        return self._tags
 
     @tags.setter
     def tags(self, tags: List[str]):
         if tags is None:
             tags = list()
-        self._raw_manifest['tags'] = tags
+        self._tags = tags
 
     @property
     def is_public(self) -> bool:
-        return self._raw_manifest.get('is_public', False)
+        return self._is_public
 
     @is_public.setter
     def is_public(self, is_public: bool):
-        self._raw_manifest['is_public'] = is_public
+        self._is_public = is_public
 
     @property
     def is_permanent(self) -> bool:
-        return self._raw_manifest.get('is_permanent', False)
+        return self._is_permanent
 
     @is_permanent.setter
     def is_permanent(self, is_permanent: bool):
-        self._raw_manifest['is_permanent'] = is_permanent
+        self._is_permanent = is_permanent
 
     @property
     def is_encrypted(self) -> bool:
-        return self._raw_manifest.get('is_encrypted', False)
+        return self._is_encrypted
 
     @is_encrypted.setter
     def is_encrypted(self, is_encrypted: bool):
-        self._raw_manifest['is_encrypted'] = is_encrypted
+        self._is_encrypted = is_encrypted
 
     @property
     def notify(self) -> bool:
-        return self._raw_manifest.get('notify', False)
+        return self._notify
 
     @notify.setter
     def notify(self, notify: bool):
-        self._raw_manifest['notify'] = notify
+        self._notify = notify
 
     # ########### Input manifest properties - Read ONLY
     @property
     def id(self) -> str:  # File ID in the KBC Storage (read only input attribute)
-        return self._raw_manifest.get('id', None)
+        return self._id
 
     @property
     def created(self) -> Union[datetime, None]:  # Created timestamp  in the KBC Storage (read only input attribute)
-        if self._raw_manifest.get('created'):
-            return datetime.strptime(self._raw_manifest['created'], KBC_DEFAULT_TIME_FORMAT)
+        if self._created:
+            return datetime.strptime(self._created, KBC_DEFAULT_TIME_FORMAT)
         else:
             return None
 
     @property
     def size_bytes(self) -> int:  # File size in the KBC Storage (read only input attribute)
-        return self._raw_manifest.get('size_bytes', 0)
+        return self._size_bytes
 
     @property
     def max_age_days(self) -> int:  # File max age (read only input attribute)
-        return self._raw_manifest.get('max_age_days', 0)
+        return self._max_age_days
 
 
 # ####### CONFIGURATION

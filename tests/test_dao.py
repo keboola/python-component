@@ -144,6 +144,7 @@ class TestTableDefinition(unittest.TestCase):
         self.assertEqual(
             {
                 'columns': ['foo', 'bar'],
+                'name': 'testDef',
                 'primary_key': ['foo', 'bar']
             },
             table_def.get_manifest_dictionary(native_types=False)
@@ -339,13 +340,16 @@ class TestTableDefinition(unittest.TestCase):
         table_def.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
         table_def.table_metadata.add_table_metadata('bar', 'kochba')
 
+        self.maxDiff = None
+
         self.assertDictEqual({
             'destination': 'some-destination',
             'incremental': True,
             'write_always': False,
             'delimiter': ',',
             'enclosure': '"',
-            'manifest_type': 'out', 'has_header': False,
+            'manifest_type': 'out',
+            'has_header': True,
             'delete_where_column': 'lilly',
             'delete_where_values': ['a', 'b'],
             'delete_where_operator': 'eq',
@@ -392,7 +396,7 @@ class TestTableDefinition(unittest.TestCase):
             'delimiter': ',',
             'enclosure': '"',
             'manifest_type': 'out',
-            'has_header': False,
+            'has_header': True,
             'delete_where_column': 'lilly',
             'delete_where_values': ['a', 'b'],
             'delete_where_operator': 'eq',
