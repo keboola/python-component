@@ -994,7 +994,6 @@ class TableDefinition(IODefinition):
                         id=manifest.get('id'),
                         table_metadata=TableMetadata(manifest),
                         schema=cls.return_schema_from_manifest(manifest),
-                        columns=manifest.get('columns'),
                         uri=manifest.get('uri'),
                         created=manifest.get('created'),
                         last_change_date=manifest.get('last_change_date'),
@@ -1078,11 +1077,11 @@ class TableDefinition(IODefinition):
     @columns.setter
     @deprecated(version='1.5.1', reason="Columns can be set by add_columns method")
     def columns(self, val: List[str]):
-        if len(self.schema) > 0:
-            warnings.warn("Columns are already set. Use 'add_columns' to add new columns.")
-            return
-
         if val:
+            if len(self.schema) > 0:
+                warnings.warn("Columns are already set. Use 'add_columns' to add new columns.")
+                return
+
             if not isinstance(val, list):
                 raise TypeError("Columns must be a list")
 
