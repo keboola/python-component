@@ -1009,20 +1009,19 @@ inheritance.</p></div>
 
         else:
             return {
-                &#34;id&#34;: self.id,
-                &#34;created&#34;: self.created.strftime(&#39;%Y-%m-%dT%H:%M:%S%z&#39;) if self.created else None,
-                &#34;is_public&#34;: self.is_public,
-                &#34;is_encrypted&#34;: self.is_encrypted,
-                &#34;name&#34;: self.name,
-                &#34;size_bytes&#34;: self.size_bytes,
-                &#34;tags&#34;: self.tags,
-                &#34;notify&#34;: self.notify,
-                &#34;max_age_days&#34;: self.max_age_days,
-                &#34;is_permanent&#34;: self.is_permanent,
+                &#39;id&#39;: self.id,
+                &#39;created&#39;: self.created.strftime(&#39;%Y-%m-%dT%H:%M:%S%z&#39;) if self.created else None,
+                &#39;is_public&#39;: self.is_public,
+                &#39;is_encrypted&#39;: self.is_encrypted,
+                &#39;name&#39;: self.name,
+                &#39;size_bytes&#39;: self.size_bytes,
+                &#39;tags&#39;: self.tags,
+                &#39;notify&#39;: self.notify,
+                &#39;max_age_days&#39;: self.max_age_days,
+                &#39;is_permanent&#39;: self.is_permanent,
             }
 
     def _has_header_in_file(self):
-        has_header = True
         if self.is_sliced:
             has_header = False
         elif self.columns and not self.stage == &#39;in&#39;:
@@ -1592,7 +1591,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
     out_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
     in_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
 
-    def get_attributes_by_stage(self, stage: Literal[&#34;in&#34;, &#34;out&#34;], legacy_queue: bool = False,
+    def get_attributes_by_stage(self, stage: Literal[&#39;in&#39;, &#39;out&#39;], legacy_queue: bool = False,
                                 native_types: bool = False) -&gt; List[str]:
         if stage == &#39;out&#39;:
             attributes = self.out_attributes
@@ -1602,17 +1601,17 @@ class SupportedManifestAttributes(SubscriptableDataclass):
                 to_remove = [&#39;primary_key&#39;, &#39;columns&#39;, &#39;distribution_key&#39;, &#39;column_metadata&#39;, &#39;metadata&#39;]
                 attributes = list(set(attributes).difference(to_remove))
 
-                to_add = [&#34;manifest_type&#34;, &#34;has_header&#34;, &#34;description&#34;, &#34;table_metadata&#34;, &#34;schema&#34;]
+                to_add = [&#39;manifest_type&#39;, &#39;has_header&#39;, &#39;description&#39;, &#39;table_metadata&#39;, &#39;schema&#39;]
                 attributes.extend(to_add)
 
         elif stage == &#39;in&#39;:
             attributes = self.in_attributes
             exclude = self.in_legacy_exclude
         else:
-            raise ValueError(f&#34;Unsupported stage {stage}&#34;)
+            raise ValueError(f&#39;Unsupported stage {stage}&#39;)
 
         if legacy_queue:
-            logging.warning(f&#34;Running on legacy queue some manifest properties will be ignored: {exclude}&#34;)
+            logging.warning(f&#39;Running on legacy queue some manifest properties will be ignored: {exclude}&#39;)
             attributes = list(set(attributes).difference(exclude))
 
         return attributes</code></pre>
@@ -2129,15 +2128,16 @@ fails.</dd>
     @deprecated(version=&#39;1.5.1&#39;, reason=&#34;Columns can be set by add_columns method&#34;)
     def columns(self, val: List[str]):
         if len(self.schema) &gt; 0:
-            warnings.warn(&#34;Columns are already set, please use add_columns method to add new columns&#34;)
+            warnings.warn(&#34;Columns are already set. Use &#39;add_columns&#39; to add new columns.&#34;)
+            return
 
         if val:
-            if isinstance(val, list):
-                for col in val:
-                    if col not in self.columns:
-                        self.schema.append(ColumnDefinition(name=col))
-            else:
-                raise TypeError(&#34;Columns must by a list&#34;)
+            if not isinstance(val, list):
+                raise TypeError(&#34;Columns must be a list&#34;)
+
+            for col in val:
+                if col not in self.columns:
+                    self.schema.append(ColumnDefinition(name=col))
 
     @property
     def column_names(self) -&gt; List[str]:
