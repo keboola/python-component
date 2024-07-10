@@ -2043,7 +2043,6 @@ fails.</dd>
                         id=manifest.get(&#39;id&#39;),
                         table_metadata=TableMetadata(manifest),
                         schema=cls.return_schema_from_manifest(manifest),
-                        columns=manifest.get(&#39;columns&#39;),
                         uri=manifest.get(&#39;uri&#39;),
                         created=manifest.get(&#39;created&#39;),
                         last_change_date=manifest.get(&#39;last_change_date&#39;),
@@ -2127,11 +2126,11 @@ fails.</dd>
     @columns.setter
     @deprecated(version=&#39;1.5.1&#39;, reason=&#34;Columns can be set by add_columns method&#34;)
     def columns(self, val: List[str]):
-        if len(self.schema) &gt; 0:
-            warnings.warn(&#34;Columns are already set. Use &#39;add_columns&#39; to add new columns.&#34;)
-            return
-
         if val:
+            if len(self.schema) &gt; 0:
+                warnings.warn(&#34;Columns are already set. Use &#39;add_columns&#39; to add new columns.&#34;)
+                return
+
             if not isinstance(val, list):
                 raise TypeError(&#34;Columns must be a list&#34;)
 
