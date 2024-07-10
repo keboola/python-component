@@ -438,6 +438,18 @@ class BaseType(DataType):
 
 @dataclass
 class ColumnDefinition:
+    """
+    Represents the definition of a column within a table schema.
+
+    Attributes:
+        name (Optional[str]): The name of the column. Defaults to None.
+        data_type (Optional[Union[Dict[str, DataType], BaseType]]): The data type of the column. This can be a specific
+            `DataType` or a `BaseType`, or a dictionary mapping from a string to one of these types. Defaults to None.
+        nullable (Optional[bool]): A flag indicating if the column can contain NULL values. Defaults to True.
+        primary_key (Optional[bool]): A flag indicating if the column is part of the table's primary key. Defaults to False.
+        description (Optional[str]): A description of the column's purpose or contents. Defaults to None.
+        metadata (Optional[Dict[str, str]]): Additional metadata associated with the column. Defaults to None.
+    """
     name: Optional[str] = None
     data_type: Optional[Union[Dict[str, DataType], BaseType]] = None
     nullable: Optional[bool] = True
@@ -682,6 +694,7 @@ class TableDefinition(IODefinition):
             The full_path is None when dealing with [workspaces](
             https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
         is_sliced: True if the full_path points to a folder with sliced tables
+        has_header: True if the file has a header
         destination: String name of the table in Storage.
         primary_key: List with names of columns used for primary key.
         columns: List of columns for headless CSV files
@@ -726,31 +739,31 @@ class TableDefinition(IODefinition):
                            'out': OUTPUT_MANIFEST_ATTRIBUTES}
 
     def __init__(self, name: str,
-                 full_path: Union[str, None] = None,
-                 is_sliced: bool = False,
+                 full_path: Optional[Union[str, None]] = None,
+                 is_sliced: Optional[bool] = False,
 
-                 destination: str = '',
-                 primary_key: List[str] = None,
-                 columns: List[str] = None,
-                 incremental: bool = None,
-                 table_metadata: TableMetadata = None,
-                 enclosure: str = '"',
-                 delimiter: str = ',',
-                 delete_where: dict = None,
-                 stage: str = 'in',
-                 write_always: bool = False,
-                 schema: List[ColumnDefinition] = None,
-                 rows_count: int = None,
-                 data_size_bytes: int = None,
-                 is_alias: bool = False,
-                 has_header: bool = None,
+                 destination: Optional[str] = '',
+                 primary_key: Optional[List[str]] = None,
+                 columns: Optional[List[str]] = None,
+                 incremental: Optional[bool] = None,
+                 table_metadata: Optional[TableMetadata] = None,
+                 enclosure: Optional[str] = '"',
+                 delimiter: Optional[str] = ',',
+                 delete_where: Optional[dict] = None,
+                 stage: Optional[str] = 'in',
+                 write_always: Optional[bool] = False,
+                 schema: Optional[List[ColumnDefinition]] = None,
+                 rows_count: Optional[int] = None,
+                 data_size_bytes: Optional[int] = None,
+                 is_alias: Optional[bool] = False,
+                 has_header: Optional[bool] = None,
 
                  # input
-                 uri: str = None,
-                 id: str = '',
-                 created: str = None,
-                 last_change_date: str = None,
-                 last_import_date: str = None,
+                 uri: Optional[str] = None,
+                 id: Optional[str] = '',
+                 created: Optional[str] = None,
+                 last_change_date: Optional[str] = None,
+                 last_import_date: Optional[str] = None,
                  ):
         """
 
@@ -820,34 +833,38 @@ class TableDefinition(IODefinition):
 
     @classmethod
     def build_output_definition(cls, name: str,
-                                destination: str,
-                                columns: List[str],
-                                primary_key: List[str] = None,
-                                incremental: bool = False,
-                                table_metadata: TableMetadata = None,
-                                enclosure: str = '"',
-                                delimiter: str = ',',
-                                delete_where: dict = None,
-                                write_always: bool = False,
-                                schema: List[ColumnDefinition] = None,
+                                destination: Optional[str] = '',
+                                columns: Optional[List[str]] = None,
+                                primary_key: Optional[List[str]] = None,
+                                incremental: Optional[bool] = False,
+                                table_metadata: Optional[TableMetadata] = None,
+                                enclosure: Optional[str] = '"',
+                                delimiter: Optional[str] = ',',
+                                delete_where: Optional[dict] = None,
+                                write_always: Optional[bool] = False,
+                                schema: Optional[List[ColumnDefinition]] = None,
                                 ):
         """
-        Factory method for TableDefinition for output tables.
-        Args:
-            name: Table / file name.
-            destination: String name of the table in Storage.
-            columns: List of columns for headless CSV files
-            primary_key: List with names of columns used for primary key.
-            incremental: Set to true to enable incremental loading
-            table_metadata: <.dao.TableMetadata> object containing column and table metadata (deprecated)
-            enclosure: str: CSV enclosure, by default "
-            delimiter: str: CSV delimiter, by default ,
-            delete_where: Dict with settings for deleting rows
-            write_always: Bool: If true, the table will be saved to Storage even when the job execution
-                           fails.
-            schema: List of ColumnDefinition objects
+        Factory method for creating a TableDefinition instance for output tables.
 
-        Returns: TableDefinition
+        This method initializes a TableDefinition object with properties specific to output tables,
+        including metadata and schema definitions.
+
+        Args:
+            name (str): The name of the table.
+            destination (Optional[str]): The destination table name in the storage. Defaults to an empty string.
+            columns (Optional[List[str]]): A list of column names for the table. Defaults to None.
+            primary_key (Optional[List[str]]): A list of column names that form the primary key. Defaults to None.
+            incremental (Optional[bool]): Indicates if the loading should be incremental. Defaults to False.
+            table_metadata (Optional[TableMetadata]): An object containing table and column metadata. Defaults to None.
+            enclosure (Optional[str]): The character used as a text qualifier in the CSV file. Defaults to '"'.
+            delimiter (Optional[str]): The character used to separate columns in the CSV file. Defaults to ','.
+            delete_where (Optional[dict]): Criteria for row deletion in incremental loads. Defaults to None.
+            write_always (Optional[bool]): If True, the table will be saved to storage even if the job fails. Defaults to False.
+            schema (Optional[List[ColumnDefinition]]): A list of ColumnDefinition objects defining the table schema. Defaults to None.
+
+        Returns:
+            TableDefinition: An instance of TableDefinition configured for output tables.
         """
         return cls(name=name,
                    destination=destination,
@@ -864,32 +881,62 @@ class TableDefinition(IODefinition):
 
     @classmethod
     def build_input_definition(cls, name: str,
-                               full_path: Union[str, None] = None,
-                               is_sliced: bool = False,
+                               full_path: Optional[Union[str, None]] = None,
+                               is_sliced: Optional[bool] = False,
 
-                               destination: str = '',
-                               primary_key: List[str] = None,
-                               columns: List[str] = None,
-                               incremental: bool = None,
-                               table_metadata: TableMetadata = None,
-                               enclosure: str = '"',
-                               delimiter: str = ',',
-                               delete_where: dict = None,
-                               stage: str = 'in',
-                               write_always: bool = False,
-                               schema: List[ColumnDefinition] = None,
-                               rows_count: int = None,
-                               data_size_bytes: int = None,
-                               is_alias: bool = False,
+                               destination: Optional[str] = '',
+                               primary_key: Optional[List[str]] = None,
+                               columns: Optional[List[str]] = None,
+                               incremental: Optional[bool] = None,
+                               table_metadata: Optional[TableMetadata] = None,
+                               enclosure: Optional[str] = '"',
+                               delimiter: Optional[str] = ',',
+                               delete_where: Optional[dict] = None,
+                               stage: Optional[str] = 'in',
+                               write_always: Optional[bool] = False,
+                               schema: Optional[List[ColumnDefinition]] = None,
+                               rows_count: Optional[int] = None,
+                               data_size_bytes: Optional[int] = None,
+                               is_alias: Optional[bool] = False,
 
                                # input
-                               uri: str = None,
-                               id: str = '',
-                               created: str = None,
-                               last_change_date: str = None,
-                               last_import_date: str = None):
+                               uri: Optional[str] = None,
+                               id: Optional[str] = '',
+                               created: Optional[str] = None,
+                               last_change_date: Optional[str] = None,
+                               last_import_date: Optional[str] = None):
         """
-        Factory method for TableDefinition for input tables.
+        Factory method for creating a TableDefinition instance for input tables.
+
+        This method initializes a TableDefinition object with properties specific to input tables,
+        including metadata and schema definitions.
+
+        Args:
+            name (str): The name of the table.
+            full_path (Optional[Union[str, None]]): The full path to the table file or folder (for sliced tables).
+            is_sliced (Optional[bool]): Indicates if the table is sliced (stored in multiple files).
+            destination (Optional[str]): The destination table name in the storage. Defaults to an empty string.
+            primary_key (Optional[List[str]]): A list of column names that form the primary key. Defaults to None.
+            columns (Optional[List[str]]): A list of column names for the table. Defaults to None.
+            incremental (Optional[bool]): Indicates if the loading should be incremental. Defaults to None.
+            table_metadata (Optional[TableMetadata]): An object containing table and column metadata. Defaults to None.
+            enclosure (Optional[str]): The character used as a text qualifier in the CSV file. Defaults to '"'.
+            delimiter (Optional[str]): The character used to separate columns in the CSV file. Defaults to ','.
+            delete_where (Optional[dict]): Criteria for row deletion in incremental loads. Defaults to None.
+            stage (Optional[str]): Indicates the stage ('in' for input tables). Defaults to 'in'.
+            write_always (Optional[bool]): If True, the table will be saved to storage even if the job fails. Defaults to False.
+            schema (Optional[List[ColumnDefinition]]): A list of ColumnDefinition objects defining the table schema. Defaults to None.
+            rows_count (Optional[int]): The number of rows in the table. Defaults to None.
+            data_size_bytes (Optional[int]): The size of the table data in bytes. Defaults to None.
+            is_alias (Optional[bool]): Indicates if the table is an alias. Defaults to False.
+            uri (Optional[str]): The URI of the table. Defaults to None.
+            id (Optional[str]): The ID of the table. Defaults to an empty string.
+            created (Optional[str]): The creation timestamp of the table. Defaults to None.
+            last_change_date (Optional[str]): The last modification timestamp of the table. Defaults to None.
+            last_import_date (Optional[str]): The last import timestamp of the table. Defaults to None.
+
+        Returns:
+            TableDefinition: An instance of TableDefinition configured for input tables.
         """
         return cls(name=name,
                    full_path=full_path,
@@ -1383,17 +1430,17 @@ class FileDefinition(IODefinition):
                             "notify"]
 
     def __init__(self, full_path: str,
-                 tags: List[str] = None,
-                 is_public: bool = False,
-                 is_permanent: bool = False,
-                 is_encrypted: bool = False,
-                 notify: bool = False,
-                 id: str = None,
-                 s3: dict = None,
-                 abs: dict = None,
-                 created: str = None,
-                 size_bytes: int = None,
-                 max_age_days: int = None
+                 tags: Optional[List[str]] = None,
+                 is_public: Optional[bool] = False,
+                 is_permanent: Optional[bool] = False,
+                 is_encrypted: Optional[bool] = False,
+                 notify: Optional[bool] = False,
+                 id: Optional[str] = None,
+                 s3: Optional[dict] = None,
+                 abs: Optional[dict] = None,
+                 created: Optional[str] = None,
+                 size_bytes: Optional[int] = None,
+                 max_age_days: Optional[int] = None
                  ):
         """
 
@@ -1424,36 +1471,60 @@ class FileDefinition(IODefinition):
         self._max_age_days = max_age_days
 
     @classmethod
-    def build_output_definition(cls, full_path: str, tags: List[str] = None, is_public: bool = False,
-                                is_permanent: bool = False, is_encrypted: bool = False, notify: bool = False):
+    def build_output_definition(cls,
+                                full_path: str,
+                                tags: Optional[List[str]] = None,
+                                is_public: Optional[bool] = False,
+                                is_permanent: Optional[bool] = False,
+                                is_encrypted: Optional[bool] = False,
+                                notify: Optional[bool] = False):
         """
-        Build output file definition
+        Factory method to create an instance of FileDefinition for output files.
+
+        This method initializes a FileDefinition object with properties specific to output files,
+        including file path, tags, and various flags indicating the file's accessibility, permanence, encryption status,
+        and whether project administrators should be notified upon file upload.
+
         Args:
-            full_path (str): Full path of the file.
-            tags (list):
-                List of tags that are assigned to this file
-            is_public: When true, the file URL will be permanent and publicly accessible.
-            is_permanent: Keeps a file forever. If false, the file will be deleted after default period of time (e.g.
-            15 days)
-            is_encrypted: If true, the file content will be encrypted in the storage.
-            notify: Notifies project administrators that a file was uploaded.
+            full_path (str): The full path where the file is or will be stored.
+            tags (Optional[List[str]]): A list of tags associated with the file. Defaults to None.
+            is_public (Optional[bool]): Flag indicating if the file URL will be permanent and publicly accessible. Defaults to False.
+            is_permanent (Optional[bool]): Flag indicating if the file should be kept forever. Defaults to False.
+            is_encrypted (Optional[bool]): Flag indicating if the file content will be encrypted in storage. Defaults to False.
+            notify (Optional[bool]): Flag indicating if project administrators should be notified that a file was uploaded. Defaults to False.
+
+        Returns:
+            An instance of FileDefinition configured for output files.
         """
         return cls(full_path=full_path, tags=tags, is_public=is_public, is_permanent=is_permanent,
                    is_encrypted=is_encrypted, notify=notify)
 
     @classmethod
-    def build_input_definition(cls, full_path: str, id: str = None, s3: dict = None, abs: dict = None,
-                               created: str = None, size_bytes: int = None, max_age_days: int = None):
+    def build_input_definition(cls, full_path: str,
+                               id: Optional[str] = None,
+                               s3: Optional[dict] = None,
+                               abs: Optional[dict] = None,
+                               created: Optional[str] = None,
+                               size_bytes: Optional[int] = None,
+                               max_age_days: Optional[int] = None):
         """
-        Build input file definition
+        Factory method to create an instance of FileDefinition for input files.
+
+        This method initializes a FileDefinition object with properties specific to input files,
+        including the file path, optional metadata such as the file's ID, S3 and ABS storage details,
+        creation date, size in bytes, and the maximum age in days before the file is considered expired.
+
         Args:
-            full_path (str): Full path of the file.
-            id (str): File ID in the KBC Storage
-            s3 (dict): S3 staging information
-            abs (dict): ABS staging information
-            created (str): Created timestamp in the KBC Storage
-            size_bytes (int): File size in the KBC Storage
-            max_age_days (int): File max age
+            full_path (str): The full path where the file is or will be stored.
+            id (Optional[str]): The unique identifier of the file. Defaults to None.
+            s3 (Optional[dict]): A dictionary containing Amazon S3 storage details. Defaults to None.
+            abs (Optional[dict]): A dictionary containing Azure Blob Storage details. Defaults to None.
+            created (Optional[str]): The creation date of the file. Defaults to None.
+            size_bytes (Optional[int]): The size of the file in bytes. Defaults to None.
+            max_age_days (Optional[int]): The maximum age of the file in days. Defaults to None.
+
+        Returns:
+            An instance of FileDefinition configured for input files.
         """
         return cls(full_path=full_path, id=id, s3=s3, abs=abs, created=created, size_bytes=size_bytes,
                    max_age_days=max_age_days)
