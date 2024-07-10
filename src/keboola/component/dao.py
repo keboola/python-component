@@ -577,7 +577,7 @@ class IODefinition(ABC):
                 'metadata': self.table_metadata.get_table_metadata_for_manifest(),
                 'column_metadata': self.table_metadata.get_column_metadata_for_manifest(),
                 'manifest_type': manifest_type,
-                'has_header': self._has_header_in_file(),
+                'has_header': self.has_header,
                 'description': None,
                 'table_metadata': self.table_metadata.get_table_metadata_for_manifest(new_manifest=True),
                 'delete_where_column': self.delete_where_column,
@@ -818,7 +818,7 @@ class TableDefinition(IODefinition):
     def __init__(self, name: str,
                  full_path: Union[str, None] = None,
                  is_sliced: bool = False,
-                 id: str = '',
+
                  destination: str = '',
                  primary_key: List[str] = None,
                  columns: List[str] = None,
@@ -830,13 +830,17 @@ class TableDefinition(IODefinition):
                  stage: str = 'in',
                  write_always: bool = False,
                  schema: List[ColumnDefinition] = None,
+                 rows_count: int = None,
+                 data_size_bytes: int = None,
+                 is_alias: bool = False,
+                 has_header: bool = None,
+
+                 # input
                  uri: str = None,
+                 id: str = '',
                  created: str = None,
                  last_change_date: str = None,
                  last_import_date: str = None,
-                 rows_count: int = None,
-                 data_size_bytes: int = None,
-                 is_alias: bool = False
                  ):
         """
 
@@ -854,13 +858,15 @@ class TableDefinition(IODefinition):
             primary_key: List with names of columns used for primary key.
             columns: List of columns for headless CSV files
             incremental: Set to true to enable incremental loading
-            table_metadata: <.dao.TableMetadata> object containing column and table metadata
+            table_metadata: <.dao.TableMetadata> object containing column and table metadata (deprecated)
             enclosure: str: CSV enclosure, by default "
             delimiter: str: CSV delimiter, by default ,
             delete_where (dict): Dict with settings for deleting rows
             stage: str: Storage Stage 'in' or 'out'
             write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
+            schema: List of ColumnDefinition objects
+
         """
         super().__init__(full_path)
         self._name = name
@@ -890,17 +896,113 @@ class TableDefinition(IODefinition):
         self.stage = stage
         self.write_always = write_always
         self.legacy_columns = columns
-
-        self._id = id
-
-        self._uri = uri
-
-        self._created = created
-        self._last_change_date = last_change_date
-        self._last_import_date = last_import_date
         self._rows_count = rows_count
         self._data_size_bytes = data_size_bytes
         self._is_alias = is_alias
+        self.has_header = has_header or self._has_header_in_file()
+
+        # input manifest properties
+        self._id = id
+        self._uri = uri
+        self._created = created
+        self._last_change_date = last_change_date
+        self._last_import_date = last_import_date
+
+    @classmethod
+    def build_output_definition(cls, name: str,
+                                destination: str,
+                                columns: List[str],
+                                primary_key: List[str] = None,
+                                incremental: bool = False,
+                                table_metadata: TableMetadata = None,
+                                enclosure: str = '"',
+                                delimiter: str = ',',
+                                delete_where: dict = None,
+                                write_always: bool = False,
+                                schema: List[ColumnDefinition] = None,
+                                ):
+        """
+        Factory method for TableDefinition for output tables.
+        Args:
+            name: Table / file name.
+            destination: String name of the table in Storage.
+            columns: List of columns for headless CSV files
+            primary_key: List with names of columns used for primary key.
+            incremental: Set to true to enable incremental loading
+            table_metadata: <.dao.TableMetadata> object containing column and table metadata (deprecated)
+            enclosure: str: CSV enclosure, by default "
+            delimiter: str: CSV delimiter, by default ,
+            delete_where: Dict with settings for deleting rows
+            write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
+            schema: List of ColumnDefinition objects
+
+        Returns: TableDefinition
+        """
+        return cls(name=name,
+                   destination=destination,
+                   columns=columns,
+                   primary_key=primary_key,
+                   incremental=incremental,
+                   table_metadata=table_metadata,
+                   enclosure=enclosure,
+                   delimiter=delimiter,
+                   delete_where=delete_where,
+                   write_always=write_always,
+                   schema=schema,
+                   )
+
+    @classmethod
+    def build_input_definition(cls, name: str,
+                               full_path: Union[str, None] = None,
+                               is_sliced: bool = False,
+
+                               destination: str = '',
+                               primary_key: List[str] = None,
+                               columns: List[str] = None,
+                               incremental: bool = None,
+                               table_metadata: TableMetadata = None,
+                               enclosure: str = '"',
+                               delimiter: str = ',',
+                               delete_where: dict = None,
+                               stage: str = 'in',
+                               write_always: bool = False,
+                               schema: List[ColumnDefinition] = None,
+                               rows_count: int = None,
+                               data_size_bytes: int = None,
+                               is_alias: bool = False,
+
+                               # input
+                               uri: str = None,
+                               id: str = '',
+                               created: str = None,
+                               last_change_date: str = None,
+                               last_import_date: str = None):
+        """
+        Factory method for TableDefinition for input tables.
+        """
+        return cls(name=name,
+                   full_path=full_path,
+                   is_sliced=is_sliced,
+                   destination=destination,
+                   primary_key=primary_key,
+                   columns=columns,
+                   incremental=incremental,
+                   table_metadata=table_metadata,
+                   enclosure=enclosure,
+                   delimiter=delimiter,
+                   delete_where=delete_where,
+                   stage=stage,
+                   write_always=write_always,
+                   schema=schema,
+                   rows_count=rows_count,
+                   data_size_bytes=data_size_bytes,
+                   is_alias=is_alias,
+                   uri=uri,
+                   id=id,
+                   created=created,
+                   last_change_date=last_change_date,
+                   last_import_date=last_import_date)
 
     @classmethod
     def convert_to_column_definition(cls, column_name, column_metadata, primary_key=False):
@@ -1318,8 +1420,6 @@ class FileDefinition(IODefinition):
                  id: str = None,
                  s3: dict = None,
                  abs: dict = None,
-                 rows_count: int = None,
-                 data_size_bytes: int = None,
                  created: str = None,
                  size_bytes: int = None,
                  max_age_days: int = None
@@ -1344,14 +1444,48 @@ class FileDefinition(IODefinition):
         self.is_encrypted = is_encrypted
         self.notify = notify
 
+        # input
         self._id = id
         self._s3 = s3
         self._abs = abs
-        self._rows_count = rows_count
-        self._data_size_bytes = data_size_bytes
         self._created = created
         self._size_bytes = size_bytes
         self._max_age_days = max_age_days
+
+    @classmethod
+    def build_output_definition(cls, full_path: str, tags: List[str] = None, is_public: bool = False,
+                                is_permanent: bool = False, is_encrypted: bool = False, notify: bool = False):
+        """
+        Build output file definition
+        Args:
+            full_path (str): Full path of the file.
+            tags (list):
+                List of tags that are assigned to this file
+            is_public: When true, the file URL will be permanent and publicly accessible.
+            is_permanent: Keeps a file forever. If false, the file will be deleted after default period of time (e.g.
+            15 days)
+            is_encrypted: If true, the file content will be encrypted in the storage.
+            notify: Notifies project administrators that a file was uploaded.
+        """
+        return cls(full_path=full_path, tags=tags, is_public=is_public, is_permanent=is_permanent,
+                   is_encrypted=is_encrypted, notify=notify)
+
+    @classmethod
+    def build_input_definition(cls, full_path: str, id: str = None, s3: dict = None, abs: dict = None,
+                               created: str = None, size_bytes: int = None, max_age_days: int = None):
+        """
+        Build input file definition
+        Args:
+            full_path (str): Full path of the file.
+            id (str): File ID in the KBC Storage
+            s3 (dict): S3 staging information
+            abs (dict): ABS staging information
+            created (str): Created timestamp in the KBC Storage
+            size_bytes (int): File size in the KBC Storage
+            max_age_days (int): File max age
+        """
+        return cls(full_path=full_path, id=id, s3=s3, abs=abs, created=created, size_bytes=size_bytes,
+                   max_age_days=max_age_days)
 
     @classmethod
     def build_from_manifest(cls,
@@ -1393,8 +1527,6 @@ class FileDefinition(IODefinition):
                        id=manifest.get('id', ''),
                        s3=manifest.get('s3'),
                        abs=manifest.get('abs'),
-                       rows_count=manifest.get('rows_count'),
-                       data_size_bytes=manifest.get('data_size_bytes', ''),
                        created=manifest.get('created'),
                        size_bytes=manifest.get('size_bytes', 0),
                        max_age_days=manifest.get('max_age_days', 0)
