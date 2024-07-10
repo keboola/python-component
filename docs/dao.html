@@ -347,7 +347,7 @@ class EnvironmentVariables:
 </dd>
 <dt id="keboola.component.dao.FileDefinition"><code class="flex name class">
 <span>class <span class="ident">FileDefinition</span></span>
-<span>(</span><span>full_path: str, tags: List[str] = None, is_public: bool = False, is_permanent: bool = False, is_encrypted: bool = False, notify: bool = False, id: str = None, s3: dict = None, abs: dict = None, rows_count: int = None, data_size_bytes: int = None, created: str = None, size_bytes: int = None, max_age_days: int = None)</span>
+<span>(</span><span>full_path: str, tags: List[str] = None, is_public: bool = False, is_permanent: bool = False, is_encrypted: bool = False, notify: bool = False, id: str = None, s3: dict = None, abs: dict = None, created: str = None, size_bytes: int = None, max_age_days: int = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>File definition class. It is used as a container for <code>{in/out}/files/</code> files.
@@ -454,8 +454,6 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
                  id: str = None,
                  s3: dict = None,
                  abs: dict = None,
-                 rows_count: int = None,
-                 data_size_bytes: int = None,
                  created: str = None,
                  size_bytes: int = None,
                  max_age_days: int = None
@@ -480,14 +478,48 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
         self.is_encrypted = is_encrypted
         self.notify = notify
 
+        # input
         self._id = id
         self._s3 = s3
         self._abs = abs
-        self._rows_count = rows_count
-        self._data_size_bytes = data_size_bytes
         self._created = created
         self._size_bytes = size_bytes
         self._max_age_days = max_age_days
+
+    @classmethod
+    def build_output_definition(cls, full_path: str, tags: List[str] = None, is_public: bool = False,
+                                is_permanent: bool = False, is_encrypted: bool = False, notify: bool = False):
+        &#34;&#34;&#34;
+        Build output file definition
+        Args:
+            full_path (str): Full path of the file.
+            tags (list):
+                List of tags that are assigned to this file
+            is_public: When true, the file URL will be permanent and publicly accessible.
+            is_permanent: Keeps a file forever. If false, the file will be deleted after default period of time (e.g.
+            15 days)
+            is_encrypted: If true, the file content will be encrypted in the storage.
+            notify: Notifies project administrators that a file was uploaded.
+        &#34;&#34;&#34;
+        return cls(full_path=full_path, tags=tags, is_public=is_public, is_permanent=is_permanent,
+                   is_encrypted=is_encrypted, notify=notify)
+
+    @classmethod
+    def build_input_definition(cls, full_path: str, id: str = None, s3: dict = None, abs: dict = None,
+                               created: str = None, size_bytes: int = None, max_age_days: int = None):
+        &#34;&#34;&#34;
+        Build input file definition
+        Args:
+            full_path (str): Full path of the file.
+            id (str): File ID in the KBC Storage
+            s3 (dict): S3 staging information
+            abs (dict): ABS staging information
+            created (str): Created timestamp in the KBC Storage
+            size_bytes (int): File size in the KBC Storage
+            max_age_days (int): File max age
+        &#34;&#34;&#34;
+        return cls(full_path=full_path, id=id, s3=s3, abs=abs, created=created, size_bytes=size_bytes,
+                   max_age_days=max_age_days)
 
     @classmethod
     def build_from_manifest(cls,
@@ -529,8 +561,6 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
                        id=manifest.get(&#39;id&#39;, &#39;&#39;),
                        s3=manifest.get(&#39;s3&#39;),
                        abs=manifest.get(&#39;abs&#39;),
-                       rows_count=manifest.get(&#39;rows_count&#39;),
-                       data_size_bytes=manifest.get(&#39;data_size_bytes&#39;, &#39;&#39;),
                        created=manifest.get(&#39;created&#39;),
                        size_bytes=manifest.get(&#39;size_bytes&#39;, 0),
                        max_age_days=manifest.get(&#39;max_age_days&#39;, 0)
@@ -544,6 +574,62 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
             if tag.startswith(prefix):
                 return True
         return False
+
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
+                                native_types: bool = False) -&gt; dict:
+        &#34;&#34;&#34;
+        Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
+        By default, returns output manifest.
+             The result keeps only values that are applicable for
+             the selected type of the Manifest file. Because although input and output manifests share most of
+             the attributes, some are not shared.
+
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Args:
+            manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+            legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
+            native_types (bool): optional flag marking if the manifest should be new, default to False - legacy format
+
+        Returns:
+            dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+        &#34;&#34;&#34;
+        if not manifest_type:
+            manifest_type = self.stage
+
+        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
+
+        filtered_dictionary = {k: v for k, v in dictionary.items() if v not in [None, [], {}, &#34;&#34;]}
+
+        return filtered_dictionary
+
+    def _filter_attributes_by_manifest_type(self, manifest_type: Literal[&#34;in&#34;, &#34;out&#34;], legacy_queue: bool = False,
+                                            native_types: bool = False):
+        &#34;&#34;&#34;
+        Filter manifest to contain only supported fields
+        Args:
+            manifest_type:
+
+        Returns:
+
+        &#34;&#34;&#34;
+
+        return {
+            &#39;id&#39;: self.id,
+            &#39;created&#39;: self.created.strftime(&#39;%Y-%m-%dT%H:%M:%S%z&#39;) if self.created else None,
+            &#39;is_public&#39;: self.is_public,
+            &#39;is_encrypted&#39;: self.is_encrypted,
+            &#39;name&#39;: self.name,
+            &#39;size_bytes&#39;: self.size_bytes,
+            &#39;tags&#39;: self.tags,
+            &#39;notify&#39;: self.notify,
+            &#39;max_age_days&#39;: self.max_age_days,
+            &#39;is_permanent&#39;: self.is_permanent,
+        }
 
     @property
     def name(self) -&gt; str:
@@ -675,6 +761,51 @@ E.g. file.jpg if <code>file.jpg.manifest</code> is provided.</p>
 <h2 id="args">Args</h2>
 <p>manifest_file_path (str):
 (optional) Full path of the file <a href="https://developers.keboola.com/extend/common-interface/manifest-files/#files">manifest</a></p></div>
+</dd>
+<dt id="keboola.component.dao.FileDefinition.build_input_definition"><code class="name flex">
+<span>def <span class="ident">build_input_definition</span></span>(<span>full_path: str, id: str = None, s3: dict = None, abs: dict = None, created: str = None, size_bytes: int = None, max_age_days: int = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Build input file definition</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>full_path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Full path of the file.</dd>
+<dt><strong><code>id</code></strong> :&ensp;<code>str</code></dt>
+<dd>File ID in the KBC Storage</dd>
+<dt><strong><code>s3</code></strong> :&ensp;<code>dict</code></dt>
+<dd>S3 staging information</dd>
+<dt><strong><code>abs</code></strong> :&ensp;<code>dict</code></dt>
+<dd>ABS staging information</dd>
+<dt><strong><code>created</code></strong> :&ensp;<code>str</code></dt>
+<dd>Created timestamp in the KBC Storage</dd>
+<dt><strong><code>size_bytes</code></strong> :&ensp;<code>int</code></dt>
+<dd>File size in the KBC Storage</dd>
+<dt><strong><code>max_age_days</code></strong> :&ensp;<code>int</code></dt>
+<dd>File max age</dd>
+</dl></div>
+</dd>
+<dt id="keboola.component.dao.FileDefinition.build_output_definition"><code class="name flex">
+<span>def <span class="ident">build_output_definition</span></span>(<span>full_path: str, tags: List[str] = None, is_public: bool = False, is_permanent: bool = False, is_encrypted: bool = False, notify: bool = False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Build output file definition</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>full_path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Full path of the file.</dd>
+<dt>tags (list):</dt>
+<dt>List of tags that are assigned to this file</dt>
+<dt><strong><code>is_public</code></strong></dt>
+<dd>When true, the file URL will be permanent and publicly accessible.</dd>
+<dt><strong><code>is_permanent</code></strong></dt>
+<dd>Keeps a file forever. If false, the file will be deleted after default period of time (e.g.</dd>
+<dt>15 days)</dt>
+<dt><strong><code>is_encrypted</code></strong></dt>
+<dd>If true, the file content will be encrypted in the storage.</dd>
+<dt><strong><code>notify</code></strong></dt>
+<dd>Notifies project administrators that a file was uploaded.</dd>
+</dl></div>
 </dd>
 <dt id="keboola.component.dao.FileDefinition.is_system_tag"><code class="name flex">
 <span>def <span class="ident">is_system_tag</span></span>(<span>tag: str) ‑> bool</span>
@@ -832,13 +963,41 @@ def user_tags(self) -&gt; List[str]:
 </details>
 </dd>
 </dl>
+<h3>Methods</h3>
+<dl>
+<dt id="keboola.component.dao.FileDefinition.get_manifest_dictionary"><code class="name flex">
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = None, legacy_queue: bool = False, native_types: bool = False) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
+By default, returns output manifest.
+The result keeps only values that are applicable for
+the selected type of the Manifest file. Because although input and output manifests share most of
+the attributes, some are not shared.</p>
+<pre><code> See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+ for more information.
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>manifest_type</code></strong> :&ensp;<code>str</code></dt>
+<dd>either 'in' or 'out'.</dd>
+<dt>See <a href="https://developers.keboola.com/extend/common-interface/manifest-files">manifest files</a></dt>
+<dt>for more information.</dt>
+<dt><strong><code>legacy_queue</code></strong> :&ensp;<code>bool</code></dt>
+<dd>optional flag marking project on legacy queue.(some options are not allowed on queue2)</dd>
+<dt><strong><code>native_types</code></strong> :&ensp;<code>bool</code></dt>
+<dd>optional flag marking if the manifest should be new, default to False - legacy format</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>dict representation of the manifest file in a format expected / produced by the Keboola Connection</p></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="keboola.component.dao.IODefinition" href="#keboola.component.dao.IODefinition">IODefinition</a></b></code>:
 <ul class="hlist">
 <li><code><a title="keboola.component.dao.IODefinition.ABSStaging" href="#keboola.component.dao.IODefinition.ABSStaging">ABSStaging</a></code></li>
 <li><code><a title="keboola.component.dao.IODefinition.S3Staging" href="#keboola.component.dao.IODefinition.S3Staging">S3Staging</a></code></li>
-<li><code><a title="keboola.component.dao.IODefinition.get_manifest_dictionary" href="#keboola.component.dao.IODefinition.get_manifest_dictionary">get_manifest_dictionary</a></code></li>
 <li><code><a title="keboola.component.dao.IODefinition.name" href="#keboola.component.dao.IODefinition.name">name</a></code></li>
 <li><code><a title="keboola.component.dao.IODefinition.stage" href="#keboola.component.dao.IODefinition.stage">stage</a></code></li>
 </ul>
@@ -957,69 +1116,7 @@ inheritance.</p></div>
 
     def _filter_attributes_by_manifest_type(self, manifest_type: Literal[&#34;in&#34;, &#34;out&#34;], legacy_queue: bool = False,
                                             native_types: bool = False):
-        &#34;&#34;&#34;
-        Filter manifest to contain only supported fields
-        Args:
-            manifest_type:
-
-        Returns:
-
-        &#34;&#34;&#34;
-
-        if isinstance(self, TableDefinition):
-            supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue,
-                                                                                 native_types)
-            fields = {
-                &#39;id&#39;: self.id,
-                &#39;uri&#39;: self._uri,
-                &#39;name&#39;: self.name,
-                &#39;created&#39;: self._created,
-                &#39;last_change_date&#39;: self._last_change_date,
-                &#39;last_import_date&#39;: self._last_import_date,
-                &#39;rows_count&#39;: self._rows_count,
-                &#39;data_size_bytes&#39;: self._data_size_bytes,
-                &#39;is_alias&#39;: self._is_alias,
-
-                &#39;destination&#39;: self.destination,
-                &#39;columns&#39;: self.columns if native_types else self.legacy_columns,
-                &#39;incremental&#39;: self.incremental,
-                &#39;primary_key&#39;: self.primary_key,
-                &#39;write_always&#39;: self.write_always,
-                &#39;delimiter&#39;: self.delimiter,
-                &#39;enclosure&#39;: self.enclosure,
-                &#39;metadata&#39;: self.table_metadata.get_table_metadata_for_manifest(),
-                &#39;column_metadata&#39;: self.table_metadata.get_column_metadata_for_manifest(),
-                &#39;manifest_type&#39;: manifest_type,
-                &#39;has_header&#39;: self._has_header_in_file(),
-                &#39;description&#39;: None,
-                &#39;table_metadata&#39;: self.table_metadata.get_table_metadata_for_manifest(new_manifest=True),
-                &#39;delete_where_column&#39;: self.delete_where_column,
-                &#39;delete_where_values&#39;: self.delete_where_values,
-                &#39;delete_where_operator&#39;: self.delete_where_operator,
-                &#39;schema&#39;: [col.to_dict() for col in self.schema] if self.schema else []
-            }
-
-            new_dict = fields.copy()
-
-            if supported_fields:
-                for attr in fields:
-                    if attr not in supported_fields:
-                        new_dict.pop(attr, None)
-            return new_dict
-
-        else:
-            return {
-                &#39;id&#39;: self.id,
-                &#39;created&#39;: self.created.strftime(&#39;%Y-%m-%dT%H:%M:%S%z&#39;) if self.created else None,
-                &#39;is_public&#39;: self.is_public,
-                &#39;is_encrypted&#39;: self.is_encrypted,
-                &#39;name&#39;: self.name,
-                &#39;size_bytes&#39;: self.size_bytes,
-                &#39;tags&#39;: self.tags,
-                &#39;notify&#39;: self.notify,
-                &#39;max_age_days&#39;: self.max_age_days,
-                &#39;is_permanent&#39;: self.is_permanent,
-            }
+        raise NotImplementedError
 
     def _has_header_in_file(self):
         if self.is_sliced:
@@ -1032,35 +1129,7 @@ inheritance.</p></div>
 
     def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
                                 native_types: bool = False) -&gt; dict:
-        &#34;&#34;&#34;
-        Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
-        By default, returns output manifest.
-             The result keeps only values that are applicable for
-             the selected type of the Manifest file. Because although input and output manifests share most of
-             the attributes, some are not shared.
-
-             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
-             for more information.
-
-        Args:
-            manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
-             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
-             for more information.
-            legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
-            native_types (bool): optional flag marking if the manifest should be new, default to False - legacy format
-
-        Returns:
-            dict representation of the manifest file in a format expected / produced by the Keboola Connection
-
-        &#34;&#34;&#34;
-        if not manifest_type:
-            manifest_type = self.stage
-
-        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
-
-        filtered_dictionary = {k: v for k, v in dictionary.items() if v is not None and v != [] and v != &#34;&#34;}
-
-        return filtered_dictionary
+        raise NotImplementedError
 
     @property
     def stage(self) -&gt; str:
@@ -1268,27 +1337,7 @@ def stage(self) -&gt; str:
 <span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = None, legacy_queue: bool = False, native_types: bool = False) ‑> dict</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
-By default, returns output manifest.
-The result keeps only values that are applicable for
-the selected type of the Manifest file. Because although input and output manifests share most of
-the attributes, some are not shared.</p>
-<pre><code> See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
- for more information.
-</code></pre>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>manifest_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>either 'in' or 'out'.</dd>
-<dt>See <a href="https://developers.keboola.com/extend/common-interface/manifest-files">manifest files</a></dt>
-<dt>for more information.</dt>
-<dt><strong><code>legacy_queue</code></strong> :&ensp;<code>bool</code></dt>
-<dd>optional flag marking project on legacy queue.(some options are not allowed on queue2)</dd>
-<dt><strong><code>native_types</code></strong> :&ensp;<code>bool</code></dt>
-<dd>optional flag marking if the manifest should be new, default to False - legacy format</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>dict representation of the manifest file in a format expected / produced by the Keboola Connection</p></div>
+<div class="desc"></div>
 </dd>
 </dl>
 </dd>
@@ -1710,7 +1759,7 @@ class TableColumnTypes(SubscriptableDataclass):
 </dd>
 <dt id="keboola.component.dao.TableDefinition"><code class="flex name class">
 <span>class <span class="ident">TableDefinition</span></span>
-<span>(</span><span>name: str, full_path: Optional[str] = None, is_sliced: bool = False, id: str = '', destination: str = '', primary_key: List[str] = None, columns: List[str] = None, incremental: bool = None, table_metadata: <a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a> = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None, stage: str = 'in', write_always: bool = False, schema: List[<a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>] = None, uri: str = None, created: str = None, last_change_date: str = None, last_import_date: str = None, rows_count: int = None, data_size_bytes: int = None, is_alias: bool = False)</span>
+<span>(</span><span>name: str, full_path: Optional[str] = None, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, columns: List[str] = None, incremental: bool = None, table_metadata: <a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a> = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None, stage: str = 'in', write_always: bool = False, schema: List[<a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>] = None, rows_count: int = None, data_size_bytes: int = None, is_alias: bool = False, has_header: bool = None, uri: str = None, id: str = '', created: str = None, last_change_date: str = None, last_import_date: str = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Table definition class. It is used as a container for <code>in/tables/</code> files.
@@ -1773,7 +1822,7 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
 <dt><strong><code>incremental</code></strong></dt>
 <dd>Set to true to enable incremental loading</dd>
 <dt><strong><code>table_metadata</code></strong></dt>
-<dd>&lt;.dao.TableMetadata&gt; object containing column and table metadata</dd>
+<dd>&lt;.dao.TableMetadata&gt; object containing column and table metadata (deprecated)</dd>
 <dt><strong><code>enclosure</code></strong></dt>
 <dd>str: CSV enclosure, by default "</dd>
 <dt><strong><code>delimiter</code></strong></dt>
@@ -1785,6 +1834,8 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
 <dt><strong><code>write_always</code></strong></dt>
 <dd>Bool: If true, the table will be saved to Storage even when the job execution
 fails.</dd>
+<dt><strong><code>schema</code></strong></dt>
+<dd>List of ColumnDefinition objects</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1867,7 +1918,7 @@ fails.</dd>
     def __init__(self, name: str,
                  full_path: Union[str, None] = None,
                  is_sliced: bool = False,
-                 id: str = &#39;&#39;,
+
                  destination: str = &#39;&#39;,
                  primary_key: List[str] = None,
                  columns: List[str] = None,
@@ -1879,13 +1930,17 @@ fails.</dd>
                  stage: str = &#39;in&#39;,
                  write_always: bool = False,
                  schema: List[ColumnDefinition] = None,
+                 rows_count: int = None,
+                 data_size_bytes: int = None,
+                 is_alias: bool = False,
+                 has_header: bool = None,
+
+                 # input
                  uri: str = None,
+                 id: str = &#39;&#39;,
                  created: str = None,
                  last_change_date: str = None,
                  last_import_date: str = None,
-                 rows_count: int = None,
-                 data_size_bytes: int = None,
-                 is_alias: bool = False
                  ):
         &#34;&#34;&#34;
 
@@ -1903,13 +1958,15 @@ fails.</dd>
             primary_key: List with names of columns used for primary key.
             columns: List of columns for headless CSV files
             incremental: Set to true to enable incremental loading
-            table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata
+            table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata (deprecated)
             enclosure: str: CSV enclosure, by default &#34;
             delimiter: str: CSV delimiter, by default ,
             delete_where (dict): Dict with settings for deleting rows
             stage: str: Storage Stage &#39;in&#39; or &#39;out&#39;
             write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
+            schema: List of ColumnDefinition objects
+
         &#34;&#34;&#34;
         super().__init__(full_path)
         self._name = name
@@ -1939,17 +1996,113 @@ fails.</dd>
         self.stage = stage
         self.write_always = write_always
         self.legacy_columns = columns
-
-        self._id = id
-
-        self._uri = uri
-
-        self._created = created
-        self._last_change_date = last_change_date
-        self._last_import_date = last_import_date
         self._rows_count = rows_count
         self._data_size_bytes = data_size_bytes
         self._is_alias = is_alias
+        self.has_header = has_header or self._has_header_in_file()
+
+        # input manifest properties
+        self._id = id
+        self._uri = uri
+        self._created = created
+        self._last_change_date = last_change_date
+        self._last_import_date = last_import_date
+
+    @classmethod
+    def build_output_definition(cls, name: str,
+                                destination: str,
+                                columns: List[str],
+                                primary_key: List[str] = None,
+                                incremental: bool = False,
+                                table_metadata: TableMetadata = None,
+                                enclosure: str = &#39;&#34;&#39;,
+                                delimiter: str = &#39;,&#39;,
+                                delete_where: dict = None,
+                                write_always: bool = False,
+                                schema: List[ColumnDefinition] = None,
+                                ):
+        &#34;&#34;&#34;
+        Factory method for TableDefinition for output tables.
+        Args:
+            name: Table / file name.
+            destination: String name of the table in Storage.
+            columns: List of columns for headless CSV files
+            primary_key: List with names of columns used for primary key.
+            incremental: Set to true to enable incremental loading
+            table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata (deprecated)
+            enclosure: str: CSV enclosure, by default &#34;
+            delimiter: str: CSV delimiter, by default ,
+            delete_where: Dict with settings for deleting rows
+            write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                           fails.
+            schema: List of ColumnDefinition objects
+
+        Returns: TableDefinition
+        &#34;&#34;&#34;
+        return cls(name=name,
+                   destination=destination,
+                   columns=columns,
+                   primary_key=primary_key,
+                   incremental=incremental,
+                   table_metadata=table_metadata,
+                   enclosure=enclosure,
+                   delimiter=delimiter,
+                   delete_where=delete_where,
+                   write_always=write_always,
+                   schema=schema,
+                   )
+
+    @classmethod
+    def build_input_definition(cls, name: str,
+                               full_path: Union[str, None] = None,
+                               is_sliced: bool = False,
+
+                               destination: str = &#39;&#39;,
+                               primary_key: List[str] = None,
+                               columns: List[str] = None,
+                               incremental: bool = None,
+                               table_metadata: TableMetadata = None,
+                               enclosure: str = &#39;&#34;&#39;,
+                               delimiter: str = &#39;,&#39;,
+                               delete_where: dict = None,
+                               stage: str = &#39;in&#39;,
+                               write_always: bool = False,
+                               schema: List[ColumnDefinition] = None,
+                               rows_count: int = None,
+                               data_size_bytes: int = None,
+                               is_alias: bool = False,
+
+                               # input
+                               uri: str = None,
+                               id: str = &#39;&#39;,
+                               created: str = None,
+                               last_change_date: str = None,
+                               last_import_date: str = None):
+        &#34;&#34;&#34;
+        Factory method for TableDefinition for input tables.
+        &#34;&#34;&#34;
+        return cls(name=name,
+                   full_path=full_path,
+                   is_sliced=is_sliced,
+                   destination=destination,
+                   primary_key=primary_key,
+                   columns=columns,
+                   incremental=incremental,
+                   table_metadata=table_metadata,
+                   enclosure=enclosure,
+                   delimiter=delimiter,
+                   delete_where=delete_where,
+                   stage=stage,
+                   write_always=write_always,
+                   schema=schema,
+                   rows_count=rows_count,
+                   data_size_bytes=data_size_bytes,
+                   is_alias=is_alias,
+                   uri=uri,
+                   id=id,
+                   created=created,
+                   last_change_date=last_change_date,
+                   last_import_date=last_import_date)
 
     @classmethod
     def convert_to_column_definition(cls, column_name, column_metadata, primary_key=False):
@@ -2053,6 +2206,89 @@ fails.</dd>
                         )
 
         return table_def
+
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
+                                native_types: bool = True) -&gt; dict:
+        &#34;&#34;&#34;
+        Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
+        By default, returns output manifest.
+             The result keeps only values that are applicable for
+             the selected type of the Manifest file. Because although input and output manifests share most of
+             the attributes, some are not shared.
+
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Args:
+            manifest_type (str): either &#39;in&#39; or &#39;out&#39;.
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+            legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
+            native_types (bool): optional flag marking if the manifest should be new, default to False - legacy format
+
+        Returns:
+            dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+        &#34;&#34;&#34;
+        if not manifest_type:
+            manifest_type = self.stage
+
+        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
+
+        filtered_dictionary = {k: v for k, v in dictionary.items() if v not in [None, [], {}, &#34;&#34;]}
+
+        return filtered_dictionary
+
+    def _filter_attributes_by_manifest_type(self, manifest_type: Literal[&#34;in&#34;, &#34;out&#34;], legacy_queue: bool = False,
+                                            native_types: bool = False):
+        &#34;&#34;&#34;
+        Filter manifest to contain only supported fields
+        Args:
+            manifest_type:
+
+        Returns:
+
+        &#34;&#34;&#34;
+
+        supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue,
+                                                                             native_types)
+        fields = {
+            &#39;id&#39;: self.id,
+            &#39;uri&#39;: self._uri,
+            &#39;name&#39;: self.name,
+            &#39;created&#39;: self._created,
+            &#39;last_change_date&#39;: self._last_change_date,
+            &#39;last_import_date&#39;: self._last_import_date,
+            &#39;rows_count&#39;: self._rows_count,
+            &#39;data_size_bytes&#39;: self._data_size_bytes,
+            &#39;is_alias&#39;: self._is_alias,
+
+            &#39;destination&#39;: self.destination,
+            &#39;columns&#39;: self.columns if native_types else self.legacy_columns,
+            &#39;incremental&#39;: self.incremental,
+            &#39;primary_key&#39;: self.primary_key,
+            &#39;write_always&#39;: self.write_always,
+            &#39;delimiter&#39;: self.delimiter,
+            &#39;enclosure&#39;: self.enclosure,
+            &#39;metadata&#39;: self.table_metadata.get_table_metadata_for_manifest(),
+            &#39;column_metadata&#39;: self.table_metadata.get_column_metadata_for_manifest(),
+            &#39;manifest_type&#39;: manifest_type,
+            &#39;has_header&#39;: self.has_header,
+            &#39;description&#39;: None,
+            &#39;table_metadata&#39;: self.table_metadata.get_table_metadata_for_manifest(new_manifest=True),
+            &#39;delete_where_column&#39;: self.delete_where_column,
+            &#39;delete_where_values&#39;: self.delete_where_values,
+            &#39;delete_where_operator&#39;: self.delete_where_operator,
+            &#39;schema&#39;: [col.to_dict() for col in self.schema] if self.schema else []
+        }
+
+        new_dict = fields.copy()
+
+        if supported_fields:
+            for attr in fields:
+                if attr not in supported_fields:
+                    new_dict.pop(attr, None)
+        return new_dict
 
     @property
     def schema(self):
@@ -2287,29 +2523,7 @@ fails.</dd>
                 self.delete_where_operator = op
             else:
                 raise ValueError(&#34;Delete where specification must contain &#34;
-                                 &#34;keys &#39;column&#39; and &#39;values&#39;&#34;)
-
-    def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False,
-                                native_types: bool = True) -&gt; dict:
-        &#34;&#34;&#34;
-
-        Args:
-             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
-             for more information.
-
-
-        Returns:
-            dict representation of the manifest file in a format expected / produced by the Keboola Connection
-
-        &#34;&#34;&#34;
-        raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue, native_types)
-        raw_manifest = {k: v for k, v in raw_manifest.items() if v not in [None, [], {}]}
-
-        # TODO bez toho neprochází test test_schema.py&#34;, line 49, in test_created_manifest_against_schema
-        raw_manifest = {k: v for k, v in raw_manifest.items() if
-                        not ((k == &#34;incremental&#34; and v is False) or (k == &#34;destination&#34; and v == &#34;&#34;))}
-
-        return raw_manifest</code></pre>
+                                 &#34;keys &#39;column&#39; and &#39;values&#39;&#34;)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2351,6 +2565,45 @@ if the counterpart table is not found.</p>
 <p>manifest_file_path (str):
 (optional) Full path of the manifest file. May be empty in case it represents only expected
 table with no input manifest.</p></div>
+</dd>
+<dt id="keboola.component.dao.TableDefinition.build_input_definition"><code class="name flex">
+<span>def <span class="ident">build_input_definition</span></span>(<span>name: str, full_path: Optional[str] = None, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, columns: List[str] = None, incremental: bool = None, table_metadata: <a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a> = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None, stage: str = 'in', write_always: bool = False, schema: List[<a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>] = None, rows_count: int = None, data_size_bytes: int = None, is_alias: bool = False, uri: str = None, id: str = '', created: str = None, last_change_date: str = None, last_import_date: str = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Factory method for TableDefinition for input tables.</p></div>
+</dd>
+<dt id="keboola.component.dao.TableDefinition.build_output_definition"><code class="name flex">
+<span>def <span class="ident">build_output_definition</span></span>(<span>name: str, destination: str, columns: List[str], primary_key: List[str] = None, incremental: bool = False, table_metadata: <a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a> = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None, write_always: bool = False, schema: List[<a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>] = None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Factory method for TableDefinition for output tables.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Table / file name.</dd>
+<dt><strong><code>destination</code></strong></dt>
+<dd>String name of the table in Storage.</dd>
+<dt><strong><code>columns</code></strong></dt>
+<dd>List of columns for headless CSV files</dd>
+<dt><strong><code>primary_key</code></strong></dt>
+<dd>List with names of columns used for primary key.</dd>
+<dt><strong><code>incremental</code></strong></dt>
+<dd>Set to true to enable incremental loading</dd>
+<dt><strong><code>table_metadata</code></strong></dt>
+<dd>&lt;.dao.TableMetadata&gt; object containing column and table metadata (deprecated)</dd>
+<dt><strong><code>enclosure</code></strong></dt>
+<dd>str: CSV enclosure, by default "</dd>
+<dt><strong><code>delimiter</code></strong></dt>
+<dd>str: CSV delimiter, by default ,</dd>
+<dt><strong><code>delete_where</code></strong></dt>
+<dd>Dict with settings for deleting rows</dd>
+<dt><strong><code>write_always</code></strong></dt>
+<dd>Bool: If true, the table will be saved to Storage even when the job execution
+fails.</dd>
+<dt><strong><code>schema</code></strong></dt>
+<dd>List of ColumnDefinition objects</dd>
+</dl>
+<p>Returns: TableDefinition</p></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.convert_to_column_definition"><code class="name flex">
 <span>def <span class="ident">convert_to_column_definition</span></span>(<span>column_name, column_metadata, primary_key=False)</span>
@@ -2593,12 +2846,28 @@ def write_always(self) -&gt; bool:
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, stage_type: Optional[str] = None, legacy_queue=False, native_types: bool = True) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = None, legacy_queue: bool = False, native_types: bool = True) ‑> dict</span>
 </code></dt>
 <dd>
-<div class="desc"><h2 id="args">Args</h2>
-<p>See <a href="https://developers.keboola.com/extend/common-interface/manifest-files">manifest files</a>
-for more information.</p>
+<div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
+By default, returns output manifest.
+The result keeps only values that are applicable for
+the selected type of the Manifest file. Because although input and output manifests share most of
+the attributes, some are not shared.</p>
+<pre><code> See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+ for more information.
+</code></pre>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>manifest_type</code></strong> :&ensp;<code>str</code></dt>
+<dd>either 'in' or 'out'.</dd>
+<dt>See <a href="https://developers.keboola.com/extend/common-interface/manifest-files">manifest files</a></dt>
+<dt>for more information.</dt>
+<dt><strong><code>legacy_queue</code></strong> :&ensp;<code>bool</code></dt>
+<dd>optional flag marking project on legacy queue.(some options are not allowed on queue2)</dd>
+<dt><strong><code>native_types</code></strong> :&ensp;<code>bool</code></dt>
+<dd>optional flag marking if the manifest should be new, default to False - legacy format</dd>
+</dl>
 <h2 id="returns">Returns</h2>
 <p>dict representation of the manifest file in a format expected / produced by the Keboola Connection</p></div>
 </dd>
@@ -3425,8 +3694,11 @@ class TableOutputMapping(SubscriptableDataclass):
 <li><code><a title="keboola.component.dao.FileDefinition.OUTPUT_MANIFEST_KEYS" href="#keboola.component.dao.FileDefinition.OUTPUT_MANIFEST_KEYS">OUTPUT_MANIFEST_KEYS</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.SYSTEM_TAG_PREFIXES" href="#keboola.component.dao.FileDefinition.SYSTEM_TAG_PREFIXES">SYSTEM_TAG_PREFIXES</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.build_from_manifest" href="#keboola.component.dao.FileDefinition.build_from_manifest">build_from_manifest</a></code></li>
+<li><code><a title="keboola.component.dao.FileDefinition.build_input_definition" href="#keboola.component.dao.FileDefinition.build_input_definition">build_input_definition</a></code></li>
+<li><code><a title="keboola.component.dao.FileDefinition.build_output_definition" href="#keboola.component.dao.FileDefinition.build_output_definition">build_output_definition</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.created" href="#keboola.component.dao.FileDefinition.created">created</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.full_name" href="#keboola.component.dao.FileDefinition.full_name">full_name</a></code></li>
+<li><code><a title="keboola.component.dao.FileDefinition.get_manifest_dictionary" href="#keboola.component.dao.FileDefinition.get_manifest_dictionary">get_manifest_dictionary</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.id" href="#keboola.component.dao.FileDefinition.id">id</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.is_encrypted" href="#keboola.component.dao.FileDefinition.is_encrypted">is_encrypted</a></code></li>
 <li><code><a title="keboola.component.dao.FileDefinition.is_permanent" href="#keboola.component.dao.FileDefinition.is_permanent">is_permanent</a></code></li>
@@ -3546,6 +3818,8 @@ class TableOutputMapping(SubscriptableDataclass):
 <li><code><a title="keboola.component.dao.TableDefinition.add_column" href="#keboola.component.dao.TableDefinition.add_column">add_column</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.add_columns" href="#keboola.component.dao.TableDefinition.add_columns">add_columns</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.build_from_manifest" href="#keboola.component.dao.TableDefinition.build_from_manifest">build_from_manifest</a></code></li>
+<li><code><a title="keboola.component.dao.TableDefinition.build_input_definition" href="#keboola.component.dao.TableDefinition.build_input_definition">build_input_definition</a></code></li>
+<li><code><a title="keboola.component.dao.TableDefinition.build_output_definition" href="#keboola.component.dao.TableDefinition.build_output_definition">build_output_definition</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.column_names" href="#keboola.component.dao.TableDefinition.column_names">column_names</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.columns" href="#keboola.component.dao.TableDefinition.columns">columns</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.convert_to_column_definition" href="#keboola.component.dao.TableDefinition.convert_to_column_definition">convert_to_column_definition</a></code></li>
