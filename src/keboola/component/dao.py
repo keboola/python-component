@@ -544,69 +544,7 @@ class IODefinition(ABC):
 
     def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
                                             native_types: bool = False):
-        """
-        Filter manifest to contain only supported fields
-        Args:
-            manifest_type:
-
-        Returns:
-
-        """
-
-        if isinstance(self, TableDefinition):
-            supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue,
-                                                                                 native_types)
-            fields = {
-                'id': self.id,
-                'uri': self._uri,
-                'name': self.name,
-                'created': self._created,
-                'last_change_date': self._last_change_date,
-                'last_import_date': self._last_import_date,
-                'rows_count': self._rows_count,
-                'data_size_bytes': self._data_size_bytes,
-                'is_alias': self._is_alias,
-
-                'destination': self.destination,
-                'columns': self.columns if native_types else self.legacy_columns,
-                'incremental': self.incremental,
-                'primary_key': self.primary_key,
-                'write_always': self.write_always,
-                'delimiter': self.delimiter,
-                'enclosure': self.enclosure,
-                'metadata': self.table_metadata.get_table_metadata_for_manifest(),
-                'column_metadata': self.table_metadata.get_column_metadata_for_manifest(),
-                'manifest_type': manifest_type,
-                'has_header': self.has_header,
-                'description': None,
-                'table_metadata': self.table_metadata.get_table_metadata_for_manifest(new_manifest=True),
-                'delete_where_column': self.delete_where_column,
-                'delete_where_values': self.delete_where_values,
-                'delete_where_operator': self.delete_where_operator,
-                'schema': [col.to_dict() for col in self.schema] if self.schema else []
-            }
-
-            new_dict = fields.copy()
-
-            if supported_fields:
-                for attr in fields:
-                    if attr not in supported_fields:
-                        new_dict.pop(attr, None)
-            return new_dict
-
-        else:
-            return {
-                'id': self.id,
-                'created': self.created.strftime('%Y-%m-%dT%H:%M:%S%z') if self.created else None,
-                'is_public': self.is_public,
-                'is_encrypted': self.is_encrypted,
-                'name': self.name,
-                'size_bytes': self.size_bytes,
-                'tags': self.tags,
-                'notify': self.notify,
-                'max_age_days': self.max_age_days,
-                'is_permanent': self.is_permanent,
-            }
+        raise NotImplementedError
 
     def _has_header_in_file(self):
         if self.is_sliced:
@@ -619,35 +557,7 @@ class IODefinition(ABC):
 
     def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
                                 native_types: bool = False) -> dict:
-        """
-        Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
-        By default, returns output manifest.
-             The result keeps only values that are applicable for
-             the selected type of the Manifest file. Because although input and output manifests share most of
-             the attributes, some are not shared.
-
-             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
-             for more information.
-
-        Args:
-            manifest_type (str): either 'in' or 'out'.
-             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
-             for more information.
-            legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
-            native_types (bool): optional flag marking if the manifest should be new, default to False - legacy format
-
-        Returns:
-            dict representation of the manifest file in a format expected / produced by the Keboola Connection
-
-        """
-        if not manifest_type:
-            manifest_type = self.stage
-
-        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
-
-        filtered_dictionary = {k: v for k, v in dictionary.items() if v is not None and v != [] and v != ""}
-
-        return filtered_dictionary
+        raise NotImplementedError
 
     @property
     def stage(self) -> str:
@@ -1107,6 +1017,89 @@ class TableDefinition(IODefinition):
 
         return table_def
 
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
+                                native_types: bool = True) -> dict:
+        """
+        Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
+        By default, returns output manifest.
+             The result keeps only values that are applicable for
+             the selected type of the Manifest file. Because although input and output manifests share most of
+             the attributes, some are not shared.
+
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Args:
+            manifest_type (str): either 'in' or 'out'.
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+            legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
+            native_types (bool): optional flag marking if the manifest should be new, default to False - legacy format
+
+        Returns:
+            dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+        """
+        if not manifest_type:
+            manifest_type = self.stage
+
+        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
+
+        filtered_dictionary = {k: v for k, v in dictionary.items() if v not in [None, [], {}, ""]}
+
+        return filtered_dictionary
+
+    def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
+                                            native_types: bool = False):
+        """
+        Filter manifest to contain only supported fields
+        Args:
+            manifest_type:
+
+        Returns:
+
+        """
+
+        supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue,
+                                                                             native_types)
+        fields = {
+            'id': self.id,
+            'uri': self._uri,
+            'name': self.name,
+            'created': self._created,
+            'last_change_date': self._last_change_date,
+            'last_import_date': self._last_import_date,
+            'rows_count': self._rows_count,
+            'data_size_bytes': self._data_size_bytes,
+            'is_alias': self._is_alias,
+
+            'destination': self.destination,
+            'columns': self.columns if native_types else self.legacy_columns,
+            'incremental': self.incremental,
+            'primary_key': self.primary_key,
+            'write_always': self.write_always,
+            'delimiter': self.delimiter,
+            'enclosure': self.enclosure,
+            'metadata': self.table_metadata.get_table_metadata_for_manifest(),
+            'column_metadata': self.table_metadata.get_column_metadata_for_manifest(),
+            'manifest_type': manifest_type,
+            'has_header': self.has_header,
+            'description': None,
+            'table_metadata': self.table_metadata.get_table_metadata_for_manifest(new_manifest=True),
+            'delete_where_column': self.delete_where_column,
+            'delete_where_values': self.delete_where_values,
+            'delete_where_operator': self.delete_where_operator,
+            'schema': [col.to_dict() for col in self.schema] if self.schema else []
+        }
+
+        new_dict = fields.copy()
+
+        if supported_fields:
+            for attr in fields:
+                if attr not in supported_fields:
+                    new_dict.pop(attr, None)
+        return new_dict
+
     @property
     def schema(self):
         return self._schema
@@ -1342,28 +1335,6 @@ class TableDefinition(IODefinition):
                 raise ValueError("Delete where specification must contain "
                                  "keys 'column' and 'values'")
 
-    def get_manifest_dictionary(self, stage_type: Optional[str] = None, legacy_queue=False,
-                                native_types: bool = True) -> dict:
-        """
-
-        Args:
-             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
-             for more information.
-
-
-        Returns:
-            dict representation of the manifest file in a format expected / produced by the Keboola Connection
-
-        """
-        raw_manifest = super(TableDefinition, self).get_manifest_dictionary(stage_type, legacy_queue, native_types)
-        raw_manifest = {k: v for k, v in raw_manifest.items() if v not in [None, [], {}]}
-
-        # TODO bez toho neprochází test test_schema.py", line 49, in test_created_manifest_against_schema
-        raw_manifest = {k: v for k, v in raw_manifest.items() if
-                        not ((k == "incremental" and v is False) or (k == "destination" and v == ""))}
-
-        return raw_manifest
-
 
 class FileDefinition(IODefinition):
     """
@@ -1540,6 +1511,62 @@ class FileDefinition(IODefinition):
             if tag.startswith(prefix):
                 return True
         return False
+
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
+                                native_types: bool = False) -> dict:
+        """
+        Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
+        By default, returns output manifest.
+             The result keeps only values that are applicable for
+             the selected type of the Manifest file. Because although input and output manifests share most of
+             the attributes, some are not shared.
+
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+
+        Args:
+            manifest_type (str): either 'in' or 'out'.
+             See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
+             for more information.
+            legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
+            native_types (bool): optional flag marking if the manifest should be new, default to False - legacy format
+
+        Returns:
+            dict representation of the manifest file in a format expected / produced by the Keboola Connection
+
+        """
+        if not manifest_type:
+            manifest_type = self.stage
+
+        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
+
+        filtered_dictionary = {k: v for k, v in dictionary.items() if v not in [None, [], {}, ""]}
+
+        return filtered_dictionary
+
+    def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
+                                            native_types: bool = False):
+        """
+        Filter manifest to contain only supported fields
+        Args:
+            manifest_type:
+
+        Returns:
+
+        """
+
+        return {
+            'id': self.id,
+            'created': self.created.strftime('%Y-%m-%dT%H:%M:%S%z') if self.created else None,
+            'is_public': self.is_public,
+            'is_encrypted': self.is_encrypted,
+            'name': self.name,
+            'size_bytes': self.size_bytes,
+            'tags': self.tags,
+            'notify': self.notify,
+            'max_age_days': self.max_age_days,
+            'is_permanent': self.is_permanent,
+        }
 
     @property
     def name(self) -> str:
