@@ -372,22 +372,24 @@ class TestTableDefinition(unittest.TestCase):
                                                   'operator': 'eq'}
                                     )
         # update column
-        table_def.update_column(ColumnDefinition('foo', data_type=DataType(type="INTEGER", length=20)))
+        table_def.update_column('foo', ColumnDefinition(data_types=BaseType(dtype=SupportedDataTypes.INTEGER, length=20)))
 
         # add new columns
-        table_def.add_column(ColumnDefinition('note', nullable=False))
+        table_def.add_column('note', ColumnDefinition(nullable=False))
         table_def.add_column('test1')
         table_def.add_columns(['test2', 'test3', 'test4'])
 
         # add new typed column
-        table_def.add_column(ColumnDefinition('id', primary_key=True, data_type=DataType(type="INTEGER", length=200)))
+        table_def.add_column('id', ColumnDefinition(primary_key=True, data_types=DataType(dtype=SupportedDataTypes.NUMERIC, length=200)))
 
-        table_def.add_columns([ColumnDefinition('new2', data_type=DataType(type="INTEGER", length=200)),
-                               ColumnDefinition('new3', data_type=DataType(type="STRING", length=200))])
+        table_def.add_columns({'new2': ColumnDefinition(data_types=DataType(dtype=SupportedDataTypes.FLOAT, length=200)),
+                               'new3': ColumnDefinition(data_types=DataType(dtype=SupportedDataTypes.DATE, length=200))})
 
         # delete columns
         table_def.delete_column('bar')
         table_def.delete_columns(['test2', 'test3'])
+
+        self.maxDiff = None
 
         self.assertDictEqual({
             'destination': 'some-destination',
@@ -398,17 +400,15 @@ class TestTableDefinition(unittest.TestCase):
             'manifest_type': 'out',
             'has_header': True,
             'delete_where_column': 'lilly',
-            'delete_where_values': ['a', 'b'],
-            'delete_where_operator': 'eq',
+            'delete_where_values': ['a', 'b'], 'delete_where_operator': 'eq',
             'schema': [{'name': 'foo', 'data_type': {'base': {'type': 'INTEGER', 'length': 20}}, 'nullable': True},
                        {'name': 'note', 'data_type': {'base': {'type': 'STRING'}}},
                        {'name': 'test1', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
                        {'name': 'test4', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'id', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True,
+                       {'name': 'id', 'data_type': {'base': {'type': 'NUMERIC', 'length': 200}}, 'nullable': True,
                         'primary_key': True},
-                       {'name': 'new2', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True},
-                       {'name': 'new3', 'data_type': {'base': {'type': 'STRING', 'length': 200}}, 'nullable': True}
-                       ]},
+                       {'name': 'new2', 'data_type': {'base': {'type': 'FLOAT', 'length': 200}}, 'nullable': True},
+                       {'name': 'new3', 'data_type': {'base': {'type': 'DATE', 'length': 200}}, 'nullable': True}]},
             table_def.get_manifest_dictionary('out', native_types=True)
         )
 
@@ -422,22 +422,24 @@ class TestTableDefinition(unittest.TestCase):
                                     )
 
         # add new columns
-        table_def.add_column(ColumnDefinition('foo', BaseType(SupportedDataTypes.STRING)))
-        table_def.add_column(ColumnDefinition('bar', BaseType(SupportedDataTypes.NUMERIC)))
-        table_def.add_column(ColumnDefinition('baz', {'snowflake': DataType(dtype='STRING', length=255),
-                                                      'bigquery': DataType(dtype='STRING',
-                                                                           length=255)}))
+        table_def.add_column('foo', ColumnDefinition(BaseType(SupportedDataTypes.STRING)))
+        table_def.add_column('bar', ColumnDefinition(BaseType(SupportedDataTypes.NUMERIC)))
+        table_def.add_column('baz', ColumnDefinition(
+            {'snowflake': DataType(dtype='STRING', length=255),
+             'bigquery': DataType(dtype='STRING', length=255)}))
 
-        # TODO: change schema to (ordered)dict so it's indexable by name
-        # table_def.schema[0].add_datatype('snowflake', DataType(type='STRING', length=255))
+        table_def.schema["foo"].add_datatype('redshift', DataType(dtype='STRING', length=255))
 
-        # add new typed column
+        table_def.schema["baz"].update_datatype('snowflake', DataType(dtype='NUMERIC', length=255))
 
-        table_def.schema[0].to_dict()
-        table_def.add_column(ColumnDefinition('id', primary_key=True, data_types=BaseType(dtype="INTEGER", length=200)))
+        self.maxDiff = None
 
-        table_def.add_columns([ColumnDefinition('new2', data_type=DataType(type="INTEGER", length=200)),
-                               ColumnDefinition('new3', data_type=DataType(type="STRING", length=200))])
+        table_def.add_columns(["test2", "test3"])
+
+        table_def.add_column('id', ColumnDefinition(primary_key=True, data_types=BaseType(dtype="INTEGER", length=200)))
+
+        table_def.add_columns({'new2': ColumnDefinition(data_types=DataType(dtype="INTEGER", length=200)),
+                               'new3': ColumnDefinition(data_types=DataType(dtype="STRING", length=200))})
 
         # delete columns
         table_def.delete_column('bar')
@@ -454,15 +456,16 @@ class TestTableDefinition(unittest.TestCase):
             'delete_where_column': 'lilly',
             'delete_where_values': ['a', 'b'],
             'delete_where_operator': 'eq',
-            'schema': [{'name': 'foo', 'data_type': {'base': {'type': 'INTEGER', 'length': 20}}, 'nullable': True},
-                       {'name': 'note', 'data_type': {'base': {'type': 'STRING'}}},
-                       {'name': 'test1', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'test4', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+            'schema': [{'name': 'foo',
+                        'data_type': {'base': {'type': 'STRING'}, 'redshift': {'type': 'STRING', 'length': 255}},
+                        'nullable': True}, {'name': 'baz',
+                                            'data_type': {'snowflake': {'type': 'NUMERIC', 'length': 255},
+                                                          'bigquery': {'type': 'STRING', 'length': 255}},
+                                            'nullable': True},
                        {'name': 'id', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True,
                         'primary_key': True},
                        {'name': 'new2', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True},
-                       {'name': 'new3', 'data_type': {'base': {'type': 'STRING', 'length': 200}}, 'nullable': True}
-                       ]},
+                       {'name': 'new3', 'data_type': {'base': {'type': 'STRING', 'length': 200}}, 'nullable': True}]},
             table_def.get_manifest_dictionary('out', native_types=True)
         )
 

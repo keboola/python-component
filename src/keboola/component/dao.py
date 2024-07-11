@@ -7,7 +7,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import List, Union, Dict, Optional
+from typing import List, Union, Dict, Optional, OrderedDict as TypeOrderedDict
+from collections import OrderedDict
 
 from deprecated import deprecated
 
@@ -426,16 +427,16 @@ class DataType(dict):
     dtype: str
     length: Optional[int] = None
     default: Optional[str] = None
-    #
-    # def __post_init__(self):
-    #     if isinstance(self.type, SupportedDataTypes):
-    #         self.type = self.type.value
+
+    def __post_init__(self):
+        if isinstance(self.dtype, SupportedDataTypes):
+            self.dtype = self.dtype.value
 
 
-class BaseType(dict):
+class BaseType(DataType):
     def __init__(self, dtype: SupportedDataTypes = SupportedDataTypes.STRING, length: Optional[int] = None,
                  default: Optional[str] = None):
-        super().__init__(base=DataType(dtype=dtype.value, length=length, default=default))
+        super().__init__(dtype=dtype, length=length, default=default)
 
 
 @dataclass
@@ -445,20 +446,23 @@ class ColumnDefinition:
 
     Attributes:
         name (Optional[str]): The name of the column. Defaults to None.
-        data_types (Optional[Union[Dict[str, DataType], BaseType]]): The data types of the column for particular backend.
+        data_types (Optional[Union[Dict[str, DataType], BaseType]]): Data types of the column for specified backend.
         This can be a specific `DataType` or a `BaseType`, or a dictionary mapping from a string to one of these types.
         Defaults to BaseType.String.
         nullable (Optional[bool]): A flag indicating if the column can contain NULL values. Defaults to True.
-        primary_key (Optional[bool]): A flag indicating if the column is part of the table's primary key. Defaults to False.
+        primary_key (Optional[bool]): Indicating if the column is part of the table's primary key. Defaults to False.
         description (Optional[str]): A description of the column's purpose or contents. Defaults to None.
         metadata (Optional[Dict[str, str]]): Additional metadata associated with the column. Defaults to None.
     """
-    name: Optional[str] = None
     data_types: Optional[Union[Dict[str, DataType], BaseType]] = field(default_factory=lambda: BaseType())
     nullable: Optional[bool] = True
     primary_key: Optional[bool] = False
     description: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
+
+    def __post_init__(self):
+        if isinstance(self.data_types, DataType):
+            self.data_types = {"base": self.data_types}
 
     def normalize_data_type(self, data_type: Union[Dict[str, DataType], BaseType]) -> Dict[str, DataType]:
         if isinstance(data_type, DataType):
@@ -474,7 +478,6 @@ class ColumnDefinition:
 
     def from_dict(self, col: dict):
         return ColumnDefinition(
-            name=col.get('name'),
             data_types={key: DataType(dtype=v.get('type'), default=v.get('default'), length=v.get('length'))
                         for key, v in col.get('data_type', {}).items()},
             nullable=col.get('nullable'),
@@ -482,14 +485,27 @@ class ColumnDefinition:
             description=col.get('description'),
             metadata=col.get('metadata'))
 
-    def to_dict(self):
+    def add_datatype(self, backend: str, data_type: DataType):
+        if backend in self.data_types:
+            raise ValueError(f"Data type for backend {backend} already exists, use update_datatype instead")
+        self.data_types[backend] = data_type
+
+    def update_datatype(self, backend: str, data_type: DataType):
+        if backend not in self.data_types:
+            raise ValueError(f"Data type for backend {backend} does not exist, use add_datatype instead")
+        self.data_types[backend] = data_type
+
+    def to_dict(self, name: str):
         # convert datatypes to dict
         datatypes_dict = {}
         for key, value in self.data_types.items():
             datatypes_dict[key] = dataclasses.asdict(value)
 
+        datatypes_dict = {key: {k.replace('dtype', 'type'): v for k, v in value.items()}
+                          for key, value in datatypes_dict.items()}
+
         result = {
-            'name': self.name,
+            'name': name,
             'data_type': datatypes_dict,
             'nullable': self.nullable,
             'primary_key': self.primary_key,
@@ -497,7 +513,7 @@ class ColumnDefinition:
             'metadata': self.metadata
         }
         # TODO: tohle bych delal az pri zapisu manifestu celkove, chceme vyhodit None values, false nechat
-        filtered = {k: v for k, v in result.items() if v not in [None]}
+        filtered = {k: v for k, v in result.items() if v not in [False]}
 
         return filtered
 
@@ -552,15 +568,6 @@ class IODefinition(ABC):
     def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
                                             native_types: bool = False):
         raise NotImplementedError
-
-    def _has_header_in_file(self):
-        if self.is_sliced:
-            has_header = False
-        elif self.columns and not self.stage == 'in':
-            has_header = False
-        else:
-            has_header = True
-        return has_header
 
     def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
                                 native_types: bool = False) -> dict:
@@ -747,7 +754,7 @@ class TableDefinition(IODefinition):
                  delete_where: Optional[dict] = None,
                  stage: Optional[str] = 'in',
                  write_always: Optional[bool] = False,
-                 schema: Optional[List[ColumnDefinition]] = None,
+                 schema: Optional[TypeOrderedDict[str, ColumnDefinition]] = None,
                  rows_count: Optional[int] = None,
                  data_size_bytes: Optional[int] = None,
                  is_alias: Optional[bool] = False,
@@ -758,7 +765,7 @@ class TableDefinition(IODefinition):
                  id: Optional[str] = '',
                  created: Optional[str] = None,
                  last_change_date: Optional[str] = None,
-                 last_import_date: Optional[str] = None,
+                 last_import_date: Optional[str] = None
                  ):
         """
 
@@ -855,8 +862,8 @@ class TableDefinition(IODefinition):
             enclosure (Optional[str]): The character used as a text qualifier in the CSV file. Defaults to '"'.
             delimiter (Optional[str]): The character used to separate columns in the CSV file. Defaults to ','.
             delete_where (Optional[dict]): Criteria for row deletion in incremental loads. Defaults to None.
-            write_always (Optional[bool]): If True, the table will be saved to storage even if the job fails. Defaults to False.
-            schema (Optional[List[ColumnDefinition]]): A list of ColumnDefinition objects defining the table schema. Defaults to None.
+            write_always (Optional[bool]): If True, the table will be saved to storage even if the job fails.
+            schema (Optional[List[ColumnDefinition]]): Dictionary of ColumnDefinition objects.
 
         Returns:
             TableDefinition: An instance of TableDefinition configured for output tables.
@@ -919,8 +926,8 @@ class TableDefinition(IODefinition):
             delimiter (Optional[str]): The character used to separate columns in the CSV file. Defaults to ','.
             delete_where (Optional[dict]): Criteria for row deletion in incremental loads. Defaults to None.
             stage (Optional[str]): Indicates the stage ('in' for input tables). Defaults to 'in'.
-            write_always (Optional[bool]): If True, the table will be saved to storage even if the job fails. Defaults to False.
-            schema (Optional[List[ColumnDefinition]]): A list of ColumnDefinition objects defining the table schema. Defaults to None.
+            write_always (Optional[bool]): If True, the table will be saved to storage even if the job fails. Defaults to False.  # noqa
+            schema (Optional[List[ColumnDefinition]]): A list of ColumnDefinition objects defining the table schema. Defaults to None.  # noqa
             rows_count (Optional[int]): The number of rows in the table. Defaults to None.
             data_size_bytes (Optional[int]): The size of the table data in bytes. Defaults to None.
             is_alias (Optional[bool]): Indicates if the table is an alias. Defaults to False.
@@ -958,21 +965,21 @@ class TableDefinition(IODefinition):
 
     @classmethod
     def convert_to_column_definition(cls, column_name, column_metadata, primary_key=False):
-        data_type = {'base': DataType(type='STRING')}
+        data_type = {'base': DataType(dtype='STRING')}
         nullable = True
         for item in column_metadata:
             if item['key'] == 'KBC.datatype.basetype':
-                data_type = {'base': DataType(type=item['value'])}
+                data_type = {'base': DataType(dtype=item['value'])}
             elif item['key'] == 'KBC.datatype.nullable':
                 nullable = item['value']
-        return ColumnDefinition(name=column_name, data_type=data_type, nullable=nullable, primary_key=primary_key)
+        return ColumnDefinition(data_types=data_type, nullable=nullable, primary_key=primary_key)
 
     @classmethod
     def return_schema_from_manifest(cls, json_data):
         if TableDefinition.is_new_manifest(json_data):
-            schema = []
+            schema = OrderedDict()
             for col in json_data.get('schema'):
-                schema.append(ColumnDefinition().from_dict(col))
+                schema[col.get("name")] = ColumnDefinition().from_dict(col)
 
         else:
             columns_metadata = json_data.get('column_metadata', {})
@@ -980,15 +987,14 @@ class TableDefinition(IODefinition):
             columns = json_data.get('columns', [])
 
             all_columns = columns
-            schema = []
+            schema = OrderedDict()
 
             for col in all_columns:
                 pk = col in primary_key
                 if col in columns_metadata:
-                    schema.append(cls.convert_to_column_definition(col, columns_metadata[col], primary_key=pk))
+                    schema[col] = cls.convert_to_column_definition(col, columns_metadata[col], primary_key=pk)
                 else:
-                    schema.append(ColumnDefinition(name=col, data_type={"base": DataType(type="STRING")},
-                                                   primary_key=pk))
+                    schema[col] = ColumnDefinition(data_types={"base": DataType(dtype="STRING")}, primary_key=pk)
 
         return schema
 
@@ -1087,9 +1093,23 @@ class TableDefinition(IODefinition):
 
         dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
 
-        filtered_dictionary = {k: v for k, v in dictionary.items() if v not in [None, [], {}, ""]}
+        filtered_dictionary = self._filter_dictionary(dictionary)
 
         return filtered_dictionary
+
+    def _filter_dictionary(self, data):
+        if isinstance(data, dict):
+            return {
+                k: self._filter_dictionary(v)
+                for k, v in data.items()
+                if v not in (None, [], {}, "")
+            }
+        elif isinstance(data, list):
+            return [self._filter_dictionary(item) for item in data if item not in (None, [], {}, "")]
+        else:
+            return data
+
+    # Usage
 
     def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
                                             native_types: bool = False):
@@ -1131,7 +1151,8 @@ class TableDefinition(IODefinition):
             'delete_where_column': self.delete_where_column,
             'delete_where_values': self.delete_where_values,
             'delete_where_operator': self.delete_where_operator,
-            'schema': [col.to_dict() for col in self.schema] if self.schema else []
+            'schema': [col.to_dict(name)
+                       for name, col in self.schema.items()] if isinstance(self.schema, OrderedDict) else []
         }
 
         new_dict = fields.copy()
@@ -1142,16 +1163,23 @@ class TableDefinition(IODefinition):
                     new_dict.pop(attr, None)
         return new_dict
 
+    def _has_header_in_file(self):
+        if self.is_sliced:
+            has_header = False
+        elif self.columns and not self.stage == 'in':
+            has_header = False
+        else:
+            has_header = True
+        return has_header
+
     @property
-    def schema(self) -> list[ColumnDefinition]:
+    def schema(self) -> TypeOrderedDict[str, ColumnDefinition]:
         return self._schema
 
     @schema.setter
     def schema(self, value):
-        self._schema = []
+        self._schema = OrderedDict()
         if value:
-            if any(not isinstance(v, ColumnDefinition) for v in value):
-                raise ValueError("Schema must be an instance of ColumnDefinition")
             self._schema = value
 
     @property
@@ -1206,8 +1234,8 @@ class TableDefinition(IODefinition):
     @property
     @deprecated(version='1.5.1', reason="Please use new column_names method instead of columns property")
     def columns(self) -> List[str]:
-        if self.schema:
-            return [col.name for col in self.schema]
+        if isinstance(self.schema, OrderedDict):
+            return list(self.schema.keys())
         else:
             return []
 
@@ -1224,7 +1252,7 @@ class TableDefinition(IODefinition):
 
             for col in val:
                 if col not in self.columns:
-                    self.schema.append(ColumnDefinition(name=col))
+                    self.schema[col] = ColumnDefinition()
 
     @property
     def column_names(self) -> List[str]:
@@ -1252,8 +1280,8 @@ class TableDefinition(IODefinition):
 
     @property
     def primary_key(self) -> List[str]:
-        if self.schema:
-            return [col.name for col in self.schema if col.primary_key]
+        if isinstance(self.schema, OrderedDict):
+            return [column_name for column_name, column_def in self.schema.items() if column_def.primary_key]
 
     @primary_key.setter
     def primary_key(self, primary_key: List[str]):
@@ -1264,12 +1292,10 @@ class TableDefinition(IODefinition):
             raise TypeError("Primary key must be a list")
 
         for col in primary_key:
-            if col not in self.columns:
+            if col in self.schema:
+                self.schema[col].primary_key = True
+            else:
                 raise UserException(f"Primary key column {col} not found in columns")
-
-            for c in self.schema:
-                if c.name == col:
-                    c.primary_key = True
 
     @property
     def delimiter(self) -> str:
@@ -1302,54 +1328,47 @@ class TableDefinition(IODefinition):
         else:
             return None
 
-    def add_column(self, column: Union[str, ColumnDefinition]):
+    def add_column(self, name: str, definition: ColumnDefinition = ColumnDefinition()):
         """
         Add column definition, accepts either ColumnDefinition or a string
         (in which case the base type STRING will be used).
         """
-        if isinstance(column, str):
-            column = ColumnDefinition(name=column)
-        if not isinstance(column, ColumnDefinition):
-            raise ValueError("New column must be an instance of ColumnDefinition or a string")
 
-        if any(existing_column.name == column.name for existing_column in self._schema):
-            raise ValueError(f"Column with name '{column.name}' already exists")
+        if name in self._schema:
+            raise ValueError(f"Column with name '{name}' already exists")
 
-        self._schema.append(column)
+        self._schema[name] = definition
 
-    def update_column(self, column: ColumnDefinition):
-        if not isinstance(column, ColumnDefinition):
+    def update_column(self, name: str, column_definition: ColumnDefinition):
+        if not isinstance(column_definition, ColumnDefinition):
             raise ValueError("New column must be an instance of ColumnDefinition")
 
-        for idx, old_column in enumerate(self._schema):
-            if old_column.name == column.name:
-                self._schema[idx] = column
-                return
+        if name in self.schema:
+            self.schema[name] = column_definition
+        else:
+            raise ValueError(f'Column with name: "{name}" not found')
 
-        raise ValueError(f"Column with name {column.name} not found")
+    def delete_column(self, column_name: str):
 
-    def delete_column(self, column_name: Union[str, ColumnDefinition]):
+        if column_name not in self.schema:
+            raise ValueError(f"Column with name {column_name} not found")
+        del self.schema[column_name]
 
-        if isinstance(column_name, ColumnDefinition):
-            column_name = column_name.name
+    def add_columns(self, columns: Union[List[str], Dict[str, ColumnDefinition]]):
+        if isinstance(columns, list):
+            for name in columns:
+                self.add_column(name)
+        else:
+            for name, column in columns.items():
+                self.add_column(name, column)
 
-        for idx, column in enumerate(self._schema):
-            if column.name == column_name:
-                del self._schema[idx]
-                return
-        raise ValueError(f"Column with name {column_name} not found")
+    def update_columns(self, columns: Dict[str, ColumnDefinition]):
+        for name, column in columns:
+            self.update_column(name, column)
 
-    def add_columns(self, columns: List[Union[str, ColumnDefinition]]):
-        for column in columns:
-            self.add_column(column)
-
-    def update_columns(self, columns: List[ColumnDefinition]):
-        for column in columns:
-            self.update_column(column)
-
-    def delete_columns(self, columns: List[Union[str, ColumnDefinition]]):
-        for column in columns:
-            self.delete_column(column)
+    def delete_columns(self, column_names: List[str]):
+        for name in column_names:
+            self.delete_column(name)
 
     def set_delete_where_from_dict(self, delete_where):
         """
@@ -1483,10 +1502,10 @@ class FileDefinition(IODefinition):
         Args:
             full_path (str): The full path where the file is or will be stored.
             tags (Optional[List[str]]): A list of tags associated with the file. Defaults to None.
-            is_public (Optional[bool]): Flag indicating if the file URL will be permanent and publicly accessible. Defaults to False.
+            is_public (Optional[bool]): Flag indicating if the file URL will be permanent and publicly accessible. Defaults to False.  # noqa
             is_permanent (Optional[bool]): Flag indicating if the file should be kept forever. Defaults to False.
-            is_encrypted (Optional[bool]): Flag indicating if the file content will be encrypted in storage. Defaults to False.
-            notify (Optional[bool]): Flag indicating if project administrators should be notified that a file was uploaded. Defaults to False.
+            is_encrypted (Optional[bool]): Flag indicating if the file content will be encrypted in storage. Defaults to False.  # noqa
+            notify (Optional[bool]): Flag indicating if project administrators should be notified that a file was uploaded. Defaults to False.  # noqa
 
         Returns:
             An instance of FileDefinition configured for output files.
