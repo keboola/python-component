@@ -404,12 +404,68 @@ class TestTableDefinition(unittest.TestCase):
                        {'name': 'note', 'data_type': {'base': {'type': 'STRING'}}},
                        {'name': 'test1', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
                        {'name': 'test4', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'id', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True, 'primary_key': True},
+                       {'name': 'id', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True,
+                        'primary_key': True},
                        {'name': 'new2', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True},
                        {'name': 'new3', 'data_type': {'base': {'type': 'STRING', 'length': 200}}, 'nullable': True}
                        ]},
             table_def.get_manifest_dictionary('out', native_types=True)
         )
+
+    def test_new_manifest_base_type_columns(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    destination='some-destination',
+                                    incremental=True,
+                                    delete_where={'column': 'lilly',
+                                                  'values': ['a', 'b'],
+                                                  'operator': 'eq'}
+                                    )
+
+        # add new columns
+        table_def.add_column(ColumnDefinition('foo', BaseType(SupportedDataTypes.STRING)))
+        table_def.add_column(ColumnDefinition('bar', BaseType(SupportedDataTypes.NUMERIC)))
+        table_def.add_column(ColumnDefinition('baz', {'snowflake': DataType(dtype='STRING', length=255),
+                                                      'bigquery': DataType(dtype='STRING',
+                                                                           length=255)}))
+
+        # TODO: change schema to (ordered)dict so it's indexable by name
+        # table_def.schema[0].add_datatype('snowflake', DataType(type='STRING', length=255))
+
+        # add new typed column
+
+        table_def.schema[0].to_dict()
+        table_def.add_column(ColumnDefinition('id', primary_key=True, data_types=BaseType(dtype="INTEGER", length=200)))
+
+        table_def.add_columns([ColumnDefinition('new2', data_type=DataType(type="INTEGER", length=200)),
+                               ColumnDefinition('new3', data_type=DataType(type="STRING", length=200))])
+
+        # delete columns
+        table_def.delete_column('bar')
+        table_def.delete_columns(['test2', 'test3'])
+
+        self.assertDictEqual({
+            'destination': 'some-destination',
+            'incremental': True,
+            'write_always': False,
+            'delimiter': ',',
+            'enclosure': '"',
+            'manifest_type': 'out',
+            'has_header': True,
+            'delete_where_column': 'lilly',
+            'delete_where_values': ['a', 'b'],
+            'delete_where_operator': 'eq',
+            'schema': [{'name': 'foo', 'data_type': {'base': {'type': 'INTEGER', 'length': 20}}, 'nullable': True},
+                       {'name': 'note', 'data_type': {'base': {'type': 'STRING'}}},
+                       {'name': 'test1', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'test4', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'id', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True,
+                        'primary_key': True},
+                       {'name': 'new2', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True},
+                       {'name': 'new3', 'data_type': {'base': {'type': 'STRING', 'length': 200}}, 'nullable': True}
+                       ]},
+            table_def.get_manifest_dictionary('out', native_types=True)
+        )
+
 
 class TestFileDefinition(unittest.TestCase):
 
@@ -424,11 +480,11 @@ class TestFileDefinition(unittest.TestCase):
 
         self.assertDictEqual(
             {
-             'name': '151971405_21702.strip.print.gif',
-             'is_public': False,
-             'is_permanent': False,
-             'is_encrypted': False,
-             'notify': False},
+                'name': '151971405_21702.strip.print.gif',
+                'is_public': False,
+                'is_permanent': False,
+                'is_encrypted': False,
+                'notify': False},
             file_def.get_manifest_dictionary()
         )
 

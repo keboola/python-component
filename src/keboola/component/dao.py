@@ -3,15 +3,15 @@ import json
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import List, Union, Dict, Optional
-from .exceptions import UserException
 
 from deprecated import deprecated
 
+from .exceptions import UserException
 
 try:
     from typing import Literal
@@ -161,7 +161,8 @@ class TableMetadata:
 
         """
 
-        if manifest.get('schema') and (manifest.get('metadata') or manifest.get('column_metadata') or manifest.get('columns')): # noqa
+        if manifest.get('schema') and (
+                manifest.get('metadata') or manifest.get('column_metadata') or manifest.get('columns')):  # noqa
             raise UserException("Manifest can't contain new 'schema' and old 'metadata'/'column_metadata'/'columns'")
 
         if not manifest.get('schema'):
@@ -421,19 +422,20 @@ class TableMetadata:
 
 
 @dataclass
-class DataType:
-    type: Union[SupportedDataTypes, str]
+class DataType(dict):
+    dtype: str
     length: Optional[int] = None
     default: Optional[str] = None
+    #
+    # def __post_init__(self):
+    #     if isinstance(self.type, SupportedDataTypes):
+    #         self.type = self.type.value
 
-    def __post_init__(self):
-        if isinstance(self.type, SupportedDataTypes):
-            self.type = self.type.value
 
-
-@dataclass
-class BaseType(DataType):
-    pass
+class BaseType(dict):
+    def __init__(self, dtype: SupportedDataTypes = SupportedDataTypes.STRING, length: Optional[int] = None,
+                 default: Optional[str] = None):
+        super().__init__(base=DataType(dtype=dtype.value, length=length, default=default))
 
 
 @dataclass
@@ -443,31 +445,20 @@ class ColumnDefinition:
 
     Attributes:
         name (Optional[str]): The name of the column. Defaults to None.
-        data_type (Optional[Union[Dict[str, DataType], BaseType]]): The data type of the column. This can be a specific
-            `DataType` or a `BaseType`, or a dictionary mapping from a string to one of these types. Defaults to None.
+        data_types (Optional[Union[Dict[str, DataType], BaseType]]): The data types of the column for particular backend.
+        This can be a specific `DataType` or a `BaseType`, or a dictionary mapping from a string to one of these types.
+        Defaults to BaseType.String.
         nullable (Optional[bool]): A flag indicating if the column can contain NULL values. Defaults to True.
         primary_key (Optional[bool]): A flag indicating if the column is part of the table's primary key. Defaults to False.
         description (Optional[str]): A description of the column's purpose or contents. Defaults to None.
         metadata (Optional[Dict[str, str]]): Additional metadata associated with the column. Defaults to None.
     """
     name: Optional[str] = None
-    data_type: Optional[Union[Dict[str, DataType], BaseType]] = None
+    data_types: Optional[Union[Dict[str, DataType], BaseType]] = field(default_factory=lambda: BaseType())
     nullable: Optional[bool] = True
     primary_key: Optional[bool] = False
     description: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
-
-    def __post_init__(self):
-        if self.data_type:
-            self.data_type = self.normalize_data_type(self.data_type)
-
-            base_type = self.data_type.get('base')
-            if base_type and not SupportedDataTypes.is_valid_type(base_type.type):
-                raise ValueError(f'Datatype "{base_type.type}" is not valid KBC Basetype!'
-                                 f'\n Supported base types are: [{SupportedDataTypes.list()}]')
-
-        else:
-            self.data_type = {"base": DataType(type="STRING")}
 
     def normalize_data_type(self, data_type: Union[Dict[str, DataType], BaseType]) -> Dict[str, DataType]:
         if isinstance(data_type, DataType):
@@ -484,25 +475,29 @@ class ColumnDefinition:
     def from_dict(self, col: dict):
         return ColumnDefinition(
             name=col.get('name'),
-            data_type={key: DataType(type=v.get('type'), default=v.get('default'), length=v.get('length'))
-                       for key, v in col.get('data_type', {}).items()},
+            data_types={key: DataType(dtype=v.get('type'), default=v.get('default'), length=v.get('length'))
+                        for key, v in col.get('data_type', {}).items()},
             nullable=col.get('nullable'),
             primary_key=col.get('primary_key'),
             description=col.get('description'),
             metadata=col.get('metadata'))
 
     def to_dict(self):
+        # convert datatypes to dict
+        datatypes_dict = {}
+        for key, value in self.data_types.items():
+            datatypes_dict[key] = dataclasses.asdict(value)
+
         result = {
             'name': self.name,
-            'data_type': {outer_key: {inner_key: value for inner_key, value in vars(outer_value).items() if value}
-                          for outer_key, outer_value in self.data_type.items()} if self.data_type else None,
+            'data_type': datatypes_dict,
             'nullable': self.nullable,
             'primary_key': self.primary_key,
             'description': self.description,
             'metadata': self.metadata
         }
-
-        filtered = {k: v for k, v in result.items() if v not in [None, False]}
+        # TODO: tohle bych delal az pri zapisu manifestu celkove, chceme vyhodit None values, false nechat
+        filtered = {k: v for k, v in result.items() if v not in [None]}
 
         return filtered
 
@@ -1148,7 +1143,7 @@ class TableDefinition(IODefinition):
         return new_dict
 
     @property
-    def schema(self):
+    def schema(self) -> list[ColumnDefinition]:
         return self._schema
 
     @schema.setter
