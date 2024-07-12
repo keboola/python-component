@@ -2507,8 +2507,7 @@ fails.</dd>
                 raise TypeError(&#34;Columns must be a list&#34;)
 
             for col in val:
-                if col not in self.columns:
-                    self.schema[col] = ColumnDefinition()
+                self.schema[col] = ColumnDefinition()
 
     @property
     def column_names(self) -&gt; List[str]:
@@ -2576,6 +2575,9 @@ fails.</dd>
     @table_metadata.setter
     def table_metadata(self, table_metadata: TableMetadata):
         self._table_metadata = table_metadata
+
+        for col, val in table_metadata.get_column_metadata_for_manifest().items():
+            self.schema[col].metadata = {item[&#39;key&#39;]: item[&#39;value&#39;] for item in val}
 
     @property
     def created(self) -&gt; Union[datetime, None]:  # Created timestamp  in the KBC Storage (read only input attribute)
