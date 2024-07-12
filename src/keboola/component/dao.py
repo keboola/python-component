@@ -790,7 +790,7 @@ class TableDefinition(IODefinition):
             stage: str: Storage Stage 'in' or 'out'
             write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
-            schema: List of ColumnDefinition objects
+            schema: (dict) Mapping of column names andColumnDefinition objects
 
         """
         super().__init__(full_path)
@@ -821,9 +821,6 @@ class TableDefinition(IODefinition):
         self.stage = stage
         self.write_always = write_always
         self.legacy_columns = columns
-        self._rows_count = rows_count
-        self._data_size_bytes = data_size_bytes
-        self._is_alias = is_alias
         self.has_header = has_header or self._has_header_in_file()
 
         # input manifest properties
@@ -832,6 +829,9 @@ class TableDefinition(IODefinition):
         self._created = created
         self._last_change_date = last_change_date
         self._last_import_date = last_import_date
+        self._rows_count = rows_count
+        self._data_size_bytes = data_size_bytes
+        self._is_alias = is_alias
 
     @classmethod
     def build_output_definition(cls, name: str,
