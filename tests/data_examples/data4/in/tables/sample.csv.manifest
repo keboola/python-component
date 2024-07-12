@@ -10,6 +10,7 @@
     "rows_count": 400,
     "data_size_bytes": 81920,
     "is_alias": false,
+    "column_metadata": {"x": [{"key": "foo", "value": "gogo"}]},
     "columns": [
         "x",
         "Sales",

@@ -623,7 +623,7 @@ class TestCommonInterface(unittest.TestCase):
             'enclosure': '"',
             'manifest_type': 'out',
             'has_header': True,
-            'schema': [{'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+            'schema': [{'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'metadata': {'foo': 'gogo'}},
                        {'name': 'Sales', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
                        {'name': 'CompPrice', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
                        {'name': 'Income', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
