@@ -926,7 +926,8 @@ class CommonInterface:
 
         """
 
-        manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue, legacy_manifest=legacy_manifest)
+        manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
+                                                         legacy_manifest=legacy_manifest)
         # make dirs if not exist
         os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
         with open(io_definition.full_path + '.manifest', 'w') as manifest_file:
@@ -938,7 +939,7 @@ class CommonInterface:
         Process all table definition objects and create appropriate manifest files.
         Args:
             io_definitions:
-            legacy_manifest: If True, creates a legacy manifest; otherwise, uses the new format if available in project.
+            legacy_manifest: If True, creates a legacy manifest otherwise, uses the new format if available in project.
 
         Returns:
 
