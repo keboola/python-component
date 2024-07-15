@@ -2344,8 +2344,6 @@ fails.</dd>
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
 
         &#34;&#34;&#34;
-        if not legacy_manifest:
-            legacy_manifest = os.environ.get(&#39;KBC_DATA_TYPE_SUPPORT&#39;, False) not in (&#39;authoritative&#39;, &#39;hint&#39;)
 
         if not manifest_type:
             manifest_type = self.stage
@@ -2505,13 +2503,14 @@ fails.</dd>
             if not isinstance(val, list):
                 raise TypeError(&#34;Columns must be a list&#34;)
 
+            self.schema = OrderedDict()
             for col in val:
                 self.schema[col] = ColumnDefinition()
 
     @property
     def column_names(self) -&gt; List[str]:
         if self.schema:
-            return [col.name for col in self.schema]
+            return list(self.schema.keys())
         else:
             return []
 
@@ -2825,7 +2824,7 @@ including metadata and schema definitions.</p>
 <pre><code class="python">@property
 def column_names(self) -&gt; List[str]:
     if self.schema:
-        return [col.name for col in self.schema]
+        return list(self.schema.keys())
     else:
         return []</code></pre>
 </details>
