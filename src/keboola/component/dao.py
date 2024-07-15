@@ -1,3 +1,4 @@
+import os
 import dataclasses
 import json
 import logging
@@ -9,9 +10,7 @@ from enum import Enum
 from pathlib import Path
 from typing import List, Union, Dict, Optional, OrderedDict as TypeOrderedDict
 from collections import OrderedDict
-
 from deprecated import deprecated
-
 from .exceptions import UserException
 
 try:
@@ -185,7 +184,7 @@ class TableMetadata:
             value = metadata['value']
             self.add_table_metadata(key, value)
 
-    def get_table_metadata_for_manifest(self, new_manifest: bool = False) -> List[dict]:
+    def get_table_metadata_for_manifest(self, legacy_manifest: bool = False) -> List[dict]:
         """
         Returns table metadata list as required by the
         [manifest format]
@@ -198,12 +197,12 @@ class TableMetadata:
         Returns: List[dict]
 
         """
-        if new_manifest:
-            final_metadata_list = [{key: self.table_metadata[key]}
-                                   for key in self.table_metadata]
-        else:
+        if legacy_manifest:
             final_metadata_list = [{'key': key,
                                     'value': self.table_metadata[key]}
+                                   for key in self.table_metadata]
+        else:
+            final_metadata_list = [{key: self.table_metadata[key]}
                                    for key in self.table_metadata]
 
         return final_metadata_list
@@ -526,12 +525,12 @@ class SupportedManifestAttributes(SubscriptableDataclass):
     in_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
 
     def get_attributes_by_stage(self, stage: Literal['in', 'out'], legacy_queue: bool = False,
-                                native_types: bool = False) -> List[str]:
+                                legacy_manifest: bool = False) -> List[str]:
         if stage == 'out':
             attributes = self.out_attributes
             exclude = self.out_legacy_exclude
 
-            if native_types:
+            if not legacy_manifest:
                 to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata', 'metadata']
                 attributes = list(set(attributes).difference(to_remove))
 
@@ -570,7 +569,7 @@ class IODefinition(ABC):
         raise NotImplementedError
 
     def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
-                                native_types: bool = False) -> dict:
+                                legacy_manifest: Optional[bool] = None) -> dict:
         raise NotImplementedError
 
     @property
@@ -1066,7 +1065,7 @@ class TableDefinition(IODefinition):
         return table_def
 
     def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
-                                native_types: bool = True) -> dict:
+                                legacy_manifest: Optional[bool] = None) -> dict:
         """
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
         By default, returns output manifest.
@@ -1082,16 +1081,19 @@ class TableDefinition(IODefinition):
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
             legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
-            native_types (bool): optional flag marking if the manifest should be new, default to False - legacy format
+            legacy_manifest (bool): If True, creates a legacy manifest; otherwise, uses the new format if permitted.
 
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
 
         """
+        if not legacy_manifest:
+            legacy_manifest = os.environ.get('KBC_DATA_TYPE_SUPPORT', False) not in ('authoritative', 'hint')
+
         if not manifest_type:
             manifest_type = self.stage
 
-        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
+        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, legacy_manifest)
 
         filtered_dictionary = self._filter_dictionary(dictionary)
 
@@ -1112,7 +1114,7 @@ class TableDefinition(IODefinition):
     # Usage
 
     def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
-                                            native_types: bool = False):
+                                            legacy_manifest: bool = False):
         """
         Filter manifest to contain only supported fields
         Args:
@@ -1123,7 +1125,7 @@ class TableDefinition(IODefinition):
         """
 
         supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue,
-                                                                             native_types)
+                                                                             legacy_manifest)
         fields = {
             'id': self.id,
             'uri': self._uri,
@@ -1136,18 +1138,18 @@ class TableDefinition(IODefinition):
             'is_alias': self._is_alias,
 
             'destination': self.destination,
-            'columns': self.columns if native_types else self.legacy_columns,
+            'columns': self.columns if not legacy_manifest else self.legacy_columns,
             'incremental': self.incremental,
             'primary_key': self.primary_key,
             'write_always': self.write_always,
             'delimiter': self.delimiter,
             'enclosure': self.enclosure,
-            'metadata': self.table_metadata.get_table_metadata_for_manifest(),
+            'metadata': self.table_metadata.get_table_metadata_for_manifest(legacy_manifest=True),
             'column_metadata': self.table_metadata.get_column_metadata_for_manifest(),
             'manifest_type': manifest_type,
             'has_header': self.has_header,
             'description': None,
-            'table_metadata': self.table_metadata.get_table_metadata_for_manifest(new_manifest=True),
+            'table_metadata': self.table_metadata.get_table_metadata_for_manifest(),
             'delete_where_column': self.delete_where_column,
             'delete_where_values': self.delete_where_values,
             'delete_where_operator': self.delete_where_operator,
@@ -1243,10 +1245,6 @@ class TableDefinition(IODefinition):
     @deprecated(version='1.5.1', reason="Columns can be set by add_columns method")
     def columns(self, val: List[str]):
         if val:
-            if len(self.schema) > 0:
-                warnings.warn("Columns are already set. Use 'add_columns' to add new columns.")
-                return
-
             if not isinstance(val, list):
                 raise TypeError("Columns must be a list")
 
@@ -1600,7 +1598,7 @@ class FileDefinition(IODefinition):
         return False
 
     def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
-                                native_types: bool = False) -> dict:
+                                legacy_manifest: Optional[bool] = None) -> dict:
         """
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
         By default, returns output manifest.
@@ -1616,7 +1614,7 @@ class FileDefinition(IODefinition):
              See [manifest files](https://developers.keboola.com/extend/common-interface/manifest-files)
              for more information.
             legacy_queue (bool): optional flag marking project on legacy queue.(some options are not allowed on queue2)
-            native_types (bool): optional flag marking if the manifest should be new, default to False - legacy format
+            legacy_manifest (bool): If True, creates a legacy manifest; otherwise, uses the new format if permitted.
 
         Returns:
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
@@ -1625,14 +1623,14 @@ class FileDefinition(IODefinition):
         if not manifest_type:
             manifest_type = self.stage
 
-        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, native_types)
+        dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, legacy_manifest)
 
         filtered_dictionary = {k: v for k, v in dictionary.items() if v not in [None, [], {}, ""]}
 
         return filtered_dictionary
 
     def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
-                                            native_types: bool = False):
+                                            legacy_manifest: bool = False):
         """
         Filter manifest to contain only supported fields
         Args:

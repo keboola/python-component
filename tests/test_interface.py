@@ -179,7 +179,7 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
-        ci.write_manifest(out_table, native_types=False)
+        ci.write_manifest(out_table, legacy_manifest=True)
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -223,7 +223,7 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
-        ci.write_manifest(out_table, native_types=False)
+        ci.write_manifest(out_table, legacy_manifest=True)
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -301,7 +301,7 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
-        ci.write_manifests([out_table], native_types=False)
+        ci.write_manifests([out_table], legacy_manifest=True)
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -340,7 +340,10 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
         ci.write_manifests([out_table])
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
+
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -615,7 +618,9 @@ class TestCommonInterface(unittest.TestCase):
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
-        new_manifest = tables[0].get_manifest_dictionary('out', native_types=True)
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+
+        new_manifest = tables[0].get_manifest_dictionary('out')
 
         self.assertEqual({
             'write_always': False,
@@ -638,6 +643,8 @@ class TestCommonInterface(unittest.TestCase):
                        {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
         }, new_manifest)
 
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
+
     def test_convert_new_to_old_manifest(self):
         path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data_new_manifest')
         os.environ["KBC_DATADIR"] = path
@@ -645,7 +652,7 @@ class TestCommonInterface(unittest.TestCase):
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
-        old_manifest = tables[0].get_manifest_dictionary('out', native_types=False)
+        old_manifest = tables[0].get_manifest_dictionary('out')
 
         self.assertEqual({
             'delimiter': ',',

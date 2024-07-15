@@ -108,7 +108,7 @@ class TestTableMetadata(unittest.TestCase):
         ]
         tmetadata.add_table_description("Description of table")
         tmetadata.add_table_metadata("custom_key", "custom_value")
-        self.assertEqual(tmetadata.get_table_metadata_for_manifest(), table_metadata)
+        self.assertEqual(tmetadata.get_table_metadata_for_manifest(legacy_manifest=True), table_metadata)
 
     def test_build_from_manifest_valid(self):
         raw_manifest = {
@@ -147,7 +147,7 @@ class TestTableDefinition(unittest.TestCase):
                 'name': 'testDef',
                 'primary_key': ['foo', 'bar']
             },
-            table_def.get_manifest_dictionary(native_types=False)
+            table_def.get_manifest_dictionary(legacy_manifest=True)
         )
 
     def test_table_manifest_missing_key(self):
@@ -186,7 +186,7 @@ class TestTableDefinition(unittest.TestCase):
                 'delete_where_operator': 'eq',
                 'write_always': False
             },
-            table_def.get_manifest_dictionary('out', native_types=False)
+            table_def.get_manifest_dictionary('out', legacy_manifest=True)
         )
 
     def test_build_from_table_manifest_metadata_equals(self):
@@ -342,6 +342,8 @@ class TestTableDefinition(unittest.TestCase):
 
         self.maxDiff = None
 
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+
         self.assertDictEqual({
             'destination': 'some-destination',
             'incremental': True,
@@ -360,6 +362,8 @@ class TestTableDefinition(unittest.TestCase):
         },
             table_def.get_manifest_dictionary('out')
         )
+
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
 
     def test_new_manifest_native_types(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
@@ -391,6 +395,8 @@ class TestTableDefinition(unittest.TestCase):
 
         self.maxDiff = None
 
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+
         self.assertDictEqual({
             'destination': 'some-destination',
             'incremental': True,
@@ -409,8 +415,10 @@ class TestTableDefinition(unittest.TestCase):
                         'primary_key': True},
                        {'name': 'new2', 'data_type': {'base': {'type': 'FLOAT', 'length': 200}}, 'nullable': True},
                        {'name': 'new3', 'data_type': {'base': {'type': 'DATE', 'length': 200}}, 'nullable': True}]},
-            table_def.get_manifest_dictionary('out', native_types=True)
+            table_def.get_manifest_dictionary('out')
         )
+
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
 
     def test_new_manifest_base_type_columns(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
@@ -445,6 +453,8 @@ class TestTableDefinition(unittest.TestCase):
         table_def.delete_column('bar')
         table_def.delete_columns(['test2', 'test3'])
 
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "hint"
+
         self.assertDictEqual({
             'destination': 'some-destination',
             'incremental': True,
@@ -466,8 +476,10 @@ class TestTableDefinition(unittest.TestCase):
                         'primary_key': True},
                        {'name': 'new2', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True},
                        {'name': 'new3', 'data_type': {'base': {'type': 'STRING', 'length': 200}}, 'nullable': True}]},
-            table_def.get_manifest_dictionary('out', native_types=True)
+            table_def.get_manifest_dictionary('out')
         )
+
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
 
 
 class TestFileDefinition(unittest.TestCase):

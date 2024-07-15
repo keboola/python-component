@@ -893,7 +893,7 @@ class CommonInterface:
         return is_legacy_queue
 
     def write_manifest(self, io_definition: Union[dao.FileDefinition, dao.TableDefinition],
-                       native_types: bool = True):
+                       legacy_manifest: Optional[bool] = None):
         """
         Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
 
@@ -926,25 +926,25 @@ class CommonInterface:
 
         """
 
-        manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue, native_types=native_types)
+        manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue, legacy_manifest=legacy_manifest)
         # make dirs if not exist
         os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
         with open(io_definition.full_path + '.manifest', 'w') as manifest_file:
             json.dump(manifest, manifest_file)
 
     def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]],
-                        native_types: bool = True):
+                        legacy_manifest: Optional[bool] = None):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
             io_definitions:
-            native_types: If True, native types are used in the manifest
+            legacy_manifest: If True, creates a legacy manifest; otherwise, uses the new format if available in project.
 
         Returns:
 
         """
         for io_def in io_definitions:
-            self.write_manifest(io_def, native_types=native_types)
+            self.write_manifest(io_def, legacy_manifest=legacy_manifest)
 
     # ############# DEPRECATED METHODS, TODO: remove
 
@@ -1017,7 +1017,7 @@ class CommonInterface:
         Returns:
 
         """
-        self.write_manifest(table_definition, native_types=False)
+        self.write_manifest(table_definition, legacy_manifest=True)
 
     @deprecated(version='1.3.0', reason="You should use write_manifests function")
     def write_tabledef_manifests(self, table_definitions: List[dao.TableDefinition]):
@@ -1029,7 +1029,7 @@ class CommonInterface:
         Returns:
 
         """
-        self.write_manifests(table_definitions, native_types=False)
+        self.write_manifests(table_definitions, legacy_manifest=True)
 
 
 # ########## CONFIGURATION
