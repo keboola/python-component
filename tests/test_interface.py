@@ -325,7 +325,10 @@ class TestCommonInterface(unittest.TestCase):
         os.remove(manifest_filename)
 
     def test_create_and_write_table_manifest_new(self):
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
         ci = CommonInterface()
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
+
         # create table def
         out_table = ci.create_out_table_definition('some-table.csv',
                                                    columns=['foo', 'bar'],
@@ -340,9 +343,7 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
-        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
         ci.write_manifests([out_table])
-        del os.environ['KBC_DATA_TYPE_SUPPORT']
 
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
@@ -652,7 +653,7 @@ class TestCommonInterface(unittest.TestCase):
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
-        old_manifest = tables[0].get_manifest_dictionary('out')
+        old_manifest = tables[0].get_manifest_dictionary('out', legacy_manifest=True)
 
         self.assertEqual({
             'delimiter': ',',

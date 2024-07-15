@@ -1086,8 +1086,6 @@ class TableDefinition(IODefinition):
             dict representation of the manifest file in a format expected / produced by the Keboola Connection
 
         """
-        if not legacy_manifest:
-            legacy_manifest = os.environ.get('KBC_DATA_TYPE_SUPPORT', False) not in ('authoritative', 'hint')
 
         if not manifest_type:
             manifest_type = self.stage
@@ -1247,13 +1245,14 @@ class TableDefinition(IODefinition):
             if not isinstance(val, list):
                 raise TypeError("Columns must be a list")
 
+            self.schema = OrderedDict()
             for col in val:
                 self.schema[col] = ColumnDefinition()
 
     @property
     def column_names(self) -> List[str]:
         if self.schema:
-            return [col.name for col in self.schema]
+            return list(self.schema.keys())
         else:
             return []
 
