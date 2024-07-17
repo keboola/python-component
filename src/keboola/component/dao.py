@@ -2,13 +2,15 @@ import dataclasses
 import json
 import logging
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import List, Union, Dict, Optional, OrderedDict as TypeOrderedDict
-from collections import OrderedDict
+
 from deprecated import deprecated
+
 from .exceptions import UserException
 
 try:
@@ -422,7 +424,7 @@ class TableMetadata:
 @dataclass
 class DataType(dict):
     dtype: str
-    length: Optional[int] = None
+    length: Optional[str] = None
     default: Optional[str] = None
 
     def __post_init__(self):
@@ -431,9 +433,36 @@ class DataType(dict):
 
 
 class BaseType(DataType):
-    def __init__(self, dtype: SupportedDataTypes = SupportedDataTypes.STRING, length: Optional[int] = None,
+    def __init__(self, dtype: SupportedDataTypes = SupportedDataTypes.STRING, length: Optional[str] = None,
                  default: Optional[str] = None):
         super().__init__(dtype=dtype, length=length, default=default)
+
+    @classmethod
+    def integer(cls, length: Optional[str] = None,
+                default: Optional[str] = None) -> 'BaseType':
+        return BaseType(dtype=SupportedDataTypes.INTEGER, length=length, default=default)
+
+    @classmethod
+    def numeric(cls, length: Optional[str] = None,
+                default: Optional[str] = None) -> 'BaseType':
+        return BaseType(dtype=SupportedDataTypes.NUMERIC, length=length, default=default)
+
+    @classmethod
+    def float(cls, length: Optional[str] = None,
+              default: Optional[str] = None) -> 'BaseType':
+        return BaseType(dtype=SupportedDataTypes.FLOAT, length=length, default=default)
+
+    @classmethod
+    def boolean(cls, default: Optional[str] = None) -> 'BaseType':
+        return BaseType(dtype=SupportedDataTypes.BOOLEAN, default=default)
+
+    @classmethod
+    def date(cls, default: Optional[str] = None) -> 'BaseType':
+        return BaseType(dtype=SupportedDataTypes.DATE, default=default)
+
+    @classmethod
+    def timestamp(cls, default: Optional[str] = None) -> 'BaseType':
+        return BaseType(dtype=SupportedDataTypes.TIMESTAMP, default=default)
 
 
 @dataclass
@@ -743,7 +772,7 @@ class TableDefinition(IODefinition):
 
                  destination: Optional[str] = '',
                  primary_key: Optional[List[str]] = None,
-                 columns: Optional[List[str]] = None,
+                 columns: Optional[Union[List[str], Dict[str, ColumnDefinition]]] = None,
                  incremental: Optional[bool] = None,
                  table_metadata: Optional[TableMetadata] = None,
                  enclosure: Optional[str] = '"',
@@ -1238,8 +1267,17 @@ class TableDefinition(IODefinition):
             return []
 
     @columns.setter
-    @deprecated(version='1.5.1', reason="Columns can be set by add_columns method")
-    def columns(self, val: List[str]):
+    def columns(self, val: Union[List[str], Dict[str, ColumnDefinition]]):
+        """
+        Set columns for the table.
+        If list of names provided, the columns will be created with default settings Basetype.String.
+        Otherwise use mapping of names and ColumnDefinition objects.
+        Args:
+            val:
+
+        Returns:
+
+        """
         if val:
             if not isinstance(val, list):
                 raise TypeError("Columns must be a list")
