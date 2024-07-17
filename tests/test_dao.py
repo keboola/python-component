@@ -142,11 +142,8 @@ class TestTableDefinition(unittest.TestCase):
                                     primary_key=['foo', 'bar']
                                     )
         self.assertEqual(
-            {
-                'columns': ['foo', 'bar'],
-                'name': 'testDef',
-                'primary_key': ['foo', 'bar']
-            },
+            {'columns': ['foo', 'bar'], 'delimiter': ',', 'enclosure': '"', 'primary_key': ['foo', 'bar'],
+             'write_always': False},
             table_def.get_manifest_dictionary(legacy_manifest=True)
         )
 
@@ -367,6 +364,7 @@ class TestTableDefinition(unittest.TestCase):
 
     def test_new_manifest_native_types(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    stage='out',
                                     columns=['foo', 'bar'],
                                     destination='some-destination',
                                     primary_key=['foo'],
@@ -376,7 +374,8 @@ class TestTableDefinition(unittest.TestCase):
                                                   'operator': 'eq'}
                                     )
         # update column
-        table_def.update_column('foo', ColumnDefinition(data_types=BaseType(dtype=SupportedDataTypes.INTEGER, length=20)))
+        table_def.update_column('foo',
+                                ColumnDefinition(data_types=BaseType(dtype=SupportedDataTypes.INTEGER, length=20)))
 
         # add new columns
         table_def.add_column('note', ColumnDefinition(nullable=False))
@@ -384,10 +383,12 @@ class TestTableDefinition(unittest.TestCase):
         table_def.add_columns(['test2', 'test3', 'test4'])
 
         # add new typed column
-        table_def.add_column('id', ColumnDefinition(primary_key=True, data_types=DataType(dtype=SupportedDataTypes.NUMERIC, length=200)))
+        table_def.add_column('id', ColumnDefinition(primary_key=True,
+                                                    data_types=DataType(dtype=SupportedDataTypes.NUMERIC, length=200)))
 
-        table_def.add_columns({'new2': ColumnDefinition(data_types=DataType(dtype=SupportedDataTypes.FLOAT, length=200)),
-                               'new3': ColumnDefinition(data_types=DataType(dtype=SupportedDataTypes.DATE, length=200))})
+        table_def.add_columns(
+            {'new2': ColumnDefinition(data_types=DataType(dtype=SupportedDataTypes.FLOAT, length=200)),
+             'new3': ColumnDefinition(data_types=DataType(dtype=SupportedDataTypes.DATE, length=200))})
 
         # delete columns
         table_def.delete_column('bar')

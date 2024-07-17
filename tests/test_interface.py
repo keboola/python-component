@@ -355,7 +355,7 @@ class TestCommonInterface(unittest.TestCase):
              'delimiter': ',',
              'destination': 'some-destination',
              'enclosure': '"',
-             'has_header': False,
+             'has_header': True,
              'incremental': True,
              'manifest_type': 'out',
              'schema': [{'data_type': {'base': {'type': 'STRING'}},
@@ -629,24 +629,25 @@ class TestCommonInterface(unittest.TestCase):
             'enclosure': '"',
             'manifest_type': 'out',
             'has_header': True,
-            'schema': [{'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'metadata': {'foo': 'gogo'}},
-                       {'name': 'Sales', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'CompPrice', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'Income', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'Advertising', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'Population', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'Price', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'ShelveLoc', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'Age', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'Education', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'Urban', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'US', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
+            'schema': [
+                {'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'metadata': {'foo': 'gogo'}},
+                {'name': 'Sales', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'CompPrice', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Income', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Advertising', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Population', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Price', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'ShelveLoc', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Age', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Education', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Urban', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'US', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
         }, new_manifest)
 
         del os.environ['KBC_DATA_TYPE_SUPPORT']
 
-    def test_convert_new_to_old_manifest(self):
+    def test_convert_new_to_old_manifest_has_header_false(self):
         path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data_new_manifest')
         os.environ["KBC_DATADIR"] = path
 
@@ -656,6 +657,8 @@ class TestCommonInterface(unittest.TestCase):
         old_manifest = tables[0].get_manifest_dictionary('out', legacy_manifest=True)
 
         self.assertEqual({
+            'columns': ['x', 'Sales', 'CompPrice', 'Income', 'Advertising', 'Population', 'Price', 'ShelveLoc', 'Age',
+                        'Education', 'Urban', 'US', 'High'],
             'delimiter': ',',
             'enclosure': '"',
             'write_always': False

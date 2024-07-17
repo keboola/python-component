@@ -221,6 +221,22 @@ class TableMetadata:
                 Returns: dict
 
         """
+
+        return self._get_legacy_column_metadata_for_manifest()
+
+    def _get_legacy_column_metadata_for_manifest(self) -> dict:
+        """
+                Returns column metadata dict as required by the
+                [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables
+                -manifests)
+
+                e.g.
+                tm = TableMetadata()
+                manifest['column_metadata'] = tm.column_metadata
+
+                Returns: dict
+
+        """
         final_column_metadata = dict()
 
         # collect unique metadata keys
@@ -769,29 +785,19 @@ class TableDefinition(IODefinition):
     def __init__(self, name: str,
                  full_path: Optional[Union[str, None]] = None,
                  is_sliced: Optional[bool] = False,
-
                  destination: Optional[str] = '',
+                 has_header: Optional[bool] = True,
                  primary_key: Optional[List[str]] = None,
-                 columns: Optional[Union[List[str], Dict[str, ColumnDefinition]]] = None,
                  incremental: Optional[bool] = None,
                  table_metadata: Optional[TableMetadata] = None,
                  enclosure: Optional[str] = '"',
                  delimiter: Optional[str] = ',',
                  delete_where: Optional[dict] = None,
-                 stage: Optional[str] = 'in',
+                 stage: Optional[str] = None,
                  write_always: Optional[bool] = False,
-                 schema: Optional[TypeOrderedDict[str, ColumnDefinition]] = None,
-                 rows_count: Optional[int] = None,
-                 data_size_bytes: Optional[int] = None,
-                 is_alias: Optional[bool] = False,
-                 has_header: Optional[bool] = None,
-
+                 schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
                  # input
-                 uri: Optional[str] = None,
-                 id: Optional[str] = '',
-                 created: Optional[str] = None,
-                 last_change_date: Optional[str] = None,
-                 last_import_date: Optional[str] = None
+                 **kwargs
                  ):
         """
 
@@ -805,9 +811,9 @@ class TableDefinition(IODefinition):
                 The full_path is None when dealing with [workspaces](
                 https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
             is_sliced: True if the full_path points to a folder with sliced tables
+            has_header: True if the file has a header, if emtpy inferred.
             destination: String name of the table in Storage.
             primary_key: List with names of columns used for primary key.
-            columns: List of columns for headless CSV files
             incremental: Set to true to enable incremental loading
             table_metadata: <.dao.TableMetadata> object containing column and table metadata (deprecated)
             enclosure: str: CSV enclosure, by default "
@@ -816,19 +822,24 @@ class TableDefinition(IODefinition):
             stage: str: Storage Stage 'in' or 'out'
             write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
-            schema: (dict) Mapping of column names andColumnDefinition objects
+            schema: (dict|lis[str]) Mapping of column names andColumnDefinition objects, or a list of names
 
         """
         super().__init__(full_path)
         self._name = name
         self.is_sliced = is_sliced
 
-        self.schema = schema
-
         # initialize manifest properties
         self._destination = None
         self.destination = destination
-        self.columns = columns
+        self._schema = dict()
+
+        if schema:
+            self.schema = schema
+        # deprecated argument for backward compatibility
+        if kwargs.get('columns'):
+            self.schema = kwargs['columns']
+
         self.primary_key = primary_key
         self._incremental = incremental
 
@@ -844,21 +855,25 @@ class TableDefinition(IODefinition):
         self.delete_where_operator = None
 
         self.set_delete_where_from_dict(delete_where)
-        self.stage = stage
         self.write_always = write_always
-        self.legacy_columns = columns
-        self.has_header = has_header or self._has_header_in_file()
 
         # input manifest properties
-        self._id = id
-        self._uri = uri
-        self._created = created
-        self._last_change_date = last_change_date
-        self._last_import_date = last_import_date
-        self._rows_count = rows_count
-        self._data_size_bytes = data_size_bytes
-        self._is_alias = is_alias
+        self._id = kwargs.get('id')
+        self._uri = kwargs.get('uri')
+        self._created = kwargs.get('created')
+        self._last_change_date = kwargs.get('last_change_date')
+        self._last_import_date = kwargs.get('last_import_date')
+        self._rows_count = kwargs.get('rows_count')
+        self._data_size_bytes = kwargs.get('data_size_bytes')
+        self._is_alias = kwargs.get('is_alias')
 
+        self.stage = stage if stage else self.__get_stage_inferred()
+        self.has_header = has_header or self._has_header_in_file()
+
+    def __get_stage_inferred(self):
+        if self._uri:
+            return 'in'
+        return 'out'
     @classmethod
     def build_output_definition(cls, name: str,
                                 destination: Optional[str] = '',
@@ -1091,7 +1106,7 @@ class TableDefinition(IODefinition):
 
         return table_def
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = 'out', legacy_queue: bool = False,
                                 legacy_manifest: Optional[bool] = None) -> dict:
         """
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
@@ -1163,14 +1178,13 @@ class TableDefinition(IODefinition):
             'is_alias': self._is_alias,
 
             'destination': self.destination,
-            'columns': self.columns if not legacy_manifest else self.legacy_columns,
             'incremental': self.incremental,
             'primary_key': self.primary_key,
             'write_always': self.write_always,
             'delimiter': self.delimiter,
             'enclosure': self.enclosure,
             'metadata': self.table_metadata.get_table_metadata_for_manifest(legacy_manifest=True),
-            'column_metadata': self.table_metadata.get_column_metadata_for_manifest(),
+            'column_metadata': self.table_metadata._get_legacy_column_metadata_for_manifest(),
             'manifest_type': manifest_type,
             'has_header': self.has_header,
             'description': None,
@@ -1179,8 +1193,10 @@ class TableDefinition(IODefinition):
             'delete_where_values': self.delete_where_values,
             'delete_where_operator': self.delete_where_operator,
             'schema': [col.to_dict(name)
-                       for name, col in self.schema.items()] if isinstance(self.schema, OrderedDict) else []
+                       for name, col in self.schema.items()] if isinstance(self.schema, (OrderedDict, dict)) else []
         }
+        if legacy_manifest:
+            fields['columns'] = self.column_names
 
         new_dict = fields.copy()
 
@@ -1193,7 +1209,7 @@ class TableDefinition(IODefinition):
     def _has_header_in_file(self):
         if self.is_sliced:
             has_header = False
-        elif self.columns and not self.stage == 'in':
+        elif self.column_names and not self.stage == 'in':
             has_header = False
         else:
             has_header = True
@@ -1204,10 +1220,17 @@ class TableDefinition(IODefinition):
         return self._schema
 
     @schema.setter
-    def schema(self, value):
-        self._schema = OrderedDict()
+    def schema(self, value: Union[TypeOrderedDict[str, ColumnDefinition], list[str]]):
         if value:
-            self._schema = value
+            if not isinstance(value, (list, dict, OrderedDict)):
+                raise TypeError("Columns must be a list or a mapping of column names and ColumnDefinition objects")
+
+            if isinstance(value, list):
+                self._schema = OrderedDict()
+                for col in value:
+                    self._schema[col] = ColumnDefinition()
+            else:
+                self._schema = value
 
     @property
     def _manifest_attributes(self) -> SupportedManifestAttributes:
@@ -1261,30 +1284,27 @@ class TableDefinition(IODefinition):
     @property
     @deprecated(version='1.5.1', reason="Please use new column_names method instead of columns property")
     def columns(self) -> List[str]:
-        if isinstance(self.schema, OrderedDict):
+        if isinstance(self.schema, (OrderedDict, dict)):
             return list(self.schema.keys())
         else:
             return []
 
     @columns.setter
-    def columns(self, val: Union[List[str], Dict[str, ColumnDefinition]]):
+    @deprecated(version='1.5.1', reason="Please use new column_names method instead of schema property")
+    def columns(self, val: List[str]):
         """
         Set columns for the table.
         If list of names provided, the columns will be created with default settings Basetype.String.
-        Otherwise use mapping of names and ColumnDefinition objects.
         Args:
             val:
 
         Returns:
 
         """
-        if val:
-            if not isinstance(val, list):
-                raise TypeError("Columns must be a list")
+        if not isinstance(val, list):
+            raise TypeError("Columns must be a list")
 
-            self.schema = OrderedDict()
-            for col in val:
-                self.schema[col] = ColumnDefinition()
+        self.schema = val
 
     @property
     def column_names(self) -> List[str]:
@@ -1352,8 +1372,8 @@ class TableDefinition(IODefinition):
     @table_metadata.setter
     def table_metadata(self, table_metadata: TableMetadata):
         self._table_metadata = table_metadata
-
-        for col, val in table_metadata.get_column_metadata_for_manifest().items():
+        # backward compatibility legacy support
+        for col, val in table_metadata._get_legacy_column_metadata_for_manifest().items():
             self.schema[col].metadata = {item['key']: item['value'] for item in val}
 
     @property
@@ -1362,6 +1382,25 @@ class TableDefinition(IODefinition):
             return datetime.strptime(self._created, KBC_DEFAULT_TIME_FORMAT)
         else:
             return None
+    @property
+    def uri(self) -> str:
+        return self._uri
+
+    @property
+    def last_change_date(self) -> str:
+        return self._last_change_date
+
+    @property
+    def last_import_date(self) -> str:
+        return self._last_import_date
+
+    @property
+    def is_alias(self) -> bool:
+        return self._is_alias
+
+
+
+
 
     def add_column(self, name: str, definition: ColumnDefinition = ColumnDefinition()):
         """
