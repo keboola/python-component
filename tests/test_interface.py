@@ -179,7 +179,7 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
-        ci.write_manifest(out_table)
+        ci.write_manifest(out_table, legacy_manifest=True)
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -223,7 +223,7 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
-        ci.write_manifest(out_table)
+        ci.write_manifest(out_table, legacy_manifest=True)
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -301,7 +301,7 @@ class TestCommonInterface(unittest.TestCase):
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
 
         # write
-        ci.write_manifests([out_table])
+        ci.write_manifests([out_table], legacy_manifest=True)
         manifest_filename = out_table.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
@@ -320,6 +320,53 @@ class TestCommonInterface(unittest.TestCase):
                 'delete_where_operator': 'eq',
                 'write_always': False
             },
+            config
+        )
+        os.remove(manifest_filename)
+
+    def test_create_and_write_table_manifest_new(self):
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+        ci = CommonInterface()
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
+
+        # create table def
+        out_table = ci.create_out_table_definition('some-table.csv',
+                                                   columns=['foo', 'bar'],
+                                                   destination='some-destination',
+                                                   primary_key=['foo'],
+                                                   incremental=True,
+                                                   delete_where={'column': 'lilly',
+                                                                 'values': ['a', 'b'],
+                                                                 'operator': 'eq'}
+                                                   )
+        out_table.table_metadata.add_table_metadata('bar', 'kochba')
+        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+
+        # write
+        ci.write_manifests([out_table])
+
+        manifest_filename = out_table.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {'delete_where_column': 'lilly',
+             'delete_where_operator': 'eq',
+             'delete_where_values': ['a', 'b'],
+             'delimiter': ',',
+             'destination': 'some-destination',
+             'enclosure': '"',
+             'has_header': False,
+             'incremental': True,
+             'manifest_type': 'out',
+             'schema': [{'data_type': {'base': {'type': 'STRING'}},
+                         'name': 'foo',
+                         'nullable': True,
+                         'primary_key': True},
+                        {'data_type': {'base': {'type': 'STRING'}},
+                         'name': 'bar',
+                         'nullable': True}],
+             'table_metadata': [{'bar': 'kochba'}],
+             'write_always': False},
             config
         )
         os.remove(manifest_filename)
@@ -440,6 +487,7 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(
             {'tags': ['foo', 'bar'],
              'is_public': True,
+             'name': 'some-file.jpg',
              'is_permanent': True,
              'is_encrypted': True,
              'notify': True},
@@ -466,6 +514,7 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(
             {'tags': ['foo', 'bar'],
              'is_public': True,
+             'name': 'some-file.jpg',
              'is_permanent': True,
              'is_encrypted': True,
              'notify': True},
@@ -562,6 +611,55 @@ class TestCommonInterface(unittest.TestCase):
             self.assertEqual(file.max_age_days, 0)
             self.assertEqual(file.size_bytes, 0)
             self.assertEqual(file.created, None)
+
+    def test_convert_old_to_new_manifest(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data4')
+        os.environ["KBC_DATADIR"] = path
+
+        ci = CommonInterface()
+        tables = ci.get_input_tables_definitions()
+
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+
+        new_manifest = tables[0].get_manifest_dictionary('out')
+
+        self.assertEqual({
+            'write_always': False,
+            'delimiter': ',',
+            'enclosure': '"',
+            'manifest_type': 'out',
+            'has_header': True,
+            'schema': [{'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'metadata': {'foo': 'gogo'}},
+                       {'name': 'Sales', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'CompPrice', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Income', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Advertising', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Population', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Price', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'ShelveLoc', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Age', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Education', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'Urban', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'US', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
+        }, new_manifest)
+
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
+
+    def test_convert_new_to_old_manifest(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data_new_manifest')
+        os.environ["KBC_DATADIR"] = path
+
+        ci = CommonInterface()
+        tables = ci.get_input_tables_definitions()
+
+        old_manifest = tables[0].get_manifest_dictionary('out', legacy_manifest=True)
+
+        self.assertEqual({
+            'delimiter': ',',
+            'enclosure': '"',
+            'write_always': False
+        }, old_manifest)
 
 
 class TestConfiguration(unittest.TestCase):

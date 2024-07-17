@@ -108,7 +108,7 @@ class TestTableMetadata(unittest.TestCase):
         ]
         tmetadata.add_table_description("Description of table")
         tmetadata.add_table_metadata("custom_key", "custom_value")
-        self.assertEqual(tmetadata.get_table_metadata_for_manifest(), table_metadata)
+        self.assertEqual(tmetadata.get_table_metadata_for_manifest(legacy_manifest=True), table_metadata)
 
     def test_build_from_manifest_valid(self):
         raw_manifest = {
@@ -138,17 +138,24 @@ class TestTableDefinition(unittest.TestCase):
 
     def test_table_manifest_minimal(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    columns=['foo', 'bar'],
                                     primary_key=['foo', 'bar']
                                     )
-
         self.assertEqual(
             {
-                'primary_key': ['foo', 'bar'],
-                'column_metadata': {},
-                'metadata': []
+                'columns': ['foo', 'bar'],
+                'name': 'testDef',
+                'primary_key': ['foo', 'bar']
             },
-            table_def.get_manifest_dictionary()
+            table_def.get_manifest_dictionary(legacy_manifest=True)
         )
+
+    def test_table_manifest_missing_key(self):
+        with self.assertRaises(UserException) as e:
+            table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                        primary_key=['foo', 'bar'])
+
+        self.assertEqual(str(e.exception), "Primary key column foo not found in columns")
 
     def test_table_manifest_full(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
@@ -179,7 +186,7 @@ class TestTableDefinition(unittest.TestCase):
                 'delete_where_operator': 'eq',
                 'write_always': False
             },
-            table_def.get_manifest_dictionary('out')
+            table_def.get_manifest_dictionary('out', legacy_manifest=True)
         )
 
     def test_build_from_table_manifest_metadata_equals(self):
@@ -319,125 +326,286 @@ class TestTableDefinition(unittest.TestCase):
         manifest = td.get_manifest_dictionary(legacy_queue=False)
         self.assertTrue('write_always' in manifest)
 
-    class TestFileDefinition(unittest.TestCase):
+    def test_new_manifest(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    columns=['foo', 'bar'],
+                                    destination='some-destination',
+                                    primary_key=['foo'],
+                                    incremental=True,
+                                    delete_where={'column': 'lilly',
+                                                  'values': ['a', 'b'],
+                                                  'operator': 'eq'}
+                                    )
+        # add metadata
+        table_def.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        table_def.table_metadata.add_table_metadata('bar', 'kochba')
 
-        def setUp(self):
-            path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                'data_examples', 'data1')
-            os.environ["KBC_DATADIR"] = path
+        self.maxDiff = None
 
-        def test_file_manifest_minimal(self):
-            file_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
-            file_def = FileDefinition(file_path)
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
 
-            self.assertDictEqual(
-                {'tags': [],
-                 'is_public': False,
-                 'is_permanent': False,
-                 'is_encrypted': False,
-                 'notify': False},
-                file_def.get_manifest_dictionary()
-            )
+        self.assertDictEqual({
+            'destination': 'some-destination',
+            'incremental': True,
+            'write_always': False,
+            'delimiter': ',',
+            'enclosure': '"',
+            'manifest_type': 'out',
+            'has_header': True,
+            'delete_where_column': 'lilly',
+            'delete_where_values': ['a', 'b'],
+            'delete_where_operator': 'eq',
+            'table_metadata': [{'bar': 'kochba'}],
+            'schema': [
+                {'name': 'foo', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
+                {'name': 'bar', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
+        },
+            table_def.get_manifest_dictionary('out')
+        )
 
-        def test_file_manifest_full(self):
-            file_def = FileDefinition("123_test_Def", is_permanent=True,
-                                      is_encrypted=True,
-                                      is_public=True,
-                                      tags=['foo', 'bar'],
-                                      notify=True
-                                      )
-            file_def._raw_manifest['id'] = '123'
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
 
-            self.assertDictEqual(
-                {'tags': ['foo', 'bar'],
-                 'is_public': True,
-                 'is_permanent': True,
-                 'is_encrypted': True,
-                 'notify': True},
-                file_def.get_manifest_dictionary('out')
-            )
-            self.assertEqual(file_def.name, 'test_Def')
-            self.assertEqual(file_def.id, '123')
+    def test_new_manifest_native_types(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    columns=['foo', 'bar'],
+                                    destination='some-destination',
+                                    primary_key=['foo'],
+                                    incremental=True,
+                                    delete_where={'column': 'lilly',
+                                                  'values': ['a', 'b'],
+                                                  'operator': 'eq'}
+                                    )
+        # update column
+        table_def.update_column('foo', ColumnDefinition(data_types=BaseType(dtype=SupportedDataTypes.INTEGER, length=20)))
 
-        def test_file_output_manifest_ignores_unrecognized(self):
-            file_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files',
-                                     '151971405_21702.strip.print.gif.manifest')
-            file_def = FileDefinition.build_from_manifest(file_path)
+        # add new columns
+        table_def.add_column('note', ColumnDefinition(nullable=False))
+        table_def.add_column('test1')
+        table_def.add_columns(['test2', 'test3', 'test4'])
 
-            # change stage
-            file_def.stage = 'out'
+        # add new typed column
+        table_def.add_column('id', ColumnDefinition(primary_key=True, data_types=DataType(dtype=SupportedDataTypes.NUMERIC, length=200)))
 
-            self.assertDictEqual(
-                {'tags': ['dilbert'],
-                 'is_encrypted': True,
-                 'is_public': False
-                 },
-                file_def.get_manifest_dictionary()
-            )
+        table_def.add_columns({'new2': ColumnDefinition(data_types=DataType(dtype=SupportedDataTypes.FLOAT, length=200)),
+                               'new3': ColumnDefinition(data_types=DataType(dtype=SupportedDataTypes.DATE, length=200))})
 
-        def test_build_from_manifest_matching_file_valid_attributes(self):
-            sample_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
-            manifest_path = sample_path + '.manifest'
-            file_def = FileDefinition.build_from_manifest(
-                manifest_path)
+        # delete columns
+        table_def.delete_column('bar')
+        table_def.delete_columns(['test2', 'test3'])
 
-            expected_manifest = json.load(open(manifest_path))
+        self.maxDiff = None
 
-            self.assertEqual(sample_path, file_def.full_path)
-            self.assertEqual(expected_manifest['name'], file_def.name)
-            self.assertEqual(datetime.strptime(expected_manifest['created'], dao.KBC_DEFAULT_TIME_FORMAT),
-                             file_def.created)
-            self.assertEqual(expected_manifest['is_public'], file_def.is_public)
-            self.assertEqual(expected_manifest['is_encrypted'], file_def.is_encrypted)
-            self.assertEqual(expected_manifest['tags'], file_def.tags)
-            self.assertEqual(expected_manifest['max_age_days'], file_def.max_age_days)
-            self.assertEqual(expected_manifest['size_bytes'], file_def.size_bytes)
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
 
-        def test_build_from_manifest_nonexistentfile_fails(self):
-            sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       'data_examples', 'data1', 'in', 'files')
+        self.assertDictEqual({
+            'destination': 'some-destination',
+            'incremental': True,
+            'write_always': False,
+            'delimiter': ',',
+            'enclosure': '"',
+            'manifest_type': 'out',
+            'has_header': True,
+            'delete_where_column': 'lilly',
+            'delete_where_values': ['a', 'b'], 'delete_where_operator': 'eq',
+            'schema': [{'name': 'foo', 'data_type': {'base': {'type': 'INTEGER', 'length': 20}}, 'nullable': True},
+                       {'name': 'note', 'data_type': {'base': {'type': 'STRING'}}},
+                       {'name': 'test1', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'test4', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                       {'name': 'id', 'data_type': {'base': {'type': 'NUMERIC', 'length': 200}}, 'nullable': True,
+                        'primary_key': True},
+                       {'name': 'new2', 'data_type': {'base': {'type': 'FLOAT', 'length': 200}}, 'nullable': True},
+                       {'name': 'new3', 'data_type': {'base': {'type': 'DATE', 'length': 200}}, 'nullable': True}]},
+            table_def.get_manifest_dictionary('out')
+        )
 
-            with self.assertRaises(ValueError):
-                FileDefinition.build_from_manifest(os.path.join(sample_path, 'orphaned.csv.manifest'))
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
 
-        def test_user_tags(self):
-            all_tags = ['foo',
-                        'bar',
-                        'componentId: 1234',
-                        'configurationId: 12345',
-                        'configurationRowId: 12345',
-                        'runId: 22123',
-                        'branchId: 312321'
-                        ]
-            file_def = FileDefinition("123_test_Def", is_permanent=True,
-                                      is_encrypted=True,
-                                      is_public=True,
-                                      tags=all_tags,
-                                      notify=True
-                                      )
+    def test_new_manifest_base_type_columns(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    destination='some-destination',
+                                    incremental=True,
+                                    delete_where={'column': 'lilly',
+                                                  'values': ['a', 'b'],
+                                                  'operator': 'eq'}
+                                    )
 
-            self.assertDictEqual(
-                {'tags': all_tags,
-                 'is_public': True,
-                 'is_permanent': True,
-                 'is_encrypted': True,
-                 'notify': True},
-                file_def.get_manifest_dictionary()
-            )
+        # add new columns
+        table_def.add_column('foo', ColumnDefinition(BaseType(SupportedDataTypes.STRING)))
+        table_def.add_column('bar', ColumnDefinition(BaseType(SupportedDataTypes.NUMERIC)))
+        table_def.add_column('baz', ColumnDefinition(
+            {'snowflake': DataType(dtype='STRING', length=255),
+             'bigquery': DataType(dtype='STRING', length=255)}))
 
-            self.assertEqual(['foo', 'bar'], file_def.user_tags)
+        table_def.schema["foo"].add_datatype('redshift', DataType(dtype='STRING', length=255))
 
-        def test_all_tags(self):
-            all_tags = ['foo',
-                        'bar',
-                        'componentId: 1234',
-                        'configurationId: 12345',
-                        'configurationRowId: 12345',
-                        'runId: 22123',
-                        'branchId: 312321'
-                        ]
-            file_def = FileDefinition("123_test_Def",
-                                      tags=all_tags
-                                      )
+        table_def.schema["baz"].update_datatype('snowflake', DataType(dtype='NUMERIC', length=255))
 
-            self.assertEqual(all_tags, file_def.tags)
+        self.maxDiff = None
+
+        table_def.add_columns(["test2", "test3"])
+
+        table_def.add_column('id', ColumnDefinition(primary_key=True, data_types=BaseType(dtype="INTEGER", length=200)))
+
+        table_def.add_columns({'new2': ColumnDefinition(data_types=DataType(dtype="INTEGER", length=200)),
+                               'new3': ColumnDefinition(data_types=DataType(dtype="STRING", length=200))})
+
+        # delete columns
+        table_def.delete_column('bar')
+        table_def.delete_columns(['test2', 'test3'])
+
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "hint"
+
+        self.assertDictEqual({
+            'destination': 'some-destination',
+            'incremental': True,
+            'write_always': False,
+            'delimiter': ',',
+            'enclosure': '"',
+            'manifest_type': 'out',
+            'has_header': True,
+            'delete_where_column': 'lilly',
+            'delete_where_values': ['a', 'b'],
+            'delete_where_operator': 'eq',
+            'schema': [{'name': 'foo',
+                        'data_type': {'base': {'type': 'STRING'}, 'redshift': {'type': 'STRING', 'length': 255}},
+                        'nullable': True}, {'name': 'baz',
+                                            'data_type': {'snowflake': {'type': 'NUMERIC', 'length': 255},
+                                                          'bigquery': {'type': 'STRING', 'length': 255}},
+                                            'nullable': True},
+                       {'name': 'id', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True,
+                        'primary_key': True},
+                       {'name': 'new2', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True},
+                       {'name': 'new3', 'data_type': {'base': {'type': 'STRING', 'length': 200}}, 'nullable': True}]},
+            table_def.get_manifest_dictionary('out')
+        )
+
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
+
+
+class TestFileDefinition(unittest.TestCase):
+
+    def setUp(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'data_examples', 'data1')
+        os.environ["KBC_DATADIR"] = path
+
+    def test_file_manifest_minimal(self):
+        file_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
+        file_def = FileDefinition(file_path)
+
+        self.assertDictEqual(
+            {
+                'name': '151971405_21702.strip.print.gif',
+                'is_public': False,
+                'is_permanent': False,
+                'is_encrypted': False,
+                'notify': False},
+            file_def.get_manifest_dictionary()
+        )
+
+    def test_file_manifest_full(self):
+        file_def = FileDefinition("123_test_Def", is_permanent=True,
+                                  is_encrypted=True,
+                                  is_public=True,
+                                  tags=['foo', 'bar'],
+                                  notify=True,
+                                  id="123"
+                                  )
+
+        self.assertDictEqual(
+            {'tags': ['foo', 'bar'],
+             'is_public': True,
+             'is_permanent': True,
+             'is_encrypted': True,
+             'notify': True,
+             'name': 'test_Def',
+             'id': '123'
+             },
+            file_def.get_manifest_dictionary('out')
+        )
+        self.assertEqual(file_def.name, 'test_Def')
+        self.assertEqual(file_def.id, '123')
+
+    def test_file_output_manifest_ignores_unrecognized(self):
+        file_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files',
+                                 '151971405_21702.strip.print.gif.manifest')
+        file_def = FileDefinition.build_from_manifest(file_path)
+
+        # change stage
+        file_def.stage = 'out'
+
+        self.assertDictEqual(
+            {'created': '2015-11-01T20:14:19+0100', 'id': 151971405, 'is_encrypted': True, 'is_permanent': False,
+             'is_public': False, 'max_age_days': 180, 'name': '21702.strip.print.gif', 'notify': False,
+             'size_bytes': 4931, 'tags': ['dilbert']},
+            file_def.get_manifest_dictionary()
+        )
+
+    def test_build_from_manifest_matching_file_valid_attributes(self):
+        sample_path = os.path.join(os.environ["KBC_DATADIR"], 'in', 'files', '151971405_21702.strip.print.gif')
+        manifest_path = sample_path + '.manifest'
+        file_def = FileDefinition.build_from_manifest(
+            manifest_path)
+
+        expected_manifest = json.load(open(manifest_path))
+
+        self.assertEqual(sample_path, file_def.full_path)
+        self.assertEqual(expected_manifest['name'], file_def.name)
+        self.assertEqual(datetime.strptime(expected_manifest['created'], dao.KBC_DEFAULT_TIME_FORMAT),
+                         file_def.created)
+        self.assertEqual(expected_manifest['is_public'], file_def.is_public)
+        self.assertEqual(expected_manifest['is_encrypted'], file_def.is_encrypted)
+        self.assertEqual(expected_manifest['tags'], file_def.tags)
+        self.assertEqual(expected_manifest['max_age_days'], file_def.max_age_days)
+        self.assertEqual(expected_manifest['size_bytes'], file_def.size_bytes)
+
+    def test_build_from_manifest_nonexistentfile_fails(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data1', 'in', 'files')
+
+        with self.assertRaises(ValueError):
+            FileDefinition.build_from_manifest(os.path.join(sample_path, 'orphaned.csv.manifest'))
+
+    def test_user_tags(self):
+        all_tags = ['foo',
+                    'bar',
+                    'componentId: 1234',
+                    'configurationId: 12345',
+                    'configurationRowId: 12345',
+                    'runId: 22123',
+                    'branchId: 312321'
+                    ]
+        file_def = FileDefinition("123_test_Def", is_permanent=True,
+                                  is_encrypted=True,
+                                  is_public=True,
+                                  tags=all_tags,
+                                  notify=True
+                                  )
+
+        self.assertDictEqual(
+            {'tags': all_tags,
+             'is_public': True,
+             'is_permanent': True,
+             'is_encrypted': True,
+             'notify': True,
+             'name': '123_test_Def'
+             },
+            file_def.get_manifest_dictionary()
+        )
+
+        self.assertEqual(['foo', 'bar'], file_def.user_tags)
+
+    def test_all_tags(self):
+        all_tags = ['foo',
+                    'bar',
+                    'componentId: 1234',
+                    'configurationId: 12345',
+                    'configurationRowId: 12345',
+                    'runId: 22123',
+                    'branchId: 312321'
+                    ]
+        file_def = FileDefinition("123_test_Def",
+                                  tags=all_tags
+                                  )
+
+        self.assertEqual(all_tags, file_def.tags)

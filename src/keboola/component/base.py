@@ -334,6 +334,7 @@ class ComponentBase(ABC, CommonInterface):
             table_metadata.add_table_description(table_schema.description)
         table_metadata.add_column_descriptions({field.name: field.description for field in table_schema.fields})
         table_metadata = self._add_field_data_types_to_table_metadata(table_schema, table_metadata)
+
         return table_metadata
 
     @staticmethod
