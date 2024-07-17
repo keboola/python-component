@@ -786,8 +786,8 @@ class TableDefinition(IODefinition):
                  full_path: Optional[Union[str, None]] = None,
                  is_sliced: Optional[bool] = False,
                  destination: Optional[str] = '',
-                 has_header: Optional[bool] = True,
                  primary_key: Optional[List[str]] = None,
+                 schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
                  incremental: Optional[bool] = None,
                  table_metadata: Optional[TableMetadata] = None,
                  enclosure: Optional[str] = '"',
@@ -795,7 +795,7 @@ class TableDefinition(IODefinition):
                  delete_where: Optional[dict] = None,
                  stage: Optional[str] = None,
                  write_always: Optional[bool] = False,
-                 schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
+                 has_header: Optional[bool] = True,
                  # input
                  **kwargs
                  ):
@@ -838,7 +838,7 @@ class TableDefinition(IODefinition):
             self.schema = schema
         # deprecated argument for backward compatibility
         if kwargs.get('columns'):
-            self.schema = kwargs['columns']
+            self.columns = kwargs['columns']
 
         self.primary_key = primary_key
         self._incremental = incremental
@@ -874,6 +874,7 @@ class TableDefinition(IODefinition):
         if self._uri:
             return 'in'
         return 'out'
+
     @classmethod
     def build_output_definition(cls, name: str,
                                 destination: Optional[str] = '',
@@ -1382,6 +1383,7 @@ class TableDefinition(IODefinition):
             return datetime.strptime(self._created, KBC_DEFAULT_TIME_FORMAT)
         else:
             return None
+
     @property
     def uri(self) -> str:
         return self._uri
@@ -1397,10 +1399,6 @@ class TableDefinition(IODefinition):
     @property
     def is_alias(self) -> bool:
         return self._is_alias
-
-
-
-
 
     def add_column(self, name: str, definition: ColumnDefinition = ColumnDefinition()):
         """

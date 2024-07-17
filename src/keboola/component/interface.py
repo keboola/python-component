@@ -7,15 +7,15 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, OrderedDict
 
 from deprecated import deprecated
 from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
 
 from . import dao
-from .exceptions import UserException
 from .dao import ColumnDefinition
+from .exceptions import UserException
 
 
 def register_csv_dialect():
@@ -331,7 +331,8 @@ class CommonInterface:
                                  delimiter: str = ',',
                                  delete_where: dict = None,
                                  write_always: bool = False,
-                                 schema: List[ColumnDefinition] = None) -> dao.TableDefinition:
+                                 schema: Union[
+                                     OrderedDict[str, ColumnDefinition], list[str]] = None) -> dao.TableDefinition:
         """
                 Helper method for dao.TableDefinition creation along with the "manifest".
                 It initializes path according to the storage_stage type.
@@ -416,14 +417,16 @@ class CommonInterface:
                                     is_sliced: bool = False,
                                     destination: str = '',
                                     primary_key: List[str] = None,
-                                    columns: List[str] = None,
+                                    schema: Union[dict[str, ColumnDefinition], OrderedDict[str, ColumnDefinition], list[
+                                        str]] = None,
                                     incremental: bool = None,
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = '"',
                                     delimiter: str = ',',
                                     delete_where: dict = None,
                                     write_always: bool = False,
-                                    schema: List[ColumnDefinition] = False) -> dao.TableDefinition:
+                                    **kwargs
+                                    ) -> dao.TableDefinition:
         """
                        Helper method for output dao.TableDefinition creation along with the "manifest".
                        It initializes path in data/tables/out/ folder.
@@ -433,7 +436,9 @@ class CommonInterface:
                            is_sliced: True if the full_path points to a folder with sliced tables
                            destination: String name of the table in Storage.
                            primary_key: List with names of columns used for primary key.
-                           columns: List of columns for headless CSV files
+                           schema: List of columns or mapping of column names and ColumnDefinition objects.
+                            if list of strings is provided, the columns will be created with default settings
+                            (BaseType.string)
                            incremental: Set to true to enable incremental loading
                            table_metadata: <.dao.TableMetadata> object containing column and table metadata
                            enclosure: str: CSV enclosure, by default "
@@ -448,7 +453,7 @@ class CommonInterface:
                                              is_sliced=is_sliced,
                                              destination=destination,
                                              primary_key=primary_key,
-                                             columns=columns,
+                                             columns=kwargs.get('columns'),
                                              incremental=incremental,
                                              table_metadata=table_metadata,
                                              enclosure=enclosure,

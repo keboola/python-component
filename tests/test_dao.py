@@ -136,6 +136,19 @@ class TestTableMetadata(unittest.TestCase):
 
 class TestTableDefinition(unittest.TestCase):
 
+    def test_legacy_order(self):
+        table_def = TableDefinition("testDef", "somepath", False, 'some-destination', ['foo'], ['foo', 'bar'], True,
+                                    TableMetadata(), '"', ',',
+                                    {'column': 'lilly', 'values': ['a', 'b'], 'operator': 'eq'},
+                                    'in', False
+                                    )
+
+        self.assertEqual(
+            {'destination': 'some-destination', 'incremental': True, 'primary_key': ['foo'], 'write_always': False,
+             'delimiter': ',', 'enclosure': '"', 'delete_where_column': 'lilly', 'delete_where_values': ['a', 'b'],
+             'delete_where_operator': 'eq', 'columns': ['foo', 'bar']},
+            table_def.get_manifest_dictionary(legacy_manifest=True))
+
     def test_table_manifest_minimal(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
                                     columns=['foo', 'bar'],
