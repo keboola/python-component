@@ -50,28 +50,113 @@ Returns: dataclass of specified type</p></div>
 <dl>
 <dt id="keboola.component.dao.BaseType"><code class="flex name class">
 <span>class <span class="ident">BaseType</span></span>
-<span>(</span><span>dtype: <a title="keboola.component.dao.SupportedDataTypes" href="#keboola.component.dao.SupportedDataTypes">SupportedDataTypes</a> = SupportedDataTypes.STRING, length: Optional[int] = None, default: Optional[str] = None)</span>
+<span>(</span><span>dtype: <a title="keboola.component.dao.SupportedDataTypes" href="#keboola.component.dao.SupportedDataTypes">SupportedDataTypes</a> = SupportedDataTypes.STRING, length: Optional[str] = None, default: Optional[str] = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>DataType(dtype: str, length: Optional[int] = None, default: Optional[str] = None)</p></div>
+<div class="desc"><p>dict() -&gt; new empty dictionary
+dict(mapping) -&gt; new dictionary initialized from a mapping object's
+(key, value) pairs
+dict(iterable) -&gt; new dictionary initialized as if via:
+d = {}
+for k, v in iterable:
+d[k] = v
+dict(**kwargs) -&gt; new dictionary initialized with the name=value pairs
+in the keyword argument list.
+For example:
+dict(one=1, two=2)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class BaseType(DataType):
-    def __init__(self, dtype: SupportedDataTypes = SupportedDataTypes.STRING, length: Optional[int] = None,
+<pre><code class="python">class BaseType(dict):
+    def __init__(self, dtype: SupportedDataTypes = SupportedDataTypes.STRING, length: Optional[str] = None,
                  default: Optional[str] = None):
-        super().__init__(dtype=dtype, length=length, default=default)</code></pre>
+        super().__init__(base=DataType(dtype=dtype, length=length, default=default))
+
+    @classmethod
+    def string(cls, length: Optional[str] = None, default: Optional[str] = None) -&gt; &#39;BaseType&#39;:
+        return BaseType(dtype=SupportedDataTypes.STRING, length=length, default=default)
+
+    @classmethod
+    def integer(cls, length: Optional[str] = None,
+                default: Optional[str] = None) -&gt; &#39;BaseType&#39;:
+        return BaseType(dtype=SupportedDataTypes.INTEGER, length=length, default=default)
+
+    @classmethod
+    def numeric(cls, length: Optional[str] = None,
+                default: Optional[str] = None) -&gt; &#39;BaseType&#39;:
+        return BaseType(dtype=SupportedDataTypes.NUMERIC, length=length, default=default)
+
+    @classmethod
+    def float(cls, length: Optional[str] = None,
+              default: Optional[str] = None) -&gt; &#39;BaseType&#39;:
+        return BaseType(dtype=SupportedDataTypes.FLOAT, length=length, default=default)
+
+    @classmethod
+    def boolean(cls, default: Optional[str] = None) -&gt; &#39;BaseType&#39;:
+        return BaseType(dtype=SupportedDataTypes.BOOLEAN, default=default)
+
+    @classmethod
+    def date(cls, default: Optional[str] = None) -&gt; &#39;BaseType&#39;:
+        return BaseType(dtype=SupportedDataTypes.DATE, default=default)
+
+    @classmethod
+    def timestamp(cls, default: Optional[str] = None) -&gt; &#39;BaseType&#39;:
+        return BaseType(dtype=SupportedDataTypes.TIMESTAMP, default=default)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a></li>
 <li>builtins.dict</li>
 </ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="keboola.component.dao.BaseType.boolean"><code class="name flex">
+<span>def <span class="ident">boolean</span></span>(<span>default: Optional[str] = None) ‑> <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.BaseType.date"><code class="name flex">
+<span>def <span class="ident">date</span></span>(<span>default: Optional[str] = None) ‑> <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.BaseType.float"><code class="name flex">
+<span>def <span class="ident">float</span></span>(<span>length: Optional[str] = None, default: Optional[str] = None) ‑> <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.BaseType.integer"><code class="name flex">
+<span>def <span class="ident">integer</span></span>(<span>length: Optional[str] = None, default: Optional[str] = None) ‑> <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.BaseType.numeric"><code class="name flex">
+<span>def <span class="ident">numeric</span></span>(<span>length: Optional[str] = None, default: Optional[str] = None) ‑> <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.BaseType.string"><code class="name flex">
+<span>def <span class="ident">string</span></span>(<span>length: Optional[str] = None, default: Optional[str] = None) ‑> <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.BaseType.timestamp"><code class="name flex">
+<span>def <span class="ident">timestamp</span></span>(<span>default: Optional[str] = None) ‑> <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 </dd>
 <dt id="keboola.component.dao.ColumnDefinition"><code class="flex name class">
 <span>class <span class="ident">ColumnDefinition</span></span>
-<span>(</span><span>data_types: Union[Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>], <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a>, ForwardRef(None)] = &lt;factory&gt;, nullable: Optional[bool] = True, primary_key: Optional[bool] = False, description: Optional[str] = None, metadata: Optional[Dict[str, str]] = None)</span>
+<span>(</span><span>data_types: Optional[Union[Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>], <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a>]] = &lt;factory&gt;, nullable: Optional[bool] = True, primary_key: Optional[bool] = False, description: Optional[str] = None, metadata: Optional[Dict[str, str]] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Represents the definition of a column within a table schema.</p>
@@ -116,15 +201,6 @@ class ColumnDefinition:
     primary_key: Optional[bool] = False
     description: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
-
-    def __post_init__(self):
-        if isinstance(self.data_types, DataType):
-            self.data_types = {&#34;base&#34;: self.data_types}
-
-    def normalize_data_type(self, data_type: Union[Dict[str, DataType], BaseType]) -&gt; Dict[str, DataType]:
-        if isinstance(data_type, DataType):
-            return {&#34;base&#34;: data_type}
-        return data_type
 
     def update_properties(self, **kwargs):
         for key, value in kwargs.items():
@@ -211,12 +287,6 @@ class ColumnDefinition:
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="keboola.component.dao.ColumnDefinition.normalize_data_type"><code class="name flex">
-<span>def <span class="ident">normalize_data_type</span></span>(<span>self, data_type: Union[Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>], <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a>]) ‑> Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>]</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 <dt id="keboola.component.dao.ColumnDefinition.to_dict"><code class="name flex">
 <span>def <span class="ident">to_dict</span></span>(<span>self, name: str)</span>
 </code></dt>
@@ -239,32 +309,24 @@ class ColumnDefinition:
 </dd>
 <dt id="keboola.component.dao.DataType"><code class="flex name class">
 <span>class <span class="ident">DataType</span></span>
-<span>(</span><span>dtype: str, length: Optional[int] = None, default: Optional[str] = None)</span>
+<span>(</span><span>dtype: str, length: Optional[str] = None, default: Optional[str] = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>DataType(dtype: str, length: Optional[int] = None, default: Optional[str] = None)</p></div>
+<div class="desc"><p>DataType(dtype: 'str', length: 'Optional[str]' = None, default: 'Optional[str]' = None)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@dataclass
-class DataType(dict):
+class DataType:
     dtype: str
-    length: Optional[int] = None
+    length: Optional[str] = None
     default: Optional[str] = None
 
     def __post_init__(self):
         if isinstance(self.dtype, SupportedDataTypes):
             self.dtype = self.dtype.value</code></pre>
 </details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>builtins.dict</li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a></li>
-</ul>
 <h3>Class variables</h3>
 <dl>
 <dt id="keboola.component.dao.DataType.default"><code class="name">var <span class="ident">default</span> : Optional[str]</code></dt>
@@ -275,7 +337,7 @@ class DataType(dict):
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="keboola.component.dao.DataType.length"><code class="name">var <span class="ident">length</span> : Optional[int]</code></dt>
+<dt id="keboola.component.dao.DataType.length"><code class="name">var <span class="ident">length</span> : Optional[str]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -903,7 +965,7 @@ and whether project administrators should be notified upon file upload.</p>
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="keboola.component.dao.FileDefinition.created"><code class="name">prop <span class="ident">created</span> : Optional[datetime.datetime]</code></dt>
+<dt id="keboola.component.dao.FileDefinition.created"><code class="name">prop <span class="ident">created</span> : Union[datetime, None]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1331,7 +1393,7 @@ inheritance.</p></div>
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="keboola.component.dao.IODefinition.abs_staging"><code class="name">prop <span class="ident">abs_staging</span> : Optional[<a title="keboola.component.dao.IODefinition.ABSStaging" href="#keboola.component.dao.IODefinition.ABSStaging">IODefinition.ABSStaging</a>]</code></dt>
+<dt id="keboola.component.dao.IODefinition.abs_staging"><code class="name">prop <span class="ident">abs_staging</span> : Union[ABSStaging, None]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1370,7 +1432,7 @@ def name(self) -&gt; str:
     raise NotImplementedError</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.dao.IODefinition.s3_staging"><code class="name">prop <span class="ident">s3_staging</span> : Optional[<a title="keboola.component.dao.IODefinition.S3Staging" href="#keboola.component.dao.IODefinition.S3Staging">IODefinition.S3Staging</a>]</code></dt>
+<dt id="keboola.component.dao.IODefinition.s3_staging"><code class="name">prop <span class="ident">s3_staging</span> : Union[S3Staging, None]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1544,7 +1606,7 @@ attributes &ndash; see the documentation for details.</p></div>
 <span>(</span><span>id: str, created: str, data: dict, oauthVersion: str, appKey: str, appSecret: str)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>OauthCredentials(id: str, created: str, data: dict, oauthVersion: str, appKey: str, appSecret: str)</p></div>
+<div class="desc"><p>OauthCredentials(id: 'str', created: 'str', data: 'dict', oauthVersion: 'str', appKey: 'str', appSecret: 'str')</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1706,7 +1768,7 @@ class SubscriptableDataclass:
 <span>(</span><span>out_attributes: List[str], in_attributes: List[str], out_legacy_exclude: List[str] = &lt;factory&gt;, in_legacy_exclude: List[str] = &lt;factory&gt;)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>SupportedManifestAttributes(out_attributes: List[str], in_attributes: List[str], out_legacy_exclude: List[str] = <factory>, in_legacy_exclude: List[str] = <factory>)</p></div>
+<div class="desc"><p>SupportedManifestAttributes(out_attributes: 'List[str]', in_attributes: 'List[str]', out_legacy_exclude: 'List[str]' = <factory>, in_legacy_exclude: 'List[str]' = <factory>)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1769,7 +1831,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.SupportedManifestAttributes.get_attributes_by_stage"><code class="name flex">
-<span>def <span class="ident">get_attributes_by_stage</span></span>(<span>self, stage: Literal['in', 'out'], legacy_queue: bool = False, legacy_manifest: bool = False) ‑> List[str]</span>
+<span>def <span class="ident">get_attributes_by_stage</span></span>(<span>self, stage: "Literal['in', 'out']", legacy_queue: bool = False, legacy_manifest: bool = False) ‑> List[str]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1837,7 +1899,7 @@ class TableColumnTypes(SubscriptableDataclass):
 </dd>
 <dt id="keboola.component.dao.TableDefinition"><code class="flex name class">
 <span>class <span class="ident">TableDefinition</span></span>
-<span>(</span><span>name: str, full_path: Optional[str] = None, is_sliced: Optional[bool] = False, destination: Optional[str] = '', primary_key: Optional[List[str]] = None, columns: Optional[List[str]] = None, incremental: Optional[bool] = None, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, stage: Optional[str] = 'in', write_always: Optional[bool] = False, schema: Optional[OrderedDict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>]] = None, rows_count: Optional[int] = None, data_size_bytes: Optional[int] = None, is_alias: Optional[bool] = False, has_header: Optional[bool] = None, uri: Optional[str] = None, id: Optional[str] = '', created: Optional[str] = None, last_change_date: Optional[str] = None, last_import_date: Optional[str] = None)</span>
+<span>(</span><span>name: str, full_path: Optional[Union[str, None]] = None, is_sliced: Optional[bool] = False, destination: Optional[str] = '', primary_key: Optional[List[str]] = None, schema: Optional[Union[TypeOrderedDict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>], list[str]]] = None, incremental: Optional[bool] = None, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, stage: Optional[str] = None, write_always: Optional[bool] = False, has_header: Optional[bool] = None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Table definition class. It is used as a container for <code>in/tables/</code> files.
@@ -1893,12 +1955,12 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
 <dt><a href="https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace">https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace</a>)</dt>
 <dt><strong><code>is_sliced</code></strong></dt>
 <dd>True if the full_path points to a folder with sliced tables</dd>
+<dt><strong><code>has_header</code></strong></dt>
+<dd>True if the file has a header, if emtpy inferred.</dd>
 <dt><strong><code>destination</code></strong></dt>
 <dd>String name of the table in Storage.</dd>
 <dt><strong><code>primary_key</code></strong></dt>
 <dd>List with names of columns used for primary key.</dd>
-<dt><strong><code>columns</code></strong></dt>
-<dd>List of columns for headless CSV files</dd>
 <dt><strong><code>incremental</code></strong></dt>
 <dd>Set to true to enable incremental loading</dd>
 <dt><strong><code>table_metadata</code></strong></dt>
@@ -1915,7 +1977,7 @@ The full_path is None when dealing with <a href="https://developers.keboola.com/
 <dd>Bool: If true, the table will be saved to Storage even when the job execution
 fails.</dd>
 <dt><strong><code>schema</code></strong></dt>
-<dd>(dict) Mapping of column names andColumnDefinition objects</dd>
+<dd>(dict|lis[str]) Mapping of column names andColumnDefinition objects, or a list of names</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1999,29 +2061,19 @@ fails.</dd>
     def __init__(self, name: str,
                  full_path: Optional[Union[str, None]] = None,
                  is_sliced: Optional[bool] = False,
-
                  destination: Optional[str] = &#39;&#39;,
                  primary_key: Optional[List[str]] = None,
-                 columns: Optional[List[str]] = None,
+                 schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
                  incremental: Optional[bool] = None,
                  table_metadata: Optional[TableMetadata] = None,
                  enclosure: Optional[str] = &#39;&#34;&#39;,
                  delimiter: Optional[str] = &#39;,&#39;,
                  delete_where: Optional[dict] = None,
-                 stage: Optional[str] = &#39;in&#39;,
+                 stage: Optional[str] = None,
                  write_always: Optional[bool] = False,
-                 schema: Optional[TypeOrderedDict[str, ColumnDefinition]] = None,
-                 rows_count: Optional[int] = None,
-                 data_size_bytes: Optional[int] = None,
-                 is_alias: Optional[bool] = False,
                  has_header: Optional[bool] = None,
-
                  # input
-                 uri: Optional[str] = None,
-                 id: Optional[str] = &#39;&#39;,
-                 created: Optional[str] = None,
-                 last_change_date: Optional[str] = None,
-                 last_import_date: Optional[str] = None
+                 **kwargs
                  ):
         &#34;&#34;&#34;
 
@@ -2035,9 +2087,9 @@ fails.</dd>
                 The full_path is None when dealing with [workspaces](
                 https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace)
             is_sliced: True if the full_path points to a folder with sliced tables
+            has_header: True if the file has a header, if emtpy inferred.
             destination: String name of the table in Storage.
             primary_key: List with names of columns used for primary key.
-            columns: List of columns for headless CSV files
             incremental: Set to true to enable incremental loading
             table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata (deprecated)
             enclosure: str: CSV enclosure, by default &#34;
@@ -2046,19 +2098,28 @@ fails.</dd>
             stage: str: Storage Stage &#39;in&#39; or &#39;out&#39;
             write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
-            schema: (dict) Mapping of column names andColumnDefinition objects
+            schema: (dict|lis[str]) Mapping of column names andColumnDefinition objects, or a list of names
 
         &#34;&#34;&#34;
         super().__init__(full_path)
         self._name = name
         self.is_sliced = is_sliced
 
-        self.schema = schema
-
         # initialize manifest properties
         self._destination = None
         self.destination = destination
-        self.columns = columns
+        self._schema = dict()
+
+        if schema:
+            self.schema = schema
+        # deprecated argument for backward compatibility
+        self._legacy_mode = False
+        if kwargs.get(&#39;force_legacy_mode&#39;):
+            self._legacy_mode = True
+        if kwargs.get(&#39;columns&#39;):
+            self.columns = kwargs[&#39;columns&#39;]
+
+        self._legacy_primary_key = list()
         self.primary_key = primary_key
         self._incremental = incremental
 
@@ -2074,20 +2135,25 @@ fails.</dd>
         self.delete_where_operator = None
 
         self.set_delete_where_from_dict(delete_where)
-        self.stage = stage
         self.write_always = write_always
-        self.legacy_columns = columns
-        self.has_header = has_header or self._has_header_in_file()
 
         # input manifest properties
-        self._id = id
-        self._uri = uri
-        self._created = created
-        self._last_change_date = last_change_date
-        self._last_import_date = last_import_date
-        self._rows_count = rows_count
-        self._data_size_bytes = data_size_bytes
-        self._is_alias = is_alias
+        self._id = kwargs.get(&#39;id&#39;)
+        self._uri = kwargs.get(&#39;uri&#39;)
+        self._created = kwargs.get(&#39;created&#39;)
+        self._last_change_date = kwargs.get(&#39;last_change_date&#39;)
+        self._last_import_date = kwargs.get(&#39;last_import_date&#39;)
+        self._rows_count = kwargs.get(&#39;rows_count&#39;)
+        self._data_size_bytes = kwargs.get(&#39;data_size_bytes&#39;)
+        self._is_alias = kwargs.get(&#39;is_alias&#39;)
+
+        self.stage = stage if stage else self.__get_stage_inferred()
+        self.has_header = has_header or self._has_header_in_file()
+
+    def __get_stage_inferred(self):
+        if self._uri:
+            return &#39;in&#39;
+        return &#39;out&#39;
 
     @classmethod
     def build_output_definition(cls, name: str,
@@ -2238,6 +2304,7 @@ fails.</dd>
                 schema[col.get(&#34;name&#34;)] = ColumnDefinition().from_dict(col)
 
         else:
+            # legacy support
             columns_metadata = json_data.get(&#39;column_metadata&#39;, {})
             primary_key = json_data.get(&#39;primary_key&#39;, [])
             columns = json_data.get(&#39;columns&#39;, [])
@@ -2304,11 +2371,19 @@ fails.</dd>
         else:
             name = Path(manifest_file_path).stem
 
+        # test if the manifest is output and incompatible
+        force_legacy_mode = False
+        if not manifest.get(&#39;columns&#39;) and manifest.get(&#39;primary_key&#39;):
+            warnings.warn(&#39;Primary key is set but columns are not. Forcing legacy mode for CSV file.&#39;,
+                          DeprecationWarning)
+            force_legacy_mode = True
+
         table_def = cls(name=name,
                         full_path=full_path,
                         is_sliced=is_sliced,
                         id=manifest.get(&#39;id&#39;),
                         table_metadata=TableMetadata(manifest),
+                        primary_key=manifest.get(&#39;primary_key&#39;),
                         schema=cls.return_schema_from_manifest(manifest),
                         uri=manifest.get(&#39;uri&#39;),
                         created=manifest.get(&#39;created&#39;),
@@ -2316,12 +2391,13 @@ fails.</dd>
                         last_import_date=manifest.get(&#39;last_import_date&#39;),
                         rows_count=manifest.get(&#39;rows_count&#39;),
                         data_size_bytes=manifest.get(&#39;data_size_bytes&#39;),
-                        is_alias=manifest.get(&#39;is_alias&#39;)
+                        is_alias=manifest.get(&#39;is_alias&#39;),
+                        force_legacy_mode=force_legacy_mode
                         )
 
         return table_def
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = &#39;out&#39;, legacy_queue: bool = False,
                                 legacy_manifest: Optional[bool] = None) -&gt; dict:
         &#34;&#34;&#34;
         Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
@@ -2348,6 +2424,8 @@ fails.</dd>
         if not manifest_type:
             manifest_type = self.stage
 
+        if self._legacy_mode:
+            legacy_manifest = True
         dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, legacy_manifest)
 
         filtered_dictionary = self._filter_dictionary(dictionary)
@@ -2393,14 +2471,13 @@ fails.</dd>
             &#39;is_alias&#39;: self._is_alias,
 
             &#39;destination&#39;: self.destination,
-            &#39;columns&#39;: self.columns if not legacy_manifest else self.legacy_columns,
             &#39;incremental&#39;: self.incremental,
             &#39;primary_key&#39;: self.primary_key,
             &#39;write_always&#39;: self.write_always,
             &#39;delimiter&#39;: self.delimiter,
             &#39;enclosure&#39;: self.enclosure,
             &#39;metadata&#39;: self.table_metadata.get_table_metadata_for_manifest(legacy_manifest=True),
-            &#39;column_metadata&#39;: self.table_metadata.get_column_metadata_for_manifest(),
+            &#39;column_metadata&#39;: self.table_metadata._get_legacy_column_metadata_for_manifest(),
             &#39;manifest_type&#39;: manifest_type,
             &#39;has_header&#39;: self.has_header,
             &#39;description&#39;: None,
@@ -2409,8 +2486,10 @@ fails.</dd>
             &#39;delete_where_values&#39;: self.delete_where_values,
             &#39;delete_where_operator&#39;: self.delete_where_operator,
             &#39;schema&#39;: [col.to_dict(name)
-                       for name, col in self.schema.items()] if isinstance(self.schema, OrderedDict) else []
+                       for name, col in self.schema.items()] if isinstance(self.schema, (OrderedDict, dict)) else []
         }
+        if legacy_manifest:
+            fields[&#39;columns&#39;] = self.column_names
 
         new_dict = fields.copy()
 
@@ -2423,7 +2502,7 @@ fails.</dd>
     def _has_header_in_file(self):
         if self.is_sliced:
             has_header = False
-        elif self.columns and not self.stage == &#39;in&#39;:
+        elif self.column_names and not self.stage == &#39;in&#39;:
             has_header = False
         else:
             has_header = True
@@ -2434,10 +2513,17 @@ fails.</dd>
         return self._schema
 
     @schema.setter
-    def schema(self, value):
-        self._schema = OrderedDict()
+    def schema(self, value: Union[TypeOrderedDict[str, ColumnDefinition], list[str]]):
         if value:
-            self._schema = value
+            if not isinstance(value, (list, dict, OrderedDict)):
+                raise TypeError(&#34;Columns must be a list or a mapping of column names and ColumnDefinition objects&#34;)
+
+            if isinstance(value, list):
+                self._schema = OrderedDict()
+                for col in value:
+                    self._schema[col] = ColumnDefinition()
+            else:
+                self._schema = value
 
     @property
     def _manifest_attributes(self) -&gt; SupportedManifestAttributes:
@@ -2491,21 +2577,27 @@ fails.</dd>
     @property
     @deprecated(version=&#39;1.5.1&#39;, reason=&#34;Please use new column_names method instead of columns property&#34;)
     def columns(self) -&gt; List[str]:
-        if isinstance(self.schema, OrderedDict):
+        if isinstance(self.schema, (OrderedDict, dict)):
             return list(self.schema.keys())
         else:
             return []
 
     @columns.setter
-    @deprecated(version=&#39;1.5.1&#39;, reason=&#34;Columns can be set by add_columns method&#34;)
+    @deprecated(version=&#39;1.5.1&#39;, reason=&#34;Please use new column_names method instead of schema property&#34;)
     def columns(self, val: List[str]):
-        if val:
-            if not isinstance(val, list):
-                raise TypeError(&#34;Columns must be a list&#34;)
+        &#34;&#34;&#34;
+        Set columns for the table.
+        If list of names provided, the columns will be created with default settings Basetype.String.
+        Args:
+            val:
 
-            self.schema = OrderedDict()
-            for col in val:
-                self.schema[col] = ColumnDefinition()
+        Returns:
+
+        &#34;&#34;&#34;
+        if not isinstance(val, list):
+            raise TypeError(&#34;Columns must be a list&#34;)
+
+        self.schema = val
 
     @property
     def column_names(self) -&gt; List[str]:
@@ -2533,8 +2625,10 @@ fails.</dd>
 
     @property
     def primary_key(self) -&gt; List[str]:
-        if isinstance(self.schema, OrderedDict):
+        if not self._legacy_mode:
             return [column_name for column_name, column_def in self.schema.items() if column_def.primary_key]
+        else:
+            return self._legacy_primary_key
 
     @primary_key.setter
     def primary_key(self, primary_key: List[str]):
@@ -2543,12 +2637,15 @@ fails.</dd>
 
         if not isinstance(primary_key, list):
             raise TypeError(&#34;Primary key must be a list&#34;)
-
-        for col in primary_key:
-            if col in self.schema:
-                self.schema[col].primary_key = True
-            else:
-                raise UserException(f&#34;Primary key column {col} not found in columns&#34;)
+        if not self._legacy_mode:
+            for col in primary_key:
+                if col in self.schema:
+                    self.schema[col].primary_key = True
+                else:
+                    raise UserException(f&#34;Primary key column {col} not found in schema. &#34;
+                                        f&#34;Please specify all columns / schema&#34;)
+        else:
+            self._legacy_primary_key = primary_key
 
     @property
     def delimiter(self) -&gt; str:
@@ -2573,8 +2670,8 @@ fails.</dd>
     @table_metadata.setter
     def table_metadata(self, table_metadata: TableMetadata):
         self._table_metadata = table_metadata
-
-        for col, val in table_metadata.get_column_metadata_for_manifest().items():
+        # backward compatibility legacy support
+        for col, val in table_metadata._get_legacy_column_metadata_for_manifest().items():
             self.schema[col].metadata = {item[&#39;key&#39;]: item[&#39;value&#39;] for item in val}
 
     @property
@@ -2583,6 +2680,22 @@ fails.</dd>
             return datetime.strptime(self._created, KBC_DEFAULT_TIME_FORMAT)
         else:
             return None
+
+    @property
+    def uri(self) -&gt; str:
+        return self._uri
+
+    @property
+    def last_change_date(self) -&gt; str:
+        return self._last_change_date
+
+    @property
+    def last_import_date(self) -&gt; str:
+        return self._last_import_date
+
+    @property
+    def is_alias(self) -&gt; bool:
+        return self._is_alias
 
     def add_column(self, name: str, definition: ColumnDefinition = ColumnDefinition()):
         &#34;&#34;&#34;
@@ -2694,7 +2807,7 @@ if the counterpart table is not found.</p>
 table with no input manifest.</p></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.build_input_definition"><code class="name flex">
-<span>def <span class="ident">build_input_definition</span></span>(<span>name: str, full_path: Optional[str] = None, is_sliced: Optional[bool] = False, destination: Optional[str] = '', primary_key: Optional[List[str]] = None, columns: Optional[List[str]] = None, incremental: Optional[bool] = None, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, stage: Optional[str] = 'in', write_always: Optional[bool] = False, schema: Optional[List[<a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>]] = None, rows_count: Optional[int] = None, data_size_bytes: Optional[int] = None, is_alias: Optional[bool] = False, uri: Optional[str] = None, id: Optional[str] = '', created: Optional[str] = None, last_change_date: Optional[str] = None, last_import_date: Optional[str] = None)</span>
+<span>def <span class="ident">build_input_definition</span></span>(<span>name: str, full_path: Optional[Union[str, None]] = None, is_sliced: Optional[bool] = False, destination: Optional[str] = '', primary_key: Optional[List[str]] = None, columns: Optional[List[str]] = None, incremental: Optional[bool] = None, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, stage: Optional[str] = 'in', write_always: Optional[bool] = False, schema: Optional[List[<a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>]] = None, rows_count: Optional[int] = None, data_size_bytes: Optional[int] = None, is_alias: Optional[bool] = False, uri: Optional[str] = None, id: Optional[str] = '', created: Optional[str] = None, last_change_date: Optional[str] = None, last_import_date: Optional[str] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Factory method for creating a TableDefinition instance for input tables.</p>
@@ -2839,13 +2952,13 @@ def column_names(self) -&gt; List[str]:
 <pre><code class="python">@property
 @deprecated(version=&#39;1.5.1&#39;, reason=&#34;Please use new column_names method instead of columns property&#34;)
 def columns(self) -&gt; List[str]:
-    if isinstance(self.schema, OrderedDict):
+    if isinstance(self.schema, (OrderedDict, dict)):
         return list(self.schema.keys())
     else:
         return []</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.dao.TableDefinition.created"><code class="name">prop <span class="ident">created</span> : Optional[datetime.datetime]</code></dt>
+<dt id="keboola.component.dao.TableDefinition.created"><code class="name">prop <span class="ident">created</span> : Union[datetime, None]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -2940,6 +3053,42 @@ def incremental(self) -&gt; bool:
     return self._incremental</code></pre>
 </details>
 </dd>
+<dt id="keboola.component.dao.TableDefinition.is_alias"><code class="name">prop <span class="ident">is_alias</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_alias(self) -&gt; bool:
+    return self._is_alias</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.dao.TableDefinition.last_change_date"><code class="name">prop <span class="ident">last_change_date</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def last_change_date(self) -&gt; str:
+    return self._last_change_date</code></pre>
+</details>
+</dd>
+<dt id="keboola.component.dao.TableDefinition.last_import_date"><code class="name">prop <span class="ident">last_import_date</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def last_import_date(self) -&gt; str:
+    return self._last_import_date</code></pre>
+</details>
+</dd>
 <dt id="keboola.component.dao.TableDefinition.primary_key"><code class="name">prop <span class="ident">primary_key</span> : List[str]</code></dt>
 <dd>
 <div class="desc"></div>
@@ -2949,8 +3098,10 @@ def incremental(self) -&gt; bool:
 </summary>
 <pre><code class="python">@property
 def primary_key(self) -&gt; List[str]:
-    if isinstance(self.schema, OrderedDict):
-        return [column_name for column_name, column_def in self.schema.items() if column_def.primary_key]</code></pre>
+    if not self._legacy_mode:
+        return [column_name for column_name, column_def in self.schema.items() if column_def.primary_key]
+    else:
+        return self._legacy_primary_key</code></pre>
 </details>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.rows_count"><code class="name">prop <span class="ident">rows_count</span> : int</code></dt>
@@ -2969,7 +3120,7 @@ def rows_count(self) -&gt; int:
     return self._rows_count</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.dao.TableDefinition.schema"><code class="name">prop <span class="ident">schema</span> : OrderedDict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>]</code></dt>
+<dt id="keboola.component.dao.TableDefinition.schema"><code class="name">prop <span class="ident">schema</span> : TypeOrderedDict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -2993,6 +3144,18 @@ def table_metadata(self) -&gt; TableMetadata:
     return self._table_metadata</code></pre>
 </details>
 </dd>
+<dt id="keboola.component.dao.TableDefinition.uri"><code class="name">prop <span class="ident">uri</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def uri(self) -&gt; str:
+    return self._uri</code></pre>
+</details>
+</dd>
 <dt id="keboola.component.dao.TableDefinition.write_always"><code class="name">prop <span class="ident">write_always</span> : bool</code></dt>
 <dd>
 <div class="desc"></div>
@@ -3009,7 +3172,7 @@ def write_always(self) -&gt; bool:
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.TableDefinition.add_column"><code class="name flex">
-<span>def <span class="ident">add_column</span></span>(<span>self, name: str, definition: <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a> = ColumnDefinition(data_types={'base': BaseType(dtype='STRING', length=None, default=None)}, nullable=True, primary_key=False, description=None, metadata=None))</span>
+<span>def <span class="ident">add_column</span></span>(<span>self, name: str, definition: <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a> = ColumnDefinition(data_types={'base': DataType(dtype='STRING', length=None, default=None)}, nullable=True, primary_key=False, description=None, metadata=None))</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Add column definition, accepts either ColumnDefinition or a string
@@ -3034,7 +3197,7 @@ def write_always(self) -&gt; bool:
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = None, legacy_queue: bool = False, legacy_manifest: Optional[bool] = None) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = 'out', legacy_queue: bool = False, legacy_manifest: Optional[bool] = None) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
@@ -3316,6 +3479,22 @@ manifest['column_metadata'] = tm.get_column_metadata_for_manifest()
 
     @deprecated(version=&#39;1.5.1&#39;, reason=&#34;Please use schema instead of Table Metadata&#34;)
     def get_column_metadata_for_manifest(self) -&gt; dict:
+        &#34;&#34;&#34;
+                Returns column metadata dict as required by the
+                [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables
+                -manifests)
+
+                e.g.
+                tm = TableMetadata()
+                manifest[&#39;column_metadata&#39;] = tm.column_metadata
+
+                Returns: dict
+
+        &#34;&#34;&#34;
+
+        return self._get_legacy_column_metadata_for_manifest()
+
+    def _get_legacy_column_metadata_for_manifest(self) -&gt; dict:
         &#34;&#34;&#34;
                 Returns column metadata dict as required by the
                 [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables
@@ -3830,6 +4009,15 @@ class TableOutputMapping(SubscriptableDataclass):
 <ul>
 <li>
 <h4><code><a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a></code></h4>
+<ul class="two-column">
+<li><code><a title="keboola.component.dao.BaseType.boolean" href="#keboola.component.dao.BaseType.boolean">boolean</a></code></li>
+<li><code><a title="keboola.component.dao.BaseType.date" href="#keboola.component.dao.BaseType.date">date</a></code></li>
+<li><code><a title="keboola.component.dao.BaseType.float" href="#keboola.component.dao.BaseType.float">float</a></code></li>
+<li><code><a title="keboola.component.dao.BaseType.integer" href="#keboola.component.dao.BaseType.integer">integer</a></code></li>
+<li><code><a title="keboola.component.dao.BaseType.numeric" href="#keboola.component.dao.BaseType.numeric">numeric</a></code></li>
+<li><code><a title="keboola.component.dao.BaseType.string" href="#keboola.component.dao.BaseType.string">string</a></code></li>
+<li><code><a title="keboola.component.dao.BaseType.timestamp" href="#keboola.component.dao.BaseType.timestamp">timestamp</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a></code></h4>
@@ -3839,7 +4027,6 @@ class TableOutputMapping(SubscriptableDataclass):
 <li><code><a title="keboola.component.dao.ColumnDefinition.description" href="#keboola.component.dao.ColumnDefinition.description">description</a></code></li>
 <li><code><a title="keboola.component.dao.ColumnDefinition.from_dict" href="#keboola.component.dao.ColumnDefinition.from_dict">from_dict</a></code></li>
 <li><code><a title="keboola.component.dao.ColumnDefinition.metadata" href="#keboola.component.dao.ColumnDefinition.metadata">metadata</a></code></li>
-<li><code><a title="keboola.component.dao.ColumnDefinition.normalize_data_type" href="#keboola.component.dao.ColumnDefinition.normalize_data_type">normalize_data_type</a></code></li>
 <li><code><a title="keboola.component.dao.ColumnDefinition.nullable" href="#keboola.component.dao.ColumnDefinition.nullable">nullable</a></code></li>
 <li><code><a title="keboola.component.dao.ColumnDefinition.primary_key" href="#keboola.component.dao.ColumnDefinition.primary_key">primary_key</a></code></li>
 <li><code><a title="keboola.component.dao.ColumnDefinition.to_dict" href="#keboola.component.dao.ColumnDefinition.to_dict">to_dict</a></code></li>
@@ -4023,7 +4210,10 @@ class TableOutputMapping(SubscriptableDataclass):
 <li><code><a title="keboola.component.dao.TableDefinition.get_manifest_dictionary" href="#keboola.component.dao.TableDefinition.get_manifest_dictionary">get_manifest_dictionary</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.id" href="#keboola.component.dao.TableDefinition.id">id</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.incremental" href="#keboola.component.dao.TableDefinition.incremental">incremental</a></code></li>
+<li><code><a title="keboola.component.dao.TableDefinition.is_alias" href="#keboola.component.dao.TableDefinition.is_alias">is_alias</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.is_new_manifest" href="#keboola.component.dao.TableDefinition.is_new_manifest">is_new_manifest</a></code></li>
+<li><code><a title="keboola.component.dao.TableDefinition.last_change_date" href="#keboola.component.dao.TableDefinition.last_change_date">last_change_date</a></code></li>
+<li><code><a title="keboola.component.dao.TableDefinition.last_import_date" href="#keboola.component.dao.TableDefinition.last_import_date">last_import_date</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.primary_key" href="#keboola.component.dao.TableDefinition.primary_key">primary_key</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.return_schema_from_manifest" href="#keboola.component.dao.TableDefinition.return_schema_from_manifest">return_schema_from_manifest</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.rows_count" href="#keboola.component.dao.TableDefinition.rows_count">rows_count</a></code></li>
@@ -4032,6 +4222,7 @@ class TableOutputMapping(SubscriptableDataclass):
 <li><code><a title="keboola.component.dao.TableDefinition.table_metadata" href="#keboola.component.dao.TableDefinition.table_metadata">table_metadata</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.update_column" href="#keboola.component.dao.TableDefinition.update_column">update_column</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.update_columns" href="#keboola.component.dao.TableDefinition.update_columns">update_columns</a></code></li>
+<li><code><a title="keboola.component.dao.TableDefinition.uri" href="#keboola.component.dao.TableDefinition.uri">uri</a></code></li>
 <li><code><a title="keboola.component.dao.TableDefinition.write_always" href="#keboola.component.dao.TableDefinition.write_always">write_always</a></code></li>
 </ul>
 </li>
