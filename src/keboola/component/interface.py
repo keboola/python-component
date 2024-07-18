@@ -950,7 +950,7 @@ class CommonInterface:
         """
 
         if not legacy_manifest:
-            legacy_manifest = self.environment_variables.data_type_support not in ('authoritative', 'hint')
+            legacy_manifest = self.environment_variables.data_type_support not in ('authoritative', 'hints')
 
         manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
                                                          legacy_manifest=legacy_manifest)

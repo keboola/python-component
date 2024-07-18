@@ -494,7 +494,7 @@ class TestTableDefinition(unittest.TestCase):
 
         table_def.add_column('id', ColumnDefinition(primary_key=True, data_types=BaseType.integer(length='200')))
 
-        os.environ['KBC_DATA_TYPE_SUPPORT'] = "hint"
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "hints"
 
         self.assertDictEqual(
             {'destination': 'some-destination', 'incremental': True, 'write_always': False, 'delimiter': ',',
