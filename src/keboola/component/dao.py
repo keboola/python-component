@@ -438,7 +438,7 @@ class TableMetadata:
 
 
 @dataclass
-class DataType(dict):
+class DataType:
     dtype: str
     length: Optional[str] = None
     default: Optional[str] = None
@@ -448,10 +448,14 @@ class DataType(dict):
             self.dtype = self.dtype.value
 
 
-class BaseType(DataType):
+class BaseType(dict):
     def __init__(self, dtype: SupportedDataTypes = SupportedDataTypes.STRING, length: Optional[str] = None,
                  default: Optional[str] = None):
-        super().__init__(dtype=dtype, length=length, default=default)
+        super().__init__(base=DataType(dtype=dtype, length=length, default=default))
+
+    @classmethod
+    def string(cls, length: Optional[str] = None, default: Optional[str] = None) -> 'BaseType':
+        return BaseType(dtype=SupportedDataTypes.STRING, length=length, default=default)
 
     @classmethod
     def integer(cls, length: Optional[str] = None,
@@ -501,15 +505,6 @@ class ColumnDefinition:
     primary_key: Optional[bool] = False
     description: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
-
-    def __post_init__(self):
-        if isinstance(self.data_types, DataType):
-            self.data_types = {"base": self.data_types}
-
-    def normalize_data_type(self, data_type: Union[Dict[str, DataType], BaseType]) -> Dict[str, DataType]:
-        if isinstance(data_type, DataType):
-            return {"base": data_type}
-        return data_type
 
     def update_properties(self, **kwargs):
         for key, value in kwargs.items():
@@ -837,6 +832,9 @@ class TableDefinition(IODefinition):
         if schema:
             self.schema = schema
         # deprecated argument for backward compatibility
+        self._legacy_mode = False
+        if kwargs.get('force_legacy_mode'):
+            self._legacy_mode = True
         if kwargs.get('columns'):
             self.columns = kwargs['columns']
 
@@ -1349,13 +1347,13 @@ class TableDefinition(IODefinition):
 
         if not isinstance(primary_key, list):
             raise TypeError("Primary key must be a list")
-
-        for col in primary_key:
-            if col in self.schema:
-                self.schema[col].primary_key = True
-            else:
-                raise UserException(f"Primary key column {col} not found in schema. "
-                                    f"Please specify all columns / schema")
+        if not self._legacy_mode:
+            for col in primary_key:
+                if col in self.schema:
+                    self.schema[col].primary_key = True
+                else:
+                    raise UserException(f"Primary key column {col} not found in schema. "
+                                        f"Please specify all columns / schema")
 
     @property
     def delimiter(self) -> str:

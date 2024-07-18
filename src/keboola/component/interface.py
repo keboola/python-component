@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Union, OrderedDict
@@ -362,6 +363,12 @@ class CommonInterface:
         else:
             raise ValueError(f'Invalid storage_stage value "{storage_stage}". Supported values are: "in" or "out"!')
 
+        # for transition period we need to force legacy mode for csv files w headers.
+        force_legacy_mode = False
+        if not columns and primary_key:
+            warnings.warn('Primary key is set but columns are not. Forcing legacy mode for CSV file.',
+                          DeprecationWarning)
+            force_legacy_mode = True
         return dao.TableDefinition(name=name,
                                    full_path=full_path,
                                    is_sliced=is_sliced,
@@ -375,7 +382,8 @@ class CommonInterface:
                                    delete_where=delete_where,
                                    stage=storage_stage,
                                    write_always=write_always,
-                                   schema=schema)
+                                   schema=schema,
+                                   force_legacy_mode=force_legacy_mode)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,

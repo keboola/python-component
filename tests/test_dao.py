@@ -377,6 +377,7 @@ class TestTableDefinition(unittest.TestCase):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
                                     columns=['foo', 'bar'],
                                     destination='some-destination',
+                                    has_header=True,
                                     primary_key=['foo'],
                                     incremental=True,
                                     delete_where={'column': 'lilly',
@@ -415,8 +416,9 @@ class TestTableDefinition(unittest.TestCase):
     def test_new_manifest_native_types(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
                                     stage='out',
-                                    columns=['foo', 'bar'],
+                                    schema=['foo', 'bar'],
                                     destination='some-destination',
+                                    has_header=True,
                                     primary_key=['foo'],
                                     incremental=True,
                                     delete_where={'column': 'lilly',
@@ -481,52 +483,39 @@ class TestTableDefinition(unittest.TestCase):
                                     )
 
         # add new columns
-        table_def.add_column('foo', ColumnDefinition(BaseType(SupportedDataTypes.STRING)))
-        table_def.add_column('bar', ColumnDefinition(BaseType(SupportedDataTypes.NUMERIC)))
-        table_def.add_column('baz', ColumnDefinition(
-            {'snowflake': DataType(dtype='STRING', length=255),
-             'bigquery': DataType(dtype='STRING', length=255)}))
+        table_def.add_column('string1', ColumnDefinition(BaseType.string()))
+        table_def.schema["string1"].add_datatype('redshift', DataType(dtype='STRING', length='255'))
 
-        table_def.schema["foo"].add_datatype('redshift', DataType(dtype='STRING', length=255))
+        table_def.add_column('numeric', ColumnDefinition(BaseType.numeric()))
 
-        table_def.schema["baz"].update_datatype('snowflake', DataType(dtype='NUMERIC', length=255))
-
-        self.maxDiff = None
-
-        table_def.add_columns(["test2", "test3"])
-
-        table_def.add_column('id', ColumnDefinition(primary_key=True, data_types=BaseType(dtype="INTEGER", length=200)))
-
-        table_def.add_columns({'new2': ColumnDefinition(data_types=DataType(dtype="INTEGER", length=200)),
-                               'new3': ColumnDefinition(data_types=DataType(dtype="STRING", length=200))})
-
-        # delete columns
-        table_def.delete_column('bar')
-        table_def.delete_columns(['test2', 'test3'])
+        table_def.add_column('id', ColumnDefinition(primary_key=True, data_types=BaseType.integer(length='200')))
 
         os.environ['KBC_DATA_TYPE_SUPPORT'] = "hint"
 
-        self.assertDictEqual({
-            'destination': 'some-destination',
-            'incremental': True,
-            'write_always': False,
-            'delimiter': ',',
-            'enclosure': '"',
-            'manifest_type': 'out',
-            'has_header': True,
-            'delete_where_column': 'lilly',
-            'delete_where_values': ['a', 'b'],
-            'delete_where_operator': 'eq',
-            'schema': [{'name': 'foo',
-                        'data_type': {'base': {'type': 'STRING'}, 'redshift': {'type': 'STRING', 'length': 255}},
-                        'nullable': True}, {'name': 'baz',
-                                            'data_type': {'snowflake': {'type': 'NUMERIC', 'length': 255},
-                                                          'bigquery': {'type': 'STRING', 'length': 255}},
-                                            'nullable': True},
-                       {'name': 'id', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True,
-                        'primary_key': True},
-                       {'name': 'new2', 'data_type': {'base': {'type': 'INTEGER', 'length': 200}}, 'nullable': True},
-                       {'name': 'new3', 'data_type': {'base': {'type': 'STRING', 'length': 200}}, 'nullable': True}]},
+        self.assertDictEqual(
+            {'destination': 'some-destination', 'incremental': True, 'write_always': False, 'delimiter': ',',
+             'enclosure': '"', 'manifest_type': 'out', 'has_header': True, 'delete_where_column': 'lilly',
+             'delete_where_values': ['a', 'b'], 'delete_where_operator': 'eq', 'schema': [{'name': 'string1',
+                                                                                           'data_type': {
+                                                                                               'base': {
+                                                                                                   'type': 'STRING'},
+                                                                                               'redshift': {
+                                                                                                   'type': 'STRING',
+                                                                                                   'length': '255'}
+                                                                                           }, 'nullable': True},
+                                                                                          {'name': 'numeric',
+                                                                                           'data_type': {
+                                                                                               'base': {
+                                                                                                   'type': 'NUMERIC'}
+                                                                                           },
+                                                                                           'nullable': True},
+                                                                                          {'name': 'id',
+                                                                                           'data_type': {
+                                                                                               'base': {
+                                                                                                   'type': 'INTEGER',
+                                                                                                   'length': '200'}},
+                                                                                           'nullable': True,
+                                                                                           'primary_key': True}]},
             table_def.get_manifest_dictionary('out')
         )
 
