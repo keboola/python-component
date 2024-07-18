@@ -1,3 +1,6 @@
+# Python 3.7 support
+from __future__ import annotations
+
 import argparse
 import csv
 import glob
@@ -423,7 +426,7 @@ class CommonInterface:
                                              delete_where=delete_where,
                                              schema=schema)
 
-    SCHEMA_TYPE = Union[dict[str, ColumnDefinition], OrderedDict[str, ColumnDefinition], list[str]]
+    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], OrderedDict[str, ColumnDefinition], List[str]]
 
     def create_out_table_definition(self, name: str,
                                     is_sliced: bool = False,
