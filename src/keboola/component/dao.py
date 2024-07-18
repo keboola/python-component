@@ -795,7 +795,7 @@ class TableDefinition(IODefinition):
                  delete_where: Optional[dict] = None,
                  stage: Optional[str] = None,
                  write_always: Optional[bool] = False,
-                 has_header: Optional[bool] = True,
+                 has_header: Optional[bool] = None,
                  # input
                  **kwargs
                  ):
@@ -1024,6 +1024,7 @@ class TableDefinition(IODefinition):
                 schema[col.get("name")] = ColumnDefinition().from_dict(col)
 
         else:
+            # legacy support
             columns_metadata = json_data.get('column_metadata', {})
             primary_key = json_data.get('primary_key', [])
             columns = json_data.get('columns', [])
@@ -1089,6 +1090,11 @@ class TableDefinition(IODefinition):
             name = file_path.name
         else:
             name = Path(manifest_file_path).stem
+
+        # test if the manifest is output and incompatible
+        if not manifest.get('columns') and manifest.get('primary_key'):
+            raise ValueError(f'The manifest {manifest_file_path} is unsupported legacy output manifest! '
+                             f'Columns must be defined in the manifest file.')
 
         table_def = cls(name=name,
                         full_path=full_path,
@@ -1348,7 +1354,8 @@ class TableDefinition(IODefinition):
             if col in self.schema:
                 self.schema[col].primary_key = True
             else:
-                raise UserException(f"Primary key column {col} not found in columns")
+                raise UserException(f"Primary key column {col} not found in schema. "
+                                    f"Please specify all columns / schema")
 
     @property
     def delimiter(self) -> str:

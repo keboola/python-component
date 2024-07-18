@@ -149,6 +149,43 @@ class TestTableDefinition(unittest.TestCase):
              'delete_where_operator': 'eq', 'columns': ['foo', 'bar']},
             table_def.get_manifest_dictionary(legacy_manifest=True))
 
+    def test_out_old_to_new_has_headers_sliced(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data1', 'in', 'tables')
+
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sliced.csv.manifest'))
+
+        manifest = table_def.get_manifest_dictionary()
+        self.assertEqual(manifest['has_header'], False)
+
+    def test_out_old_to_new_has_headers_columns(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data1', 'in', 'tables')
+
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample_output.csv.manifest'))
+
+        manifest = table_def.get_manifest_dictionary()
+        self.assertEqual(manifest['has_header'], False)
+
+    def test_in_old_to_new_has_headers_columns(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data1', 'in', 'tables')
+
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample.csv.manifest'))
+
+        manifest = table_def.get_manifest_dictionary()
+        self.assertEqual(manifest['has_header'], True)
+
+    def test_out_pkey_and_no_columns_incompatible(self):
+        with self.assertRaises(UserException) as e:
+            TableDefinition("testDef", "somepath", primary_key=['foo'])
+
+    def test_out_legacy_to_new_incompatible(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data1', 'in', 'tables')
+        with self.assertRaises(ValueError) as e:
+            TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample_output_header.csv.manifest'))
+
     def test_table_manifest_minimal(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
                                     columns=['foo', 'bar'],
