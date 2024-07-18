@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import logging
+import warnings
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -838,6 +839,7 @@ class TableDefinition(IODefinition):
         if kwargs.get('columns'):
             self.columns = kwargs['columns']
 
+        self._legacy_primary_key = list()
         self.primary_key = primary_key
         self._incremental = incremental
 
@@ -1090,15 +1092,18 @@ class TableDefinition(IODefinition):
             name = Path(manifest_file_path).stem
 
         # test if the manifest is output and incompatible
+        force_legacy_mode = False
         if not manifest.get('columns') and manifest.get('primary_key'):
-            raise ValueError(f'The manifest {manifest_file_path} is unsupported legacy output manifest! '
-                             f'Columns must be defined in the manifest file.')
+            warnings.warn('Primary key is set but columns are not. Forcing legacy mode for CSV file.',
+                          DeprecationWarning)
+            force_legacy_mode = True
 
         table_def = cls(name=name,
                         full_path=full_path,
                         is_sliced=is_sliced,
                         id=manifest.get('id'),
                         table_metadata=TableMetadata(manifest),
+                        primary_key=manifest.get('primary_key'),
                         schema=cls.return_schema_from_manifest(manifest),
                         uri=manifest.get('uri'),
                         created=manifest.get('created'),
@@ -1106,7 +1111,8 @@ class TableDefinition(IODefinition):
                         last_import_date=manifest.get('last_import_date'),
                         rows_count=manifest.get('rows_count'),
                         data_size_bytes=manifest.get('data_size_bytes'),
-                        is_alias=manifest.get('is_alias')
+                        is_alias=manifest.get('is_alias'),
+                        force_legacy_mode=force_legacy_mode
                         )
 
         return table_def
@@ -1138,6 +1144,8 @@ class TableDefinition(IODefinition):
         if not manifest_type:
             manifest_type = self.stage
 
+        if self._legacy_mode:
+            legacy_manifest = True
         dictionary = self._filter_attributes_by_manifest_type(manifest_type, legacy_queue, legacy_manifest)
 
         filtered_dictionary = self._filter_dictionary(dictionary)
@@ -1337,8 +1345,10 @@ class TableDefinition(IODefinition):
 
     @property
     def primary_key(self) -> List[str]:
-        if isinstance(self.schema, OrderedDict):
+        if not self._legacy_mode:
             return [column_name for column_name, column_def in self.schema.items() if column_def.primary_key]
+        else:
+            return self._legacy_primary_key
 
     @primary_key.setter
     def primary_key(self, primary_key: List[str]):
@@ -1354,6 +1364,8 @@ class TableDefinition(IODefinition):
                 else:
                     raise UserException(f"Primary key column {col} not found in schema. "
                                         f"Please specify all columns / schema")
+        else:
+            self._legacy_primary_key = primary_key
 
     @property
     def delimiter(self) -> str:

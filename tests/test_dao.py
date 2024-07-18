@@ -180,11 +180,14 @@ class TestTableDefinition(unittest.TestCase):
         with self.assertRaises(UserException) as e:
             TableDefinition("testDef", "somepath", primary_key=['foo'])
 
-    def test_out_legacy_to_new_incompatible(self):
+    def test_out_legacy_to_new_compatible(self):
         sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                    'data_examples', 'data1', 'in', 'tables')
-        with self.assertRaises(ValueError) as e:
-            TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample_output_header.csv.manifest'))
+
+        res = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample_output_header.csv.manifest'))
+        res_manifest = res.get_manifest_dictionary()
+        self.assertDictEqual({'delimiter': ',', 'enclosure': '"', 'primary_key': ['x'], 'write_always': False},
+                             res_manifest)
 
     def test_table_manifest_minimal(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
@@ -202,7 +205,8 @@ class TestTableDefinition(unittest.TestCase):
             table_def = TableDefinition("testDef", "somepath", is_sliced=False,
                                         primary_key=['foo', 'bar'])
 
-        self.assertEqual(str(e.exception), "Primary key column foo not found in columns")
+        self.assertEqual(str(e.exception),
+                         "Primary key column foo not found in schema. Please specify all columns / schema")
 
     def test_table_manifest_full(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
@@ -375,7 +379,7 @@ class TestTableDefinition(unittest.TestCase):
 
     def test_new_manifest(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
-                                    columns=['foo', 'bar'],
+                                    schema=['foo', 'bar'],
                                     destination='some-destination',
                                     has_header=True,
                                     primary_key=['foo'],
@@ -427,7 +431,7 @@ class TestTableDefinition(unittest.TestCase):
                                     )
         # update column
         table_def.update_column('foo',
-                                ColumnDefinition(data_types=BaseType(dtype=SupportedDataTypes.INTEGER, length=20)))
+                                ColumnDefinition(data_types=BaseType.integer(length='20')))
 
         # add new columns
         table_def.add_column('note', ColumnDefinition(nullable=False))
@@ -436,11 +440,11 @@ class TestTableDefinition(unittest.TestCase):
 
         # add new typed column
         table_def.add_column('id', ColumnDefinition(primary_key=True,
-                                                    data_types=DataType(dtype=SupportedDataTypes.NUMERIC, length=200)))
+                                                    data_types=BaseType.numeric(length='200')))
 
         table_def.add_columns(
-            {'new2': ColumnDefinition(data_types=DataType(dtype=SupportedDataTypes.FLOAT, length=200)),
-             'new3': ColumnDefinition(data_types=DataType(dtype=SupportedDataTypes.DATE, length=200))})
+            {'new2': ColumnDefinition(data_types=BaseType.float(length='200')),
+             'new3': ColumnDefinition(data_types=BaseType.date())})
 
         # delete columns
         table_def.delete_column('bar')
@@ -460,14 +464,14 @@ class TestTableDefinition(unittest.TestCase):
             'has_header': True,
             'delete_where_column': 'lilly',
             'delete_where_values': ['a', 'b'], 'delete_where_operator': 'eq',
-            'schema': [{'name': 'foo', 'data_type': {'base': {'type': 'INTEGER', 'length': 20}}, 'nullable': True},
+            'schema': [{'name': 'foo', 'data_type': {'base': {'type': 'INTEGER', 'length': '20'}}, 'nullable': True},
                        {'name': 'note', 'data_type': {'base': {'type': 'STRING'}}},
                        {'name': 'test1', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
                        {'name': 'test4', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                       {'name': 'id', 'data_type': {'base': {'type': 'NUMERIC', 'length': 200}}, 'nullable': True,
+                       {'name': 'id', 'data_type': {'base': {'type': 'NUMERIC', 'length': '200'}}, 'nullable': True,
                         'primary_key': True},
-                       {'name': 'new2', 'data_type': {'base': {'type': 'FLOAT', 'length': 200}}, 'nullable': True},
-                       {'name': 'new3', 'data_type': {'base': {'type': 'DATE', 'length': 200}}, 'nullable': True}]},
+                       {'name': 'new2', 'data_type': {'base': {'type': 'FLOAT', 'length': '200'}}, 'nullable': True},
+                       {'name': 'new3', 'data_type': {'base': {'type': 'DATE'}}, 'nullable': True}]},
             table_def.get_manifest_dictionary('out')
         )
 
@@ -520,6 +524,42 @@ class TestTableDefinition(unittest.TestCase):
         )
 
         del os.environ['KBC_DATA_TYPE_SUPPORT']
+
+    def test_new_manifest_column_methods(self):
+        table_def = TableDefinition("testDef", "somepath",
+                                    stage='out',
+                                    schema=['foo', 'bar', 'to_delete'],
+                                    destination='some-destination',
+                                    has_header=True,
+                                    primary_key=['foo'],
+                                    incremental=True,
+                                    delete_where={'column': 'lilly',
+                                                  'values': ['a', 'b'],
+                                                  'operator': 'eq'}
+                                    )
+
+        table_def.add_column('note', ColumnDefinition(nullable=False))
+
+        table_def.update_column('foo', ColumnDefinition(data_types=BaseType.integer()))
+        table_def.schema['bar'].add_datatype('redshift', DataType(dtype='STRING', length='255'))
+
+        table_def.delete_column('to_delete')
+
+        self.assertDictEqual(
+            {'destination': 'some-destination', 'incremental': True, 'write_always': False, 'delimiter': ',',
+             'enclosure': '"', 'manifest_type': 'out', 'has_header': True, 'delete_where_column': 'lilly',
+             'delete_where_values': ['a', 'b'], 'delete_where_operator': 'eq',
+             'schema': [{'name': 'foo', 'data_type': {'base': {'type': 'INTEGER'}}, 'nullable': True},
+                        {'name': 'bar',
+                         'data_type': {
+                             'base': {
+                                 'type': 'STRING'},
+                             'redshift': {
+                                 'type': 'STRING',
+                                 'length': '255'}},
+                         'nullable': True},
+                        {'name': 'note', 'data_type': {'base': {'type': 'STRING'}}}]},
+            table_def.get_manifest_dictionary())
 
 
 class TestFileDefinition(unittest.TestCase):

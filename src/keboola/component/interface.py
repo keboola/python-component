@@ -333,7 +333,8 @@ class CommonInterface:
                                  delete_where: dict = None,
                                  write_always: bool = False,
                                  schema: Union[
-                                     OrderedDict[str, ColumnDefinition], list[str]] = None) -> dao.TableDefinition:
+                                     OrderedDict[str, ColumnDefinition], list[str]] = None,
+                                 has_header: Optional[bool] = None) -> dao.TableDefinition:
         """
                 Helper method for dao.TableDefinition creation along with the "manifest".
                 It initializes path according to the storage_stage type.
@@ -365,7 +366,7 @@ class CommonInterface:
 
         # for transition period we need to force legacy mode for csv files w headers.
         force_legacy_mode = False
-        if not columns and primary_key:
+        if not schema and not columns and primary_key:
             warnings.warn('Primary key is set but columns are not. Forcing legacy mode for CSV file.',
                           DeprecationWarning)
             force_legacy_mode = True
@@ -383,6 +384,7 @@ class CommonInterface:
                                    stage=storage_stage,
                                    write_always=write_always,
                                    schema=schema,
+                                   has_header=has_header,
                                    force_legacy_mode=force_legacy_mode)
 
     def create_in_table_definition(self, name: str,
@@ -421,18 +423,20 @@ class CommonInterface:
                                              delete_where=delete_where,
                                              schema=schema)
 
+    SCHEMA_TYPE = Union[dict[str, ColumnDefinition], OrderedDict[str, ColumnDefinition], list[str]]
+
     def create_out_table_definition(self, name: str,
                                     is_sliced: bool = False,
                                     destination: str = '',
                                     primary_key: List[str] = None,
-                                    schema: Union[dict[str, ColumnDefinition], OrderedDict[str, ColumnDefinition], list[
-                                        str]] = None,
+                                    schema: SCHEMA_TYPE = None,
                                     incremental: bool = None,
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = '"',
                                     delimiter: str = ',',
                                     delete_where: dict = None,
                                     write_always: bool = False,
+                                    has_header: Optional[bool] = None,
                                     **kwargs
                                     ) -> dao.TableDefinition:
         """
@@ -454,6 +458,8 @@ class CommonInterface:
                            delete_where: Dict with settings for deleting rows
                            write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
+                           has_header:Optional[bool] = flag whether the header is present in the file,
+                                if None legacy method is used
         """
 
         return self._create_table_definition(name=name,
@@ -468,7 +474,8 @@ class CommonInterface:
                                              delimiter=delimiter,
                                              delete_where=delete_where,
                                              write_always=write_always,
-                                             schema=schema)
+                                             schema=schema,
+                                             has_header=has_header)
 
     # # File processing
 

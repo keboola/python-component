@@ -331,7 +331,8 @@ class TestCommonInterface(unittest.TestCase):
 
         # create table def
         out_table = ci.create_out_table_definition('some-table.csv',
-                                                   columns=['foo', 'bar'],
+                                                   schema=['foo', 'bar'],
+                                                   has_header=True,
                                                    destination='some-destination',
                                                    primary_key=['foo'],
                                                    incremental=True,
@@ -376,7 +377,7 @@ class TestCommonInterface(unittest.TestCase):
 
         tables = ci.get_input_tables_definitions()
 
-        self.assertEqual(len(tables), 4)
+        self.assertEqual(6, len(tables))
         for table in tables:
             if table.name == 'sample.csv':
                 self.assertEqual(table.columns, [
@@ -406,7 +407,7 @@ class TestCommonInterface(unittest.TestCase):
 
         tables = ci.get_input_tables_definitions(orphaned_manifests=True)
 
-        self.assertEqual(len(tables), 5)
+        self.assertEqual(7, len(tables))
         for table in tables:
             if table.name == 'sample.csv':
                 self.assertEqual(table.columns, [
