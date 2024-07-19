@@ -597,8 +597,6 @@ class IODefinition(ABC):
     def __init__(self, full_path):
         self.full_path = full_path
 
-        self.__stage = None
-
     @classmethod
     def build_from_manifest(cls,
                             manifest_file_path: str
@@ -618,13 +616,13 @@ class IODefinition(ABC):
         """
         Helper property marking the stage of the file. (str)
         """
-        return self.__stage
+        return self._stage
 
     @stage.setter
     def stage(self, stage: str):
         if stage not in ['in', 'out']:
             raise ValueError(f'Invalid stage "{stage}", supported values are: "in", "out"')
-        self.__stage = stage
+        self._stage = stage
 
     @property
     @abstractmethod
