@@ -755,18 +755,31 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 
         &#34;&#34;&#34;
 
-        return {
-            &#39;id&#39;: self.id,
-            &#39;created&#39;: self.created.strftime(&#39;%Y-%m-%dT%H:%M:%S%z&#39;) if self.created else None,
-            &#39;is_public&#39;: self.is_public,
-            &#39;is_encrypted&#39;: self.is_encrypted,
-            &#39;name&#39;: self.name,
-            &#39;size_bytes&#39;: self.size_bytes,
-            &#39;tags&#39;: self.tags,
-            &#39;notify&#39;: self.notify,
-            &#39;max_age_days&#39;: self.max_age_days,
-            &#39;is_permanent&#39;: self.is_permanent,
-        }
+        if manifest_type == &#39;in&#39;:
+
+            manifest_dictionary = {
+                &#39;id&#39;: self.id,
+                &#39;created&#39;: self.created.strftime(&#39;%Y-%m-%dT%H:%M:%S%z&#39;) if self.created else None,
+                &#39;is_public&#39;: self.is_public,
+                &#39;is_encrypted&#39;: self.is_encrypted,
+                &#39;name&#39;: self.name,
+                &#39;size_bytes&#39;: self.size_bytes,
+                &#39;tags&#39;: self.tags,
+                &#39;notify&#39;: self.notify,
+                &#39;max_age_days&#39;: self.max_age_days,
+                &#39;is_permanent&#39;: self.is_permanent,
+            }
+
+        else:
+            manifest_dictionary = {
+                &#39;is_public&#39;: self.is_public,
+                &#39;is_permanent&#39;: self.is_permanent,
+                &#39;is_encrypted&#39;: self.is_encrypted,
+                &#39;tags&#39;: self.tags,
+                &#39;notify&#39;: self.notify,
+            }
+
+        return manifest_dictionary
 
     @property
     def name(self) -&gt; str:
@@ -1302,7 +1315,7 @@ inheritance.</p></div>
 
     def __get_stage_inferred(self):
         stage = &#39;in&#39;
-        if not self.full_path or not Path(self.full_path).exists():
+        if not self.full_path or Path(self.full_path).exists():
             return stage
 
         if Path(self.full_path).parent.parent.name == &#39;in&#39;:
