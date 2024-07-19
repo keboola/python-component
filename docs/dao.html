@@ -1279,8 +1279,6 @@ inheritance.</p></div>
     def __init__(self, full_path):
         self.full_path = full_path
 
-        self.__stage = None
-
     @classmethod
     def build_from_manifest(cls,
                             manifest_file_path: str
@@ -1300,13 +1298,13 @@ inheritance.</p></div>
         &#34;&#34;&#34;
         Helper property marking the stage of the file. (str)
         &#34;&#34;&#34;
-        return self.__stage
+        return self._stage
 
     @stage.setter
     def stage(self, stage: str):
         if stage not in [&#39;in&#39;, &#39;out&#39;]:
             raise ValueError(f&#39;Invalid stage &#34;{stage}&#34;, supported values are: &#34;in&#34;, &#34;out&#34;&#39;)
-        self.__stage = stage
+        self._stage = stage
 
     @property
     @abstractmethod
@@ -1480,7 +1478,7 @@ def stage(self) -&gt; str:
     &#34;&#34;&#34;
     Helper property marking the stage of the file. (str)
     &#34;&#34;&#34;
-    return self.__stage</code></pre>
+    return self._stage</code></pre>
 </details>
 </dd>
 </dl>
