@@ -362,7 +362,9 @@ is established in following order:</p>
                                  delimiter: str = &#39;,&#39;,
                                  delete_where: dict = None,
                                  write_always: bool = False,
-                                 schema: List[ColumnDefinition] = None) -&gt; dao.TableDefinition:
+                                 schema: Union[
+                                     OrderedDict[str, ColumnDefinition], list[str]] = None,
+                                 has_header: Optional[bool] = None) -&gt; dao.TableDefinition:
         &#34;&#34;&#34;
                 Helper method for dao.TableDefinition creation along with the &#34;manifest&#34;.
                 It initializes path according to the storage_stage type.
@@ -392,6 +394,12 @@ is established in following order:</p>
         else:
             raise ValueError(f&#39;Invalid storage_stage value &#34;{storage_stage}&#34;. Supported values are: &#34;in&#34; or &#34;out&#34;!&#39;)
 
+        # for transition period we need to force legacy mode for csv files w headers.
+        force_legacy_mode = False
+        if not schema and not columns and primary_key:
+            warnings.warn(&#39;Primary key is set but columns are not. Forcing legacy mode for CSV file.&#39;,
+                          DeprecationWarning)
+            force_legacy_mode = True
         return dao.TableDefinition(name=name,
                                    full_path=full_path,
                                    is_sliced=is_sliced,
@@ -405,7 +413,9 @@ is established in following order:</p>
                                    delete_where=delete_where,
                                    stage=storage_stage,
                                    write_always=write_always,
-                                   schema=schema)
+                                   schema=schema,
+                                   has_header=has_header,
+                                   force_legacy_mode=force_legacy_mode)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,
@@ -443,18 +453,22 @@ is established in following order:</p>
                                              delete_where=delete_where,
                                              schema=schema)
 
+    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], OrderedDict[str, ColumnDefinition], List[str]]
+
     def create_out_table_definition(self, name: str,
                                     is_sliced: bool = False,
                                     destination: str = &#39;&#39;,
                                     primary_key: List[str] = None,
-                                    columns: List[str] = None,
+                                    schema: SCHEMA_TYPE = None,
                                     incremental: bool = None,
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = &#39;&#34;&#39;,
                                     delimiter: str = &#39;,&#39;,
                                     delete_where: dict = None,
                                     write_always: bool = False,
-                                    schema: List[ColumnDefinition] = False) -&gt; dao.TableDefinition:
+                                    has_header: Optional[bool] = None,
+                                    **kwargs
+                                    ) -&gt; dao.TableDefinition:
         &#34;&#34;&#34;
                        Helper method for output dao.TableDefinition creation along with the &#34;manifest&#34;.
                        It initializes path in data/tables/out/ folder.
@@ -464,7 +478,9 @@ is established in following order:</p>
                            is_sliced: True if the full_path points to a folder with sliced tables
                            destination: String name of the table in Storage.
                            primary_key: List with names of columns used for primary key.
-                           columns: List of columns for headless CSV files
+                           schema: List of columns or mapping of column names and ColumnDefinition objects.
+                            if list of strings is provided, the columns will be created with default settings
+                            (BaseType.string)
                            incremental: Set to true to enable incremental loading
                            table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata
                            enclosure: str: CSV enclosure, by default &#34;
@@ -472,6 +488,8 @@ is established in following order:</p>
                            delete_where: Dict with settings for deleting rows
                            write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
+                           has_header:Optional[bool] = flag whether the header is present in the file,
+                                if None legacy method is used
         &#34;&#34;&#34;
 
         return self._create_table_definition(name=name,
@@ -479,14 +497,15 @@ is established in following order:</p>
                                              is_sliced=is_sliced,
                                              destination=destination,
                                              primary_key=primary_key,
-                                             columns=columns,
+                                             columns=kwargs.get(&#39;columns&#39;),
                                              incremental=incremental,
                                              table_metadata=table_metadata,
                                              enclosure=enclosure,
                                              delimiter=delimiter,
                                              delete_where=delete_where,
                                              write_always=write_always,
-                                             schema=schema)
+                                             schema=schema,
+                                             has_header=has_header)
 
     # # File processing
 
@@ -958,7 +977,7 @@ is established in following order:</p>
         &#34;&#34;&#34;
 
         if not legacy_manifest:
-            legacy_manifest = self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hint&#39;)
+            legacy_manifest = self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;)
 
         manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
                                                          legacy_manifest=legacy_manifest)
@@ -1077,6 +1096,10 @@ is established in following order:</p>
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.LOGGING_TYPE_STD"><code class="name">var <span class="ident">LOGGING_TYPE_STD</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.interface.CommonInterface.SCHEMA_TYPE"><code class="name">var <span class="ident">SCHEMA_TYPE</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1209,7 +1232,7 @@ def tables_out_path(self):
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.interface.CommonInterface.create_in_table_definition"><code class="name flex">
-<span>def <span class="ident">create_in_table_definition</span></span>(<span>self, name: str, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, columns: List[str] = None, incremental: bool = None, table_metadata: <a title="keboola.component.dao.TableMetadata" href="dao.html#keboola.component.dao.TableMetadata">TableMetadata</a> = None, delete_where: str = None, schema: List[<a title="keboola.component.dao.ColumnDefinition" href="dao.html#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>] = None) ‑> <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a></span>
+<span>def <span class="ident">create_in_table_definition</span></span>(<span>self, name: str, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, columns: List[str] = None, incremental: bool = None, table_metadata: dao.TableMetadata = None, delete_where: str = None, schema: List[ColumnDefinition] = None) ‑> <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper method for input dao.TableDefinition creation along with the "manifest".
@@ -1261,7 +1284,7 @@ It initializes path in data/files/out/ folder.</p>
 </dl></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.create_out_table_definition"><code class="name flex">
-<span>def <span class="ident">create_out_table_definition</span></span>(<span>self, name: str, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, columns: List[str] = None, incremental: bool = None, table_metadata: <a title="keboola.component.dao.TableMetadata" href="dao.html#keboola.component.dao.TableMetadata">TableMetadata</a> = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None, write_always: bool = False, schema: List[<a title="keboola.component.dao.ColumnDefinition" href="dao.html#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>] = False) ‑> <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a></span>
+<span>def <span class="ident">create_out_table_definition</span></span>(<span>self, name: str, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, schema: SCHEMA_TYPE = None, incremental: bool = None, table_metadata: dao.TableMetadata = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None, write_always: bool = False, has_header: Optional[bool] = None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper method for output dao.TableDefinition creation along with the "manifest".
@@ -1276,8 +1299,10 @@ It initializes path in data/tables/out/ folder.</p>
 <dd>String name of the table in Storage.</dd>
 <dt><strong><code>primary_key</code></strong></dt>
 <dd>List with names of columns used for primary key.</dd>
-<dt><strong><code>columns</code></strong></dt>
-<dd>List of columns for headless CSV files</dd>
+<dt><strong><code>schema</code></strong></dt>
+<dd>List of columns or mapping of column names and ColumnDefinition objects.</dd>
+<dt>if list of strings is provided, the columns will be created with default settings</dt>
+<dt>(BaseType.string)</dt>
 <dt><strong><code>incremental</code></strong></dt>
 <dd>Set to true to enable incremental loading</dd>
 <dt><strong><code>table_metadata</code></strong></dt>
@@ -1291,7 +1316,9 @@ It initializes path in data/tables/out/ folder.</p>
 <dt><strong><code>write_always</code></strong></dt>
 <dd>Bool: If true, the table will be saved to Storage even when the job execution</dd>
 </dl>
-<p>fails.</p></div>
+<p>fails.
+has_header:Optional[bool] = flag whether the header is present in the file,
+if None legacy method is used</p></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.get_input_file_definitions_grouped_by_name"><code class="name flex">
 <span>def <span class="ident">get_input_file_definitions_grouped_by_name</span></span>(<span>self, orphaned_manifests=False, only_latest_files=True, tags: List[str] = None) ‑> Dict[str, List[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>]]</span>
@@ -1472,7 +1499,7 @@ mandatory_params = [par1, par2, group3]</p>
 par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))</p></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.write_filedef_manifest"><code class="name flex">
-<span>def <span class="ident">write_filedef_manifest</span></span>(<span>self, file_definition: <a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>)</span>
+<span>def <span class="ident">write_filedef_manifest</span></span>(<span>self, file_definition: dao.FileDefinition)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.</p>
@@ -1494,7 +1521,7 @@ ci.write_filedef_manifest(file_def)
 <p>Returns:</p></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.write_filedef_manifests"><code class="name flex">
-<span>def <span class="ident">write_filedef_manifests</span></span>(<span>self, file_definitions: List[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>])</span>
+<span>def <span class="ident">write_filedef_manifests</span></span>(<span>self, file_definitions: List[dao.FileDefinition])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
@@ -1503,7 +1530,7 @@ ci.write_filedef_manifest(file_def)
 Returns:</p></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.write_manifest"><code class="name flex">
-<span>def <span class="ident">write_manifest</span></span>(<span>self, io_definition: Union[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>, <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>], legacy_manifest: Optional[bool] = None)</span>
+<span>def <span class="ident">write_manifest</span></span>(<span>self, io_definition: Union[dao.FileDefinition, dao.TableDefinition], legacy_manifest: Optional[bool] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.</p>
@@ -1530,7 +1557,7 @@ object containing manifest.
 Returns:</p></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.write_manifests"><code class="name flex">
-<span>def <span class="ident">write_manifests</span></span>(<span>self, io_definitions: List[Union[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>, <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>]], legacy_manifest: Optional[bool] = None)</span>
+<span>def <span class="ident">write_manifests</span></span>(<span>self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]], legacy_manifest: Optional[bool] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
@@ -1551,7 +1578,7 @@ Returns:</p></div>
 <p>state_dict (dict):</p></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.write_tabledef_manifest"><code class="name flex">
-<span>def <span class="ident">write_tabledef_manifest</span></span>(<span>self, table_definition: <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>)</span>
+<span>def <span class="ident">write_tabledef_manifest</span></span>(<span>self, table_definition: dao.TableDefinition)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.</p>
@@ -1578,7 +1605,7 @@ ci.write_tabledef_manifest(table_def)
 <p>Returns:</p></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.write_tabledef_manifests"><code class="name flex">
-<span>def <span class="ident">write_tabledef_manifests</span></span>(<span>self, table_definitions: List[<a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>])</span>
+<span>def <span class="ident">write_tabledef_manifests</span></span>(<span>self, table_definitions: List[dao.TableDefinition])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
@@ -1741,7 +1768,7 @@ See docs:
 </details>
 <h3>Instance variables</h3>
 <dl>
-<dt id="keboola.component.interface.Configuration.files_input_mapping"><code class="name">prop <span class="ident">files_input_mapping</span> : List[<a title="keboola.component.dao.FileInputMapping" href="dao.html#keboola.component.dao.FileInputMapping">FileInputMapping</a>]</code></dt>
+<dt id="keboola.component.interface.Configuration.files_input_mapping"><code class="name">prop <span class="ident">files_input_mapping</span> : List[dao.FileInputMapping]</code></dt>
 <dd>
 <div class="desc"><p>List of file <a href="https://developers.keboola.com/extend/common-interface/config-file/#files">input mappings</a></p>
 <p>Files specified in the configuration file (defined on component's input mapping). (from configuration[
@@ -1769,7 +1796,7 @@ def files_input_mapping(self) -&gt; List[dao.FileInputMapping]:
     return files</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.interface.Configuration.files_output_mapping"><code class="name">prop <span class="ident">files_output_mapping</span> : List[<a title="keboola.component.dao.FileOutputMapping" href="dao.html#keboola.component.dao.FileOutputMapping">FileOutputMapping</a>]</code></dt>
+<dt id="keboola.component.interface.Configuration.files_output_mapping"><code class="name">prop <span class="ident">files_output_mapping</span> : List[dao.FileOutputMapping]</code></dt>
 <dd>
 <div class="desc"><p>List of file <a href="https://developers.keboola.com/extend/common-interface/config-file/#files">output mappings</a></p>
 <p>Get files which are supposed to be returned when the application finishes. (from configuration[
@@ -1797,7 +1824,7 @@ def files_output_mapping(self) -&gt; List[dao.FileOutputMapping]:
     return files</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.interface.Configuration.oauth_credentials"><code class="name">prop <span class="ident">oauth_credentials</span> : <a title="keboola.component.dao.OauthCredentials" href="dao.html#keboola.component.dao.OauthCredentials">OauthCredentials</a></code></dt>
+<dt id="keboola.component.interface.Configuration.oauth_credentials"><code class="name">prop <span class="ident">oauth_credentials</span> : dao.OauthCredentials</code></dt>
 <dd>
 <div class="desc"><p>Returns subscriptable class OauthCredentials</p>
 <p>Returns: OauthCredentials</p></div>
@@ -1827,7 +1854,7 @@ def oauth_credentials(self) -&gt; dao.OauthCredentials:
     return credentials</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.interface.Configuration.tables_input_mapping"><code class="name">prop <span class="ident">tables_input_mapping</span> : List[<a title="keboola.component.dao.TableInputMapping" href="dao.html#keboola.component.dao.TableInputMapping">TableInputMapping</a>]</code></dt>
+<dt id="keboola.component.interface.Configuration.tables_input_mapping"><code class="name">prop <span class="ident">tables_input_mapping</span> : List[dao.TableInputMapping]</code></dt>
 <dd>
 <div class="desc"><p>List of table <a href="https://developers.keboola.com/extend/common-interface/config-file/#tables">input mappings</a></p>
 <p>Tables specified in the configuration file.</p>
@@ -1867,7 +1894,7 @@ def tables_input_mapping(self) -&gt; List[dao.TableInputMapping]:
     return tables</code></pre>
 </details>
 </dd>
-<dt id="keboola.component.interface.Configuration.tables_output_mapping"><code class="name">prop <span class="ident">tables_output_mapping</span> : List[<a title="keboola.component.dao.TableOutputMapping" href="dao.html#keboola.component.dao.TableOutputMapping">TableOutputMapping</a>]</code></dt>
+<dt id="keboola.component.interface.Configuration.tables_output_mapping"><code class="name">prop <span class="ident">tables_output_mapping</span> : List[dao.TableOutputMapping]</code></dt>
 <dd>
 <div class="desc"><p>List of table <a href="https://developers.keboola.com/extend/common-interface/config-file/#tables">output mappings</a></p>
 <p>Get tables which are supposed to be returned when the application finishes. (from configuration[
@@ -1923,6 +1950,7 @@ def tables_output_mapping(self) -&gt; List[dao.TableOutputMapping]:
 <ul class="">
 <li><code><a title="keboola.component.interface.CommonInterface.LOGGING_TYPE_GELF" href="#keboola.component.interface.CommonInterface.LOGGING_TYPE_GELF">LOGGING_TYPE_GELF</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.LOGGING_TYPE_STD" href="#keboola.component.interface.CommonInterface.LOGGING_TYPE_STD">LOGGING_TYPE_STD</a></code></li>
+<li><code><a title="keboola.component.interface.CommonInterface.SCHEMA_TYPE" href="#keboola.component.interface.CommonInterface.SCHEMA_TYPE">SCHEMA_TYPE</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.configuration" href="#keboola.component.interface.CommonInterface.configuration">configuration</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.create_in_table_definition" href="#keboola.component.interface.CommonInterface.create_in_table_definition">create_in_table_definition</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.create_out_file_definition" href="#keboola.component.interface.CommonInterface.create_out_file_definition">create_out_file_definition</a></code></li>

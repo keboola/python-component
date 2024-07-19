@@ -1,3 +1,6 @@
+# Python 3.7 support
+from __future__ import annotations
+
 import argparse
 import csv
 import glob
@@ -5,17 +8,18 @@ import json
 import logging
 import os
 import sys
+import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, OrderedDict
 
 from deprecated import deprecated
 from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
 
 from . import dao
-from .exceptions import UserException
 from .dao import ColumnDefinition
+from .exceptions import UserException
 
 
 def register_csv_dialect():
@@ -331,7 +335,9 @@ class CommonInterface:
                                  delimiter: str = ',',
                                  delete_where: dict = None,
                                  write_always: bool = False,
-                                 schema: List[ColumnDefinition] = None) -> dao.TableDefinition:
+                                 schema: Union[
+                                     OrderedDict[str, ColumnDefinition], list[str]] = None,
+                                 has_header: Optional[bool] = None) -> dao.TableDefinition:
         """
                 Helper method for dao.TableDefinition creation along with the "manifest".
                 It initializes path according to the storage_stage type.
@@ -361,6 +367,12 @@ class CommonInterface:
         else:
             raise ValueError(f'Invalid storage_stage value "{storage_stage}". Supported values are: "in" or "out"!')
 
+        # for transition period we need to force legacy mode for csv files w headers.
+        force_legacy_mode = False
+        if not schema and not columns and primary_key:
+            warnings.warn('Primary key is set but columns are not. Forcing legacy mode for CSV file.',
+                          DeprecationWarning)
+            force_legacy_mode = True
         return dao.TableDefinition(name=name,
                                    full_path=full_path,
                                    is_sliced=is_sliced,
@@ -374,7 +386,9 @@ class CommonInterface:
                                    delete_where=delete_where,
                                    stage=storage_stage,
                                    write_always=write_always,
-                                   schema=schema)
+                                   schema=schema,
+                                   has_header=has_header,
+                                   force_legacy_mode=force_legacy_mode)
 
     def create_in_table_definition(self, name: str,
                                    is_sliced: bool = False,
@@ -412,18 +426,22 @@ class CommonInterface:
                                              delete_where=delete_where,
                                              schema=schema)
 
+    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], OrderedDict[str, ColumnDefinition], List[str]]
+
     def create_out_table_definition(self, name: str,
                                     is_sliced: bool = False,
                                     destination: str = '',
                                     primary_key: List[str] = None,
-                                    columns: List[str] = None,
+                                    schema: SCHEMA_TYPE = None,
                                     incremental: bool = None,
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = '"',
                                     delimiter: str = ',',
                                     delete_where: dict = None,
                                     write_always: bool = False,
-                                    schema: List[ColumnDefinition] = False) -> dao.TableDefinition:
+                                    has_header: Optional[bool] = None,
+                                    **kwargs
+                                    ) -> dao.TableDefinition:
         """
                        Helper method for output dao.TableDefinition creation along with the "manifest".
                        It initializes path in data/tables/out/ folder.
@@ -433,7 +451,9 @@ class CommonInterface:
                            is_sliced: True if the full_path points to a folder with sliced tables
                            destination: String name of the table in Storage.
                            primary_key: List with names of columns used for primary key.
-                           columns: List of columns for headless CSV files
+                           schema: List of columns or mapping of column names and ColumnDefinition objects.
+                            if list of strings is provided, the columns will be created with default settings
+                            (BaseType.string)
                            incremental: Set to true to enable incremental loading
                            table_metadata: <.dao.TableMetadata> object containing column and table metadata
                            enclosure: str: CSV enclosure, by default "
@@ -441,6 +461,8 @@ class CommonInterface:
                            delete_where: Dict with settings for deleting rows
                            write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
+                           has_header:Optional[bool] = flag whether the header is present in the file,
+                                if None legacy method is used
         """
 
         return self._create_table_definition(name=name,
@@ -448,14 +470,15 @@ class CommonInterface:
                                              is_sliced=is_sliced,
                                              destination=destination,
                                              primary_key=primary_key,
-                                             columns=columns,
+                                             columns=kwargs.get('columns'),
                                              incremental=incremental,
                                              table_metadata=table_metadata,
                                              enclosure=enclosure,
                                              delimiter=delimiter,
                                              delete_where=delete_where,
                                              write_always=write_always,
-                                             schema=schema)
+                                             schema=schema,
+                                             has_header=has_header)
 
     # # File processing
 
@@ -927,7 +950,7 @@ class CommonInterface:
         """
 
         if not legacy_manifest:
-            legacy_manifest = self.environment_variables.data_type_support not in ('authoritative', 'hint')
+            legacy_manifest = self.environment_variables.data_type_support not in ('authoritative', 'hints')
 
         manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
                                                          legacy_manifest=legacy_manifest)

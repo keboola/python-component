@@ -5,20 +5,6 @@
   "incremental": true,
   "delimiter": ",",
   "enclosure": "\"",
-  "metadata": [
-    {
-      "key": "bar",
-      "value": "kochba"
-    }
-  ],
-  "column_metadata": {
-    "x": [
-      {
-        "key": "foo",
-        "value": "gogo"
-      }
-    ]
-  },
   "columns": [
     "x",
     "Sales",

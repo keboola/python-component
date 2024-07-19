@@ -1,0 +1,9 @@
+{
+  "primary_key": [
+    "x"
+  ],
+  "incremental": true,
+  "delimiter": ",",
+  "enclosure": "\"",
+  "attributes": []
+}
