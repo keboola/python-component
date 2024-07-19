@@ -645,7 +645,7 @@ class IODefinition(ABC):
 
     def __get_stage_inferred(self):
         stage = 'in'
-        if not self.full_path or not Path(self.full_path).exists():
+        if not self.full_path or Path(self.full_path).exists():
             return stage
 
         if Path(self.full_path).parent.parent.name == 'in':
@@ -1732,18 +1732,31 @@ class FileDefinition(IODefinition):
 
         """
 
-        return {
-            'id': self.id,
-            'created': self.created.strftime('%Y-%m-%dT%H:%M:%S%z') if self.created else None,
-            'is_public': self.is_public,
-            'is_encrypted': self.is_encrypted,
-            'name': self.name,
-            'size_bytes': self.size_bytes,
-            'tags': self.tags,
-            'notify': self.notify,
-            'max_age_days': self.max_age_days,
-            'is_permanent': self.is_permanent,
-        }
+        if manifest_type == 'in':
+
+            manifest_dictionary = {
+                'id': self.id,
+                'created': self.created.strftime('%Y-%m-%dT%H:%M:%S%z') if self.created else None,
+                'is_public': self.is_public,
+                'is_encrypted': self.is_encrypted,
+                'name': self.name,
+                'size_bytes': self.size_bytes,
+                'tags': self.tags,
+                'notify': self.notify,
+                'max_age_days': self.max_age_days,
+                'is_permanent': self.is_permanent,
+            }
+
+        else:
+            manifest_dictionary = {
+                'is_public': self.is_public,
+                'is_permanent': self.is_permanent,
+                'is_encrypted': self.is_encrypted,
+                'tags': self.tags,
+                'notify': self.notify,
+            }
+
+        return manifest_dictionary
 
     @property
     def name(self) -> str:

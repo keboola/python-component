@@ -598,8 +598,6 @@ class TestFileDefinition(unittest.TestCase):
              'is_permanent': True,
              'is_encrypted': True,
              'notify': True,
-             'name': 'test_Def',
-             'id': '123'
              },
             file_def.get_manifest_dictionary('out')
         )
@@ -615,9 +613,8 @@ class TestFileDefinition(unittest.TestCase):
         file_def.stage = 'out'
 
         self.assertDictEqual(
-            {'created': '2015-11-01T20:14:19+0100', 'id': 151971405, 'is_encrypted': True, 'is_permanent': False,
-             'is_public': False, 'max_age_days': 180, 'name': '21702.strip.print.gif', 'notify': False,
-             'size_bytes': 4931, 'tags': ['dilbert']},
+            {'is_encrypted': True, 'is_permanent': False,
+             'is_public': False, 'notify': False, 'tags': ['dilbert']},
             file_def.get_manifest_dictionary()
         )
 

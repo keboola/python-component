@@ -488,7 +488,6 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(
             {'tags': ['foo', 'bar'],
              'is_public': True,
-             'name': 'some-file.jpg',
              'is_permanent': True,
              'is_encrypted': True,
              'notify': True},
@@ -509,13 +508,13 @@ class TestCommonInterface(unittest.TestCase):
 
         # write
         ci.write_manifest(out_file)
+
         manifest_filename = out_file.full_path + '.manifest'
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
             {'tags': ['foo', 'bar'],
              'is_public': True,
-             'name': 'some-file.jpg',
              'is_permanent': True,
              'is_encrypted': True,
              'notify': True},
