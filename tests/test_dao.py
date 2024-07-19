@@ -575,7 +575,6 @@ class TestFileDefinition(unittest.TestCase):
 
         self.assertDictEqual(
             {
-                'name': '151971405_21702.strip.print.gif',
                 'is_public': False,
                 'is_permanent': False,
                 'is_encrypted': False,
@@ -664,8 +663,7 @@ class TestFileDefinition(unittest.TestCase):
              'is_public': True,
              'is_permanent': True,
              'is_encrypted': True,
-             'notify': True,
-             'name': '123_test_Def'
+             'notify': True
              },
             file_def.get_manifest_dictionary()
         )
