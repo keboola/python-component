@@ -597,9 +597,6 @@ class IODefinition(ABC):
     def __init__(self, full_path):
         self.full_path = full_path
 
-        # infer stage by default
-        self.__stage = self.__get_stage_inferred()
-
     @classmethod
     def build_from_manifest(cls,
                             manifest_file_path: str
@@ -619,13 +616,13 @@ class IODefinition(ABC):
         """
         Helper property marking the stage of the file. (str)
         """
-        return self.__stage
+        return self._stage
 
     @stage.setter
     def stage(self, stage: str):
         if stage not in ['in', 'out']:
             raise ValueError(f'Invalid stage "{stage}", supported values are: "in", "out"')
-        self.__stage = stage
+        self._stage = stage
 
     @property
     @abstractmethod
@@ -642,17 +639,6 @@ class IODefinition(ABC):
         File name - excluding the KBC ID if present (`str`, read-only)
         """
         raise NotImplementedError
-
-    def __get_stage_inferred(self):
-        stage = 'in'
-        if not self.full_path or not Path(self.full_path).exists():
-            return stage
-
-        if Path(self.full_path).parent.parent.name == 'in':
-            stage = 'in'
-        elif Path(self.full_path).parent.parent.name == 'out':
-            stage = 'out'
-        return stage
 
     # ############ Staging parameters
 
@@ -792,7 +778,7 @@ class TableDefinition(IODefinition):
                  enclosure: Optional[str] = '"',
                  delimiter: Optional[str] = ',',
                  delete_where: Optional[dict] = None,
-                 stage: Optional[str] = None,
+                 stage: Optional[str] = 'out',
                  write_always: Optional[bool] = False,
                  has_header: Optional[bool] = None,
                  # input
@@ -870,7 +856,7 @@ class TableDefinition(IODefinition):
         self._data_size_bytes = kwargs.get('data_size_bytes')
         self._is_alias = kwargs.get('is_alias')
 
-        self.stage = stage if stage else self.__get_stage_inferred()
+        self.stage = stage
         self.has_header = has_header or self._has_header_in_file()
 
     def __get_stage_inferred(self):
@@ -1101,7 +1087,13 @@ class TableDefinition(IODefinition):
                           DeprecationWarning)
             force_legacy_mode = True
 
+        if manifest.get('id'):
+            stage = 'in'
+        else:
+            stage = 'out'
+
         table_def = cls(name=name,
+                        stage=stage,
                         full_path=full_path,
                         is_sliced=is_sliced,
                         id=manifest.get('id'),
@@ -1536,6 +1528,7 @@ class FileDefinition(IODefinition):
                             "notify"]
 
     def __init__(self, full_path: str,
+                 stage: Optional[str] = 'out',
                  tags: Optional[List[str]] = None,
                  is_public: Optional[bool] = False,
                  is_permanent: Optional[bool] = False,
@@ -1552,6 +1545,7 @@ class FileDefinition(IODefinition):
 
         Args:
             full_path (str): Full path of the file.
+            stage (str): Storage Stage 'in' or 'out' default out
             tags (list):
                 List of tags that are assigned to this file
             is_public: When true, the file URL will be permanent and publicly accessible.
@@ -1561,6 +1555,8 @@ class FileDefinition(IODefinition):
             notify: Notifies project administrators that a file was uploaded.
         """
         super().__init__(full_path)
+
+        self.stage = stage
 
         self.tags = tags
         self.is_public = is_public
@@ -1602,7 +1598,7 @@ class FileDefinition(IODefinition):
         Returns:
             An instance of FileDefinition configured for output files.
         """
-        return cls(full_path=full_path, tags=tags, is_public=is_public, is_permanent=is_permanent,
+        return cls(full_path=full_path, stage="out", tags=tags, is_public=is_public, is_permanent=is_permanent,
                    is_encrypted=is_encrypted, notify=notify)
 
     @classmethod
@@ -1632,7 +1628,7 @@ class FileDefinition(IODefinition):
         Returns:
             An instance of FileDefinition configured for input files.
         """
-        return cls(full_path=full_path, id=id, s3=s3, abs=abs, created=created, size_bytes=size_bytes,
+        return cls(full_path=full_path, stage="in", id=id, s3=s3, abs=abs, created=created, size_bytes=size_bytes,
                    max_age_days=max_age_days)
 
     @classmethod
@@ -1667,7 +1663,13 @@ class FileDefinition(IODefinition):
 
         full_path = str(file_path)
 
+        if manifest.get('id'):
+            stage = 'in'
+        else:
+            stage = 'out'
+
         file_def = cls(full_path=full_path,
+                       stage=stage,
                        tags=manifest.get('tags', []),
                        is_public=manifest.get('is_public', False),
                        is_permanent=manifest.get('is_permanent', False),
@@ -1732,18 +1734,31 @@ class FileDefinition(IODefinition):
 
         """
 
-        return {
-            'id': self.id,
-            'created': self.created.strftime('%Y-%m-%dT%H:%M:%S%z') if self.created else None,
-            'is_public': self.is_public,
-            'is_encrypted': self.is_encrypted,
-            'name': self.name,
-            'size_bytes': self.size_bytes,
-            'tags': self.tags,
-            'notify': self.notify,
-            'max_age_days': self.max_age_days,
-            'is_permanent': self.is_permanent,
-        }
+        if manifest_type == 'in':
+
+            manifest_dictionary = {
+                'id': self.id,
+                'created': self.created.strftime('%Y-%m-%dT%H:%M:%S%z') if self.created else None,
+                'is_public': self.is_public,
+                'is_encrypted': self.is_encrypted,
+                'name': self.name,
+                'size_bytes': self.size_bytes,
+                'tags': self.tags,
+                'notify': self.notify,
+                'max_age_days': self.max_age_days,
+                'is_permanent': self.is_permanent,
+            }
+
+        else:
+            manifest_dictionary = {
+                'is_public': self.is_public,
+                'is_permanent': self.is_permanent,
+                'is_encrypted': self.is_encrypted,
+                'tags': self.tags,
+                'notify': self.notify,
+            }
+
+        return manifest_dictionary
 
     @property
     def name(self) -> str:

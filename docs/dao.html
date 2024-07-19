@@ -460,7 +460,7 @@ class EnvironmentVariables:
 </dd>
 <dt id="keboola.component.dao.FileDefinition"><code class="flex name class">
 <span>class <span class="ident">FileDefinition</span></span>
-<span>(</span><span>full_path: str, tags: Optional[List[str]] = None, is_public: Optional[bool] = False, is_permanent: Optional[bool] = False, is_encrypted: Optional[bool] = False, notify: Optional[bool] = False, id: Optional[str] = None, s3: Optional[dict] = None, abs: Optional[dict] = None, created: Optional[str] = None, size_bytes: Optional[int] = None, max_age_days: Optional[int] = None)</span>
+<span>(</span><span>full_path: str, stage: Optional[str] = 'out', tags: Optional[List[str]] = None, is_public: Optional[bool] = False, is_permanent: Optional[bool] = False, is_encrypted: Optional[bool] = False, notify: Optional[bool] = False, id: Optional[str] = None, s3: Optional[dict] = None, abs: Optional[dict] = None, created: Optional[str] = None, size_bytes: Optional[int] = None, max_age_days: Optional[int] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>File definition class. It is used as a container for <code>{in/out}/files/</code> files.
@@ -496,6 +496,8 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 <dl>
 <dt><strong><code>full_path</code></strong> :&ensp;<code>str</code></dt>
 <dd>Full path of the file.</dd>
+<dt><strong><code>stage</code></strong> :&ensp;<code>str</code></dt>
+<dd>Storage Stage 'in' or 'out' default out</dd>
 <dt>tags (list):</dt>
 <dt>List of tags that are assigned to this file</dt>
 <dt><strong><code>is_public</code></strong></dt>
@@ -559,6 +561,7 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
                             &#34;notify&#34;]
 
     def __init__(self, full_path: str,
+                 stage: Optional[str] = &#39;out&#39;,
                  tags: Optional[List[str]] = None,
                  is_public: Optional[bool] = False,
                  is_permanent: Optional[bool] = False,
@@ -575,6 +578,7 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 
         Args:
             full_path (str): Full path of the file.
+            stage (str): Storage Stage &#39;in&#39; or &#39;out&#39; default out
             tags (list):
                 List of tags that are assigned to this file
             is_public: When true, the file URL will be permanent and publicly accessible.
@@ -584,6 +588,8 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
             notify: Notifies project administrators that a file was uploaded.
         &#34;&#34;&#34;
         super().__init__(full_path)
+
+        self.stage = stage
 
         self.tags = tags
         self.is_public = is_public
@@ -625,7 +631,7 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
         Returns:
             An instance of FileDefinition configured for output files.
         &#34;&#34;&#34;
-        return cls(full_path=full_path, tags=tags, is_public=is_public, is_permanent=is_permanent,
+        return cls(full_path=full_path, stage=&#34;out&#34;, tags=tags, is_public=is_public, is_permanent=is_permanent,
                    is_encrypted=is_encrypted, notify=notify)
 
     @classmethod
@@ -655,7 +661,7 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
         Returns:
             An instance of FileDefinition configured for input files.
         &#34;&#34;&#34;
-        return cls(full_path=full_path, id=id, s3=s3, abs=abs, created=created, size_bytes=size_bytes,
+        return cls(full_path=full_path, stage=&#34;in&#34;, id=id, s3=s3, abs=abs, created=created, size_bytes=size_bytes,
                    max_age_days=max_age_days)
 
     @classmethod
@@ -690,7 +696,13 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 
         full_path = str(file_path)
 
+        if manifest.get(&#39;id&#39;):
+            stage = &#39;in&#39;
+        else:
+            stage = &#39;out&#39;
+
         file_def = cls(full_path=full_path,
+                       stage=stage,
                        tags=manifest.get(&#39;tags&#39;, []),
                        is_public=manifest.get(&#39;is_public&#39;, False),
                        is_permanent=manifest.get(&#39;is_permanent&#39;, False),
@@ -755,18 +767,31 @@ table_def = dao.FileDefinition.build_from_manifest('in/files/file.jpg.manifest')
 
         &#34;&#34;&#34;
 
-        return {
-            &#39;id&#39;: self.id,
-            &#39;created&#39;: self.created.strftime(&#39;%Y-%m-%dT%H:%M:%S%z&#39;) if self.created else None,
-            &#39;is_public&#39;: self.is_public,
-            &#39;is_encrypted&#39;: self.is_encrypted,
-            &#39;name&#39;: self.name,
-            &#39;size_bytes&#39;: self.size_bytes,
-            &#39;tags&#39;: self.tags,
-            &#39;notify&#39;: self.notify,
-            &#39;max_age_days&#39;: self.max_age_days,
-            &#39;is_permanent&#39;: self.is_permanent,
-        }
+        if manifest_type == &#39;in&#39;:
+
+            manifest_dictionary = {
+                &#39;id&#39;: self.id,
+                &#39;created&#39;: self.created.strftime(&#39;%Y-%m-%dT%H:%M:%S%z&#39;) if self.created else None,
+                &#39;is_public&#39;: self.is_public,
+                &#39;is_encrypted&#39;: self.is_encrypted,
+                &#39;name&#39;: self.name,
+                &#39;size_bytes&#39;: self.size_bytes,
+                &#39;tags&#39;: self.tags,
+                &#39;notify&#39;: self.notify,
+                &#39;max_age_days&#39;: self.max_age_days,
+                &#39;is_permanent&#39;: self.is_permanent,
+            }
+
+        else:
+            manifest_dictionary = {
+                &#39;is_public&#39;: self.is_public,
+                &#39;is_permanent&#39;: self.is_permanent,
+                &#39;is_encrypted&#39;: self.is_encrypted,
+                &#39;tags&#39;: self.tags,
+                &#39;notify&#39;: self.notify,
+            }
+
+        return manifest_dictionary
 
     @property
     def name(self) -&gt; str:
@@ -1254,9 +1279,6 @@ inheritance.</p></div>
     def __init__(self, full_path):
         self.full_path = full_path
 
-        # infer stage by default
-        self.__stage = self.__get_stage_inferred()
-
     @classmethod
     def build_from_manifest(cls,
                             manifest_file_path: str
@@ -1276,13 +1298,13 @@ inheritance.</p></div>
         &#34;&#34;&#34;
         Helper property marking the stage of the file. (str)
         &#34;&#34;&#34;
-        return self.__stage
+        return self._stage
 
     @stage.setter
     def stage(self, stage: str):
         if stage not in [&#39;in&#39;, &#39;out&#39;]:
             raise ValueError(f&#39;Invalid stage &#34;{stage}&#34;, supported values are: &#34;in&#34;, &#34;out&#34;&#39;)
-        self.__stage = stage
+        self._stage = stage
 
     @property
     @abstractmethod
@@ -1299,17 +1321,6 @@ inheritance.</p></div>
         File name - excluding the KBC ID if present (`str`, read-only)
         &#34;&#34;&#34;
         raise NotImplementedError
-
-    def __get_stage_inferred(self):
-        stage = &#39;in&#39;
-        if not self.full_path or not Path(self.full_path).exists():
-            return stage
-
-        if Path(self.full_path).parent.parent.name == &#39;in&#39;:
-            stage = &#39;in&#39;
-        elif Path(self.full_path).parent.parent.name == &#39;out&#39;:
-            stage = &#39;out&#39;
-        return stage
 
     # ############ Staging parameters
 
@@ -1467,7 +1478,7 @@ def stage(self) -&gt; str:
     &#34;&#34;&#34;
     Helper property marking the stage of the file. (str)
     &#34;&#34;&#34;
-    return self.__stage</code></pre>
+    return self._stage</code></pre>
 </details>
 </dd>
 </dl>
@@ -1899,7 +1910,7 @@ class TableColumnTypes(SubscriptableDataclass):
 </dd>
 <dt id="keboola.component.dao.TableDefinition"><code class="flex name class">
 <span>class <span class="ident">TableDefinition</span></span>
-<span>(</span><span>name: str, full_path: Optional[Union[str, None]] = None, is_sliced: Optional[bool] = False, destination: Optional[str] = '', primary_key: Optional[List[str]] = None, schema: Optional[Union[TypeOrderedDict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>], list[str]]] = None, incremental: Optional[bool] = None, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, stage: Optional[str] = None, write_always: Optional[bool] = False, has_header: Optional[bool] = None, **kwargs)</span>
+<span>(</span><span>name: str, full_path: Optional[Union[str, None]] = None, is_sliced: Optional[bool] = False, destination: Optional[str] = '', primary_key: Optional[List[str]] = None, schema: Optional[Union[TypeOrderedDict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>], list[str]]] = None, incremental: Optional[bool] = None, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, stage: Optional[str] = 'out', write_always: Optional[bool] = False, has_header: Optional[bool] = None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Table definition class. It is used as a container for <code>in/tables/</code> files.
@@ -2069,7 +2080,7 @@ fails.</dd>
                  enclosure: Optional[str] = &#39;&#34;&#39;,
                  delimiter: Optional[str] = &#39;,&#39;,
                  delete_where: Optional[dict] = None,
-                 stage: Optional[str] = None,
+                 stage: Optional[str] = &#39;out&#39;,
                  write_always: Optional[bool] = False,
                  has_header: Optional[bool] = None,
                  # input
@@ -2147,7 +2158,7 @@ fails.</dd>
         self._data_size_bytes = kwargs.get(&#39;data_size_bytes&#39;)
         self._is_alias = kwargs.get(&#39;is_alias&#39;)
 
-        self.stage = stage if stage else self.__get_stage_inferred()
+        self.stage = stage
         self.has_header = has_header or self._has_header_in_file()
 
     def __get_stage_inferred(self):
@@ -2378,7 +2389,13 @@ fails.</dd>
                           DeprecationWarning)
             force_legacy_mode = True
 
+        if manifest.get(&#39;id&#39;):
+            stage = &#39;in&#39;
+        else:
+            stage = &#39;out&#39;
+
         table_def = cls(name=name,
+                        stage=stage,
                         full_path=full_path,
                         is_sliced=is_sliced,
                         id=manifest.get(&#39;id&#39;),
