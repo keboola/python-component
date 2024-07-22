@@ -1387,6 +1387,8 @@ class TableDefinition(IODefinition):
         self._table_metadata = table_metadata
         # backward compatibility legacy support
         for col, val in table_metadata._get_legacy_column_metadata_for_manifest().items():
+            if not self.schema.get(col):
+                self.schema[col] = ColumnDefinition()
             self.schema[col].metadata = {item['key']: item['value'] for item in val}
 
     @property
