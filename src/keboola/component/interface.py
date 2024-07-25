@@ -952,6 +952,9 @@ class CommonInterface:
         if not legacy_manifest:
             legacy_manifest = self.environment_variables.data_type_support not in ('authoritative', 'hints')
 
+        if self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support'):
+            legacy_manifest = self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support') not in ('authoritative', 'hints')  # noqa: E501
+
         manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
                                                          legacy_manifest=legacy_manifest)
         # make dirs if not exist
