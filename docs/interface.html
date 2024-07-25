@@ -979,6 +979,9 @@ is established in following order:</p>
         if not legacy_manifest:
             legacy_manifest = self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;)
 
+        if self.configuration.config_data.get(&#39;storage&#39;, {}).get(&#39;output&#39;, {}).get(&#39;data_type_support&#39;):
+            legacy_manifest = self.configuration.config_data.get(&#39;storage&#39;, {}).get(&#39;output&#39;, {}).get(&#39;data_type_support&#39;) not in (&#39;authoritative&#39;, &#39;hints&#39;)  # noqa: E501
+
         manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
                                                          legacy_manifest=legacy_manifest)
         # make dirs if not exist
