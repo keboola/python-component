@@ -1807,6 +1807,14 @@ class SupportedManifestAttributes(SubscriptableDataclass):
         elif stage == &#39;in&#39;:
             attributes = self.in_attributes
             exclude = self.in_legacy_exclude
+
+            if not legacy_manifest:
+                to_remove = [&#39;columns&#39;, &#39;column_metadata&#39;, &#39;metadata&#39;]
+                attributes = list(set(attributes).difference(to_remove))
+
+                to_add = [&#39;manifest_type&#39;, &#39;has_header&#39;, &#39;description&#39;, &#39;table_metadata&#39;, &#39;schema&#39;]
+                attributes.extend(to_add)
+
         else:
             raise ValueError(f&#39;Unsupported stage {stage}&#39;)
 
@@ -2414,7 +2422,7 @@ fails.</dd>
 
         return table_def
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = &#39;out&#39;, legacy_queue: bool = False,
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
                                 legacy_manifest: Optional[bool] = None) -&gt; dict:
         &#34;&#34;&#34;
         Returns manifest dictionary in appropriate manifest_type: either &#39;in&#39; or &#39;out&#39;.
@@ -3216,7 +3224,7 @@ def write_always(self) -&gt; bool:
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = 'out', legacy_queue: bool = False, legacy_manifest: Optional[bool] = None) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = None, legacy_queue: bool = False, legacy_manifest: Optional[bool] = None) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
