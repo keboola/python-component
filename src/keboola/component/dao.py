@@ -582,6 +582,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
         elif stage == 'in':
             attributes = self.in_attributes
             exclude = self.in_legacy_exclude
+
         else:
             raise ValueError(f'Unsupported stage {stage}')
 
@@ -1112,7 +1113,7 @@ class TableDefinition(IODefinition):
 
         return table_def
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = 'out', legacy_queue: bool = False,
+    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
                                 legacy_manifest: Optional[bool] = None) -> dict:
         """
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.

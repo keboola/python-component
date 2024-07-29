@@ -136,17 +136,38 @@ class TestTableMetadata(unittest.TestCase):
 
 class TestTableDefinition(unittest.TestCase):
 
-    def test_legacy_order(self):
+    def test_legacy_order_out(self):
         table_def = TableDefinition("testDef", "somepath", False, 'some-destination', ['foo'], ['foo', 'bar'], True,
                                     TableMetadata(), '"', ',',
                                     {'column': 'lilly', 'values': ['a', 'b'], 'operator': 'eq'},
-                                    'in', False
+                                    'out', False
                                     )
 
         self.assertEqual(
             {'destination': 'some-destination', 'incremental': True, 'primary_key': ['foo'], 'write_always': False,
              'delimiter': ',', 'enclosure': '"', 'delete_where_column': 'lilly', 'delete_where_values': ['a', 'b'],
              'delete_where_operator': 'eq', 'columns': ['foo', 'bar']},
+            table_def.get_manifest_dictionary(legacy_manifest=True))
+
+    def test_legacy_order_in(self):
+
+        table_def = TableDefinition("data",
+                                    metadata=TableMetadata({
+                                                                "id": "228956",
+                                                                "key": "KBC.createdBy.component.id",
+                                                                "value": "keboola.python-transformation",
+                                                                "provider": "system",
+                                                                "timestamp": "2017-05-26 00:39:07"
+                                                            }),
+                                    stage='in',
+                                    is_sliced=False,
+                                    schema=["id", "name", "text"],
+                                    created="2015-01-25T01:35:14+0100",
+                                    last_change_date="2015-01-25T01:35:14+0100",
+                                    last_import_date="2015-01-25T01:35:14+0100")
+
+        self.assertEqual(
+            {'columns': ['id', 'name', 'text'], 'created': '2015-01-25T01:35:14+0100', 'last_change_date': '2015-01-25T01:35:14+0100', 'last_import_date': '2015-01-25T01:35:14+0100', 'name': 'data'},
             table_def.get_manifest_dictionary(legacy_manifest=True))
 
     def test_out_old_to_new_has_headers_sliced(self):
@@ -166,15 +187,6 @@ class TestTableDefinition(unittest.TestCase):
 
         manifest = table_def.get_manifest_dictionary()
         self.assertEqual(manifest['has_header'], False)
-
-    def test_in_old_to_new_has_headers_columns(self):
-        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                   'data_examples', 'data1', 'in', 'tables')
-
-        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample.csv.manifest'))
-
-        manifest = table_def.get_manifest_dictionary()
-        self.assertEqual(manifest['has_header'], True)
 
     def test_out_pkey_and_no_columns_incompatible(self):
         with self.assertRaises(UserException) as e:

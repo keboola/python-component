@@ -212,6 +212,59 @@ possible to create the container for the output table using the `CommonInterface
 
 ![TableDefinition dependencies](docs/imgs/TableDefinition_class.png)
 
+**Table schema example:**
+
+```python
+from keboola.component import CommonInterface
+from keboola.component.dao import ColumnDefinition, DataType, SupportedDataTypes, BaseType
+
+# init the interface
+ci = CommonInterface(data_folder_path='data')
+
+# create container for the result
+out = ci.create_out_table_definition("testDef",
+                                     columns=['foo', 'bar'],
+                                     destination='some-destination',
+                                     primary_key=['foo'],
+                                     incremental=True,
+                                     delete_where={'column': 'lilly',
+                                                   'values': ['a', 'b'],
+                                                   'operator': 'eq'})
+
+# update column
+out.update_column('foo',
+                  ColumnDefinition(data_types=BaseType(dtype=SupportedDataTypes.INTEGER, length='20')))
+
+# add new columns
+out.add_column('note', ColumnDefinition(nullable=False))
+out.add_column('test1')
+out.add_columns(['test2', 'test3', 'test4'])
+
+# add new typed column
+out.add_column('id', ColumnDefinition(primary_key=True,
+                                      data_types={'snowflake': DataType(dtype="INTEGER", length='200')})
+               )
+
+out.add_columns({
+    'phone': ColumnDefinition(primary_key=True,
+                              data_types={'snowflake': DataType(dtype="INTEGER", length='200'),
+                                          'bigquery': DataType(dtype="BIGINT")}),
+    'new2': ColumnDefinition(data_types={'snowflake': DataType(dtype="INTEGER", length='200')}),
+                 })
+
+# delete columns
+out.delete_column('bar')
+out.delete_columns(['test2', 'test3'])
+
+
+# write some content
+with open(out.full_path, 'w') as result:
+    result.write('line')
+    
+# write manifest
+ci.write_manifest(out)
+```
+
 **Example:**
 
 ```python
