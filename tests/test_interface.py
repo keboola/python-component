@@ -685,6 +685,35 @@ class TestCommonInterface(unittest.TestCase):
             'write_always': False
         }, old_manifest)
 
+    def test_full_input_manifest(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data_full_input_manifest')
+        os.environ["KBC_DATADIR"] = path
+
+        ci = CommonInterface()
+        tables = ci.get_input_tables_definitions()
+
+        ci.write_manifests([tables[0]])
+        manifest_filename = tables[0].full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            old_manifest = json.load(manifest_file)
+
+        self.assertEqual({
+            'id': 'in.c-main.test',
+            'uri': 'https://connection.keboola.com//v2/storage/tables/in.c-main.test',
+            'name': 'sample.csv',
+            'created': '2015-11-02T09:11:37+0100',
+            'last_change_date': '2015-11-02T09:11:37+0100',
+            'last_import_date': '2015-11-02T09:11:37+0100',
+            'rows_count': 400,
+            'data_size_bytes': 81920,
+            'is_alias': False,
+            'indexed_columns': ['x'],
+            'primary_key': ['x'],
+            'column_metadata': {'x': [{'key': 'foo', 'value': 'gogo'}]},
+            'columns': ['x', 'Sales', 'CompPrice', 'Income', 'Advertising', 'Population', 'Price', 'ShelveLoc', 'Age',
+                         'Education', 'Urban', 'US', 'High']
+        }, old_manifest)
+
 
 class TestConfiguration(unittest.TestCase):
 
