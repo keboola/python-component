@@ -962,9 +962,9 @@ class CommonInterface:
 
     def _expects_legacy_manifest(self) -> bool:
         legacy_manifest = self.environment_variables.data_type_support not in ('authoritative', 'hints')
-        if self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support'):
-            legacy_manifest = self.configuration.config_data.get('storage', {}).get('output', {}).get(
-                'data_type_support') not in ('authoritative', 'hints')
+        om_override = self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support')
+        if om_override:
+            legacy_manifest = om_override not in ('authoritative', 'hints')
         return legacy_manifest
 
     def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]],
