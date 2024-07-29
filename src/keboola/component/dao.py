@@ -1215,7 +1215,7 @@ class TableDefinition(IODefinition):
             'schema': [col.to_dict(name)
                        for name, col in self.schema.items()] if isinstance(self.schema, (OrderedDict, dict)) else []
         }
-        if legacy_manifest:
+        if legacy_manifest or self.stage == 'in':
             fields['columns'] = self.column_names
 
         new_dict = fields.copy()
