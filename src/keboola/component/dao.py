@@ -744,6 +744,11 @@ class TableDefinition(IODefinition):
         "columns",
         "metadata",
         "column_metadata",
+        "rows_count",
+        "data_size_bytes",
+        "is_alias",
+        "attributes",
+        "indexed_columns"
     ]
 
     OUTPUT_MANIFEST_ATTRIBUTES = [
@@ -856,6 +861,8 @@ class TableDefinition(IODefinition):
         self._rows_count = kwargs.get('rows_count')
         self._data_size_bytes = kwargs.get('data_size_bytes')
         self._is_alias = kwargs.get('is_alias')
+        self._indexed_columns = kwargs.get('indexed_columns')
+        self._attributes = kwargs.get('attributes')
 
         self.stage = stage
         self.has_header = has_header or self._has_header_in_file()
@@ -1108,7 +1115,9 @@ class TableDefinition(IODefinition):
                         rows_count=manifest.get('rows_count'),
                         data_size_bytes=manifest.get('data_size_bytes'),
                         is_alias=manifest.get('is_alias'),
-                        force_legacy_mode=force_legacy_mode
+                        force_legacy_mode=force_legacy_mode,
+                        indexed_columns=manifest.get('indexed_columns'),
+                        attributes=manifest.get('attributes')
                         )
 
         return table_def
@@ -1185,6 +1194,8 @@ class TableDefinition(IODefinition):
             'rows_count': self._rows_count,
             'data_size_bytes': self._data_size_bytes,
             'is_alias': self._is_alias,
+            'indexed_columns': self._indexed_columns,
+            'attributes': self._attributes,
 
             'destination': self.destination,
             'incremental': self.incremental,
