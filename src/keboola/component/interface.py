@@ -950,10 +950,8 @@ class CommonInterface:
         """
 
         if not legacy_manifest:
-            legacy_manifest = self.environment_variables.data_type_support not in ('authoritative', 'hints')
 
-        if self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support'):
-            legacy_manifest = self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support') not in ('authoritative', 'hints')  # noqa: E501
+            legacy_manifest = self._expects_legacy_manifest()
 
         manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
                                                          legacy_manifest=legacy_manifest)
@@ -961,6 +959,13 @@ class CommonInterface:
         os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
         with open(io_definition.full_path + '.manifest', 'w') as manifest_file:
             json.dump(manifest, manifest_file)
+
+    def _expects_legacy_manifest(self) -> bool:
+        legacy_manifest = self.environment_variables.data_type_support not in ('authoritative', 'hints')
+        if self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support'):
+            legacy_manifest = self.configuration.config_data.get('storage', {}).get('output', {}).get(
+                'data_type_support') not in ('authoritative', 'hints')
+        return legacy_manifest
 
     def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]],
                         legacy_manifest: Optional[bool] = None):

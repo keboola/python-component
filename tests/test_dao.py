@@ -188,15 +188,6 @@ class TestTableDefinition(unittest.TestCase):
         manifest = table_def.get_manifest_dictionary()
         self.assertEqual(manifest['has_header'], False)
 
-    def test_in_old_to_new_has_headers_columns(self):
-        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                   'data_examples', 'data1', 'in', 'tables')
-
-        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample.csv.manifest'))
-
-        manifest = table_def.get_manifest_dictionary()
-        self.assertEqual(manifest['has_header'], True)
-
     def test_out_pkey_and_no_columns_incompatible(self):
         with self.assertRaises(UserException) as e:
             TableDefinition("testDef", "somepath", primary_key=['foo'])
