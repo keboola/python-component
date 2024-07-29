@@ -977,10 +977,8 @@ is established in following order:</p>
         &#34;&#34;&#34;
 
         if not legacy_manifest:
-            legacy_manifest = self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;)
 
-        if self.configuration.config_data.get(&#39;storage&#39;, {}).get(&#39;output&#39;, {}).get(&#39;data_type_support&#39;):
-            legacy_manifest = self.configuration.config_data.get(&#39;storage&#39;, {}).get(&#39;output&#39;, {}).get(&#39;data_type_support&#39;) not in (&#39;authoritative&#39;, &#39;hints&#39;)  # noqa: E501
+            legacy_manifest = self._expects_legacy_manifest()
 
         manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
                                                          legacy_manifest=legacy_manifest)
@@ -988,6 +986,13 @@ is established in following order:</p>
         os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
         with open(io_definition.full_path + &#39;.manifest&#39;, &#39;w&#39;) as manifest_file:
             json.dump(manifest, manifest_file)
+
+    def _expects_legacy_manifest(self) -&gt; bool:
+        legacy_manifest = self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;)
+        if self.configuration.config_data.get(&#39;storage&#39;, {}).get(&#39;output&#39;, {}).get(&#39;data_type_support&#39;):
+            legacy_manifest = self.configuration.config_data.get(&#39;storage&#39;, {}).get(&#39;output&#39;, {}).get(
+                &#39;data_type_support&#39;) not in (&#39;authoritative&#39;, &#39;hints&#39;)
+        return legacy_manifest
 
     def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]],
                         legacy_manifest: Optional[bool] = None):

@@ -1808,13 +1808,6 @@ class SupportedManifestAttributes(SubscriptableDataclass):
             attributes = self.in_attributes
             exclude = self.in_legacy_exclude
 
-            if not legacy_manifest:
-                to_remove = [&#39;columns&#39;, &#39;column_metadata&#39;, &#39;metadata&#39;]
-                attributes = list(set(attributes).difference(to_remove))
-
-                to_add = [&#39;manifest_type&#39;, &#39;has_header&#39;, &#39;description&#39;, &#39;table_metadata&#39;, &#39;schema&#39;]
-                attributes.extend(to_add)
-
         else:
             raise ValueError(f&#39;Unsupported stage {stage}&#39;)
 
