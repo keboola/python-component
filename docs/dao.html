@@ -2517,7 +2517,7 @@ fails.</dd>
             &#39;schema&#39;: [col.to_dict(name)
                        for name, col in self.schema.items()] if isinstance(self.schema, (OrderedDict, dict)) else []
         }
-        if legacy_manifest:
+        if legacy_manifest or self.stage == &#39;in&#39;:
             fields[&#39;columns&#39;] = self.column_names
 
         new_dict = fields.copy()
