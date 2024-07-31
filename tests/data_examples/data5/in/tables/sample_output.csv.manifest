@@ -1,0 +1,29 @@
+{
+  "primary_key": [
+    "x"
+  ],
+  "incremental": true,
+  "delimiter": "\t",
+  "enclosure": "'",
+  "columns": [
+    "x",
+    "Sales",
+    "CompPrice",
+    "Income",
+    "Advertising",
+    "Population",
+    "Price",
+    "ShelveLoc",
+    "Age",
+    "Education",
+    "Urban",
+    "US",
+    "High"
+  ],
+  "attributes": [],
+  "delete_where_column": "Advertising",
+  "delete_where_values": ["Video", "Search"],
+  "delete_where_operator": "eq",
+  "name": "Leads",
+  "destination": "out.c-main.Leads"
+}

@@ -1,1 +1,1 @@
-{"write_always": false, "delimiter": ",", "enclosure": "\"", "columns": ["x", "Sales", "CompPrice", "Income", "Advertising", "Population", "Price", "ShelveLoc", "Age", "Education", "Urban", "US", "High"]}
+{"incremental": false, "write_always": false, "delimiter": ",", "enclosure": "\"", "columns": ["x", "Sales", "CompPrice", "Income", "Advertising", "Population", "Price", "ShelveLoc", "Age", "Education", "Urban", "US", "High"]}

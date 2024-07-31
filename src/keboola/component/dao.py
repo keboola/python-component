@@ -849,6 +849,15 @@ class TableDefinition(IODefinition):
         self.delete_where_column = None
         self.delete_where_operator = None
 
+        if kwargs.get('delete_where_values'):
+            self.delete_where_values = kwargs['delete_where_values']
+
+        if kwargs.get('delete_where_column'):
+            self.delete_where_column = kwargs['delete_where_column']
+
+        if kwargs.get('delete_where_operator'):
+            self.delete_where_operator = kwargs['delete_where_operator']
+
         self.set_delete_where_from_dict(delete_where)
         self.write_always = write_always
 
@@ -883,7 +892,8 @@ class TableDefinition(IODefinition):
                                 delimiter: Optional[str] = ',',
                                 delete_where: Optional[dict] = None,
                                 write_always: Optional[bool] = False,
-                                schema: Optional[List[ColumnDefinition]] = None,
+                                schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
+                                **kwargs
                                 ):
         """
         Factory method for creating a TableDefinition instance for output tables.
@@ -918,6 +928,7 @@ class TableDefinition(IODefinition):
                    delete_where=delete_where,
                    write_always=write_always,
                    schema=schema,
+                   **kwargs
                    )
 
     @classmethod
@@ -935,7 +946,7 @@ class TableDefinition(IODefinition):
                                delete_where: Optional[dict] = None,
                                stage: Optional[str] = 'in',
                                write_always: Optional[bool] = False,
-                               schema: Optional[List[ColumnDefinition]] = None,
+                               schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
                                rows_count: Optional[int] = None,
                                data_size_bytes: Optional[int] = None,
                                is_alias: Optional[bool] = False,
@@ -945,7 +956,9 @@ class TableDefinition(IODefinition):
                                id: Optional[str] = '',
                                created: Optional[str] = None,
                                last_change_date: Optional[str] = None,
-                               last_import_date: Optional[str] = None):
+                               last_import_date: Optional[str] = None,
+                               **kwargs
+                               ):
         """
         Factory method for creating a TableDefinition instance for input tables.
 
@@ -1000,7 +1013,9 @@ class TableDefinition(IODefinition):
                    id=id,
                    created=created,
                    last_change_date=last_change_date,
-                   last_import_date=last_import_date)
+                   last_import_date=last_import_date,
+                   **kwargs
+                   )
 
     @classmethod
     def convert_to_column_definition(cls, column_name, column_metadata, primary_key=False):
@@ -1088,6 +1103,9 @@ class TableDefinition(IODefinition):
         else:
             name = Path(manifest_file_path).stem
 
+        if manifest.get('name'):
+            name = manifest.get('name')
+
         # test if the manifest is output and incompatible
         force_legacy_mode = False
         if not manifest.get('columns') and manifest.get('primary_key'):
@@ -1097,28 +1115,57 @@ class TableDefinition(IODefinition):
 
         if manifest.get('id'):
             stage = 'in'
+            table_def = cls.build_input_definition(
+                # helper parameters
+                stage=stage,
+                force_legacy_mode=force_legacy_mode,
+                is_sliced=is_sliced,
+                full_path=full_path,
+
+                # basic in manifest parameters
+                id=manifest.get('id'),
+                uri=manifest.get('uri'),
+                name=name,
+                primary_key=manifest.get('primary_key'),
+                created=manifest.get('created'),
+                last_change_date=manifest.get('last_change_date'),
+                last_import_date=manifest.get('last_import_date'),
+                schema=cls.return_schema_from_manifest(manifest),
+                table_metadata=TableMetadata(manifest),
+
+                # additional in manifest parameters
+                rows_count=manifest.get('rows_count'),
+                data_size_bytes=manifest.get('data_size_bytes'),
+                is_alias=manifest.get('is_alias'),
+                attributes=manifest.get('attributes'),
+                indexed_columns=manifest.get('indexed_columns'),
+            )
+
         else:
             stage = 'out'
+            table_def = cls.build_output_definition(
+                # helper parameters
+                stage=stage,
+                force_legacy_mode=force_legacy_mode,
+                is_sliced=is_sliced,
+                full_path=full_path,
 
-        table_def = cls(name=name,
-                        stage=stage,
-                        full_path=full_path,
-                        is_sliced=is_sliced,
-                        id=manifest.get('id'),
-                        table_metadata=TableMetadata(manifest),
-                        primary_key=manifest.get('primary_key'),
-                        schema=cls.return_schema_from_manifest(manifest),
-                        uri=manifest.get('uri'),
-                        created=manifest.get('created'),
-                        last_change_date=manifest.get('last_change_date'),
-                        last_import_date=manifest.get('last_import_date'),
-                        rows_count=manifest.get('rows_count'),
-                        data_size_bytes=manifest.get('data_size_bytes'),
-                        is_alias=manifest.get('is_alias'),
-                        force_legacy_mode=force_legacy_mode,
-                        indexed_columns=manifest.get('indexed_columns'),
-                        attributes=manifest.get('attributes')
-                        )
+                # basic out manifest parameters
+                name=name,
+                destination=manifest.get('destination'),
+                schema=cls.return_schema_from_manifest(manifest),
+                incremental=manifest.get('incremental'),
+                primary_key=manifest.get('primary_key'),
+                write_always=manifest.get('write_always', False),
+                delimiter=manifest.get('delimiter', ','),
+                enclosure=manifest.get('enclosure', '"'),
+                table_metadata=TableMetadata(manifest),
+
+                # additional in manifest parameters
+                delete_where_values=manifest.get('delete_where_values'),
+                delete_where_column=manifest.get('delete_where_column'),
+                delete_where_operator=manifest.get('delete_where_operator')
+            )
 
         return table_def
 

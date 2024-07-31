@@ -1,7 +1,7 @@
 {
     "id": "in.c-main.test",
     "uri": "https:\/\/connection.keboola.com\/\/v2\/storage\/tables\/in.c-main.test",
-    "name": "test",
+    "name": "orphaned_manifest.csv",
     "primary_key": [],
     "indexed_columns": [],
     "created": "2015-11-02T09:11:37+0100",

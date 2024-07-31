@@ -2151,6 +2151,15 @@ fails.</dd>
         self.delete_where_column = None
         self.delete_where_operator = None
 
+        if kwargs.get(&#39;delete_where_values&#39;):
+            self.delete_where_values = kwargs[&#39;delete_where_values&#39;]
+
+        if kwargs.get(&#39;delete_where_column&#39;):
+            self.delete_where_column = kwargs[&#39;delete_where_column&#39;]
+
+        if kwargs.get(&#39;delete_where_operator&#39;):
+            self.delete_where_operator = kwargs[&#39;delete_where_operator&#39;]
+
         self.set_delete_where_from_dict(delete_where)
         self.write_always = write_always
 
@@ -2185,7 +2194,8 @@ fails.</dd>
                                 delimiter: Optional[str] = &#39;,&#39;,
                                 delete_where: Optional[dict] = None,
                                 write_always: Optional[bool] = False,
-                                schema: Optional[List[ColumnDefinition]] = None,
+                                schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
+                                **kwargs
                                 ):
         &#34;&#34;&#34;
         Factory method for creating a TableDefinition instance for output tables.
@@ -2220,6 +2230,7 @@ fails.</dd>
                    delete_where=delete_where,
                    write_always=write_always,
                    schema=schema,
+                   **kwargs
                    )
 
     @classmethod
@@ -2237,7 +2248,7 @@ fails.</dd>
                                delete_where: Optional[dict] = None,
                                stage: Optional[str] = &#39;in&#39;,
                                write_always: Optional[bool] = False,
-                               schema: Optional[List[ColumnDefinition]] = None,
+                               schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
                                rows_count: Optional[int] = None,
                                data_size_bytes: Optional[int] = None,
                                is_alias: Optional[bool] = False,
@@ -2247,7 +2258,9 @@ fails.</dd>
                                id: Optional[str] = &#39;&#39;,
                                created: Optional[str] = None,
                                last_change_date: Optional[str] = None,
-                               last_import_date: Optional[str] = None):
+                               last_import_date: Optional[str] = None,
+                               **kwargs
+                               ):
         &#34;&#34;&#34;
         Factory method for creating a TableDefinition instance for input tables.
 
@@ -2302,7 +2315,9 @@ fails.</dd>
                    id=id,
                    created=created,
                    last_change_date=last_change_date,
-                   last_import_date=last_import_date)
+                   last_import_date=last_import_date,
+                   **kwargs
+                   )
 
     @classmethod
     def convert_to_column_definition(cls, column_name, column_metadata, primary_key=False):
@@ -2390,6 +2405,9 @@ fails.</dd>
         else:
             name = Path(manifest_file_path).stem
 
+        if manifest.get(&#39;name&#39;):
+            name = manifest.get(&#39;name&#39;)
+
         # test if the manifest is output and incompatible
         force_legacy_mode = False
         if not manifest.get(&#39;columns&#39;) and manifest.get(&#39;primary_key&#39;):
@@ -2399,28 +2417,57 @@ fails.</dd>
 
         if manifest.get(&#39;id&#39;):
             stage = &#39;in&#39;
+            table_def = cls.build_input_definition(
+                # helper parameters
+                stage=stage,
+                force_legacy_mode=force_legacy_mode,
+                is_sliced=is_sliced,
+                full_path=full_path,
+
+                # basic in manifest parameters
+                id=manifest.get(&#39;id&#39;),
+                uri=manifest.get(&#39;uri&#39;),
+                name=name,
+                primary_key=manifest.get(&#39;primary_key&#39;),
+                created=manifest.get(&#39;created&#39;),
+                last_change_date=manifest.get(&#39;last_change_date&#39;),
+                last_import_date=manifest.get(&#39;last_import_date&#39;),
+                schema=cls.return_schema_from_manifest(manifest),
+                table_metadata=TableMetadata(manifest),
+
+                # additional in manifest parameters
+                rows_count=manifest.get(&#39;rows_count&#39;),
+                data_size_bytes=manifest.get(&#39;data_size_bytes&#39;),
+                is_alias=manifest.get(&#39;is_alias&#39;),
+                attributes=manifest.get(&#39;attributes&#39;),
+                indexed_columns=manifest.get(&#39;indexed_columns&#39;),
+            )
+
         else:
             stage = &#39;out&#39;
+            table_def = cls.build_output_definition(
+                # helper parameters
+                stage=stage,
+                force_legacy_mode=force_legacy_mode,
+                is_sliced=is_sliced,
+                full_path=full_path,
 
-        table_def = cls(name=name,
-                        stage=stage,
-                        full_path=full_path,
-                        is_sliced=is_sliced,
-                        id=manifest.get(&#39;id&#39;),
-                        table_metadata=TableMetadata(manifest),
-                        primary_key=manifest.get(&#39;primary_key&#39;),
-                        schema=cls.return_schema_from_manifest(manifest),
-                        uri=manifest.get(&#39;uri&#39;),
-                        created=manifest.get(&#39;created&#39;),
-                        last_change_date=manifest.get(&#39;last_change_date&#39;),
-                        last_import_date=manifest.get(&#39;last_import_date&#39;),
-                        rows_count=manifest.get(&#39;rows_count&#39;),
-                        data_size_bytes=manifest.get(&#39;data_size_bytes&#39;),
-                        is_alias=manifest.get(&#39;is_alias&#39;),
-                        force_legacy_mode=force_legacy_mode,
-                        indexed_columns=manifest.get(&#39;indexed_columns&#39;),
-                        attributes=manifest.get(&#39;attributes&#39;)
-                        )
+                # basic out manifest parameters
+                name=name,
+                destination=manifest.get(&#39;destination&#39;),
+                schema=cls.return_schema_from_manifest(manifest),
+                incremental=manifest.get(&#39;incremental&#39;),
+                primary_key=manifest.get(&#39;primary_key&#39;),
+                write_always=manifest.get(&#39;write_always&#39;, False),
+                delimiter=manifest.get(&#39;delimiter&#39;, &#39;,&#39;),
+                enclosure=manifest.get(&#39;enclosure&#39;, &#39;&#34;&#39;),
+                table_metadata=TableMetadata(manifest),
+
+                # additional in manifest parameters
+                delete_where_values=manifest.get(&#39;delete_where_values&#39;),
+                delete_where_column=manifest.get(&#39;delete_where_column&#39;),
+                delete_where_operator=manifest.get(&#39;delete_where_operator&#39;)
+            )
 
         return table_def
 
@@ -2838,7 +2885,7 @@ if the counterpart table is not found.</p>
 table with no input manifest.</p></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.build_input_definition"><code class="name flex">
-<span>def <span class="ident">build_input_definition</span></span>(<span>name: str, full_path: Optional[Union[str, None]] = None, is_sliced: Optional[bool] = False, destination: Optional[str] = '', primary_key: Optional[List[str]] = None, columns: Optional[List[str]] = None, incremental: Optional[bool] = None, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, stage: Optional[str] = 'in', write_always: Optional[bool] = False, schema: Optional[List[<a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>]] = None, rows_count: Optional[int] = None, data_size_bytes: Optional[int] = None, is_alias: Optional[bool] = False, uri: Optional[str] = None, id: Optional[str] = '', created: Optional[str] = None, last_change_date: Optional[str] = None, last_import_date: Optional[str] = None)</span>
+<span>def <span class="ident">build_input_definition</span></span>(<span>name: str, full_path: Optional[Union[str, None]] = None, is_sliced: Optional[bool] = False, destination: Optional[str] = '', primary_key: Optional[List[str]] = None, columns: Optional[List[str]] = None, incremental: Optional[bool] = None, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, stage: Optional[str] = 'in', write_always: Optional[bool] = False, schema: Optional[Union[TypeOrderedDict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>], list[str]]] = None, rows_count: Optional[int] = None, data_size_bytes: Optional[int] = None, is_alias: Optional[bool] = False, uri: Optional[str] = None, id: Optional[str] = '', created: Optional[str] = None, last_change_date: Optional[str] = None, last_import_date: Optional[str] = None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Factory method for creating a TableDefinition instance for input tables.</p>
@@ -2900,7 +2947,7 @@ including metadata and schema definitions.</p>
 </dl></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.build_output_definition"><code class="name flex">
-<span>def <span class="ident">build_output_definition</span></span>(<span>name: str, destination: Optional[str] = '', columns: Optional[List[str]] = None, primary_key: Optional[List[str]] = None, incremental: Optional[bool] = False, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, write_always: Optional[bool] = False, schema: Optional[List[<a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>]] = None)</span>
+<span>def <span class="ident">build_output_definition</span></span>(<span>name: str, destination: Optional[str] = '', columns: Optional[List[str]] = None, primary_key: Optional[List[str]] = None, incremental: Optional[bool] = False, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, write_always: Optional[bool] = False, schema: Optional[Union[TypeOrderedDict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>], list[str]]] = None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Factory method for creating a TableDefinition instance for output tables.</p>
