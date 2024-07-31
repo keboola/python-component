@@ -304,7 +304,8 @@ class TestTableDefinition(unittest.TestCase):
 
         expected_table_def = TableDefinition(name='orphaned.csv',
                                              full_path=os.path.join(sample_path, 'orphaned.csv'),
-                                             is_sliced=False
+                                             is_sliced=False,
+                                             write_always=False
                                              )
 
         self.assertEqual(expected_table_def.full_path, table_def.full_path)
@@ -572,6 +573,50 @@ class TestTableDefinition(unittest.TestCase):
                          'nullable': True},
                         {'name': 'note', 'data_type': {'base': {'type': 'STRING'}}}]},
             table_def.get_manifest_dictionary())
+
+    def test_build_from_manifest_full_input(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data_full_input_manifest', 'in', 'tables')
+
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample.csv.manifest'))
+
+        self.assertEqual(table_def.id, 'in.c-main.test')
+        self.assertEqual(table_def.uri, 'https://connection.keboola.com//v2/storage/tables/in.c-main.test')
+        self.assertEqual(table_def.name, 'sample.csv')
+        self.assertEqual(table_def.created, datetime.strptime("2015-11-02T09:11:37+0100", "%Y-%m-%dT%H:%M:%S%z"))
+        self.assertEqual(table_def.last_change_date, "2015-11-02T09:11:37+0100")
+        self.assertEqual(table_def.last_import_date, "2015-11-02T09:11:37+0100")
+        self.assertEqual(table_def.rows_count, 400)
+        self.assertEqual(table_def.data_size_bytes, 81920)
+        self.assertEqual(table_def.is_alias, False)
+        self.assertEqual(table_def._indexed_columns, ['x'])
+        self.assertEqual(table_def.primary_key, ['x'])
+        self.assertEqual(table_def.table_metadata.column_metadata, {'x': {'foo': 'gogo'}})
+        self.assertEqual(table_def.column_names, ['x', 'Sales', 'CompPrice', 'Income', 'Advertising',
+                                                  'Population', 'Price', 'ShelveLoc', 'Age', 'Education',
+                                                  'Urban', 'US', 'High'])
+
+    def test_build_from_manifest_full_output(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data_full_output_manifest', 'in', 'tables')
+
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample_output.csv.manifest'))
+
+        self.assertEqual(table_def.name, 'sample_output.csv')
+        self.assertEqual(table_def.destination, 'out.c-adform_masterdata-processor-test.sample_output')
+        self.assertEqual(table_def.column_names, ['x', 'Sales', 'CompPrice', 'Income', 'Advertising',
+                                                  'Population', 'Price', 'ShelveLoc', 'Age', 'Education',
+                                                  'Urban', 'US', 'High'])
+        self.assertEqual(table_def.incremental, True)
+        self.assertEqual(table_def.primary_key, ['x'])
+        # self.assertEqual(table_def.write_always, True)
+        self.assertEqual(table_def.delimiter, '\t')
+        self.assertEqual(table_def.enclosure, '\'')
+        self.assertEqual(table_def.table_metadata.column_metadata, {'x': {'foo': 'gogo'}})
+        self.assertEqual(table_def.delete_where_column, 'Advertising')
+        self.assertEqual(table_def.delete_where_values, ['Video', 'Search'])
+        self.assertEqual(table_def.delete_where_operator, 'eq')
+
 
 
 class TestFileDefinition(unittest.TestCase):
