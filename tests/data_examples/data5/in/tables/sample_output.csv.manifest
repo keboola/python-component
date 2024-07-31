@@ -1,0 +1,24 @@
+{
+  "primary_key": [
+    "x"
+  ],
+  "incremental": true,
+  "delimiter": "\t",
+  "enclosure": "'",
+  "columns": [
+    "x",
+    "Sales",
+    "CompPrice",
+    "Income",
+    "Advertising",
+    "Population",
+    "Price",
+    "ShelveLoc",
+    "Age",
+    "Education",
+    "Urban",
+    "US",
+    "High"
+  ],
+  "attributes": []
+}

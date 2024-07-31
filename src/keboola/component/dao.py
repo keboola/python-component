@@ -1106,6 +1106,8 @@ class TableDefinition(IODefinition):
                         is_sliced=is_sliced,
                         id=manifest.get('id'),
                         table_metadata=TableMetadata(manifest),
+                        delimiter=manifest.get('delimiter', ','),
+                        enclosure=manifest.get('enclosure', '"'),
                         primary_key=manifest.get('primary_key'),
                         schema=cls.return_schema_from_manifest(manifest),
                         uri=manifest.get('uri'),

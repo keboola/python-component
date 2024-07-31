@@ -746,6 +746,74 @@ class TestCommonInterface(unittest.TestCase):
                          'Education', 'Urban', 'US', 'High']
         }, old_manifest)
 
+    def test_separator_delimiter(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data5')
+        os.environ["KBC_DATADIR"] = path
+
+        ci = CommonInterface()
+        tables = ci.get_input_tables_definitions()
+
+        old_manifest = tables[0].get_manifest_dictionary('out', legacy_manifest=True)
+
+        self.assertEqual({
+                              'columns': [
+                                'x',
+                                'Sales',
+                                'CompPrice',
+                                'Income',
+                                'Advertising',
+                                'Population',
+                                'Price',
+                                'ShelveLoc',
+                                'Age',
+                                'Education',
+                                'Urban',
+                                'US',
+                                'High'
+                              ],
+                              'delimiter': '\t',
+                              'enclosure': "'",
+                              'primary_key': [
+                                'x'
+                              ],
+                              'write_always': False
+        }, old_manifest)
+
+    def test_separator_delimiter_dtypes(self):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data5')
+        os.environ["KBC_DATADIR"] = path
+
+        ci = CommonInterface()
+        tables = ci.get_input_tables_definitions()
+
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+
+        new_manifest = tables[0].get_manifest_dictionary('out')
+
+        self.assertEqual({
+            'write_always': False,
+            'delimiter': '\t',
+            'enclosure': '\'',
+            'manifest_type': 'out',
+            'has_header': False,
+            'schema': [
+                {'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
+                {'name': 'Sales', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'CompPrice', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Income', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Advertising', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Population', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Price', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'ShelveLoc', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Age', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Education', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'Urban', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'US', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
+                {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
+        }, new_manifest)
+
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
+
 
 class TestConfiguration(unittest.TestCase):
 
