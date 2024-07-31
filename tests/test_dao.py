@@ -305,7 +305,6 @@ class TestTableDefinition(unittest.TestCase):
         expected_table_def = TableDefinition(name='orphaned.csv',
                                              full_path=os.path.join(sample_path, 'orphaned.csv'),
                                              is_sliced=False,
-                                             write_always=False
                                              )
 
         self.assertEqual(expected_table_def.full_path, table_def.full_path)
@@ -609,7 +608,7 @@ class TestTableDefinition(unittest.TestCase):
                                                   'Urban', 'US', 'High'])
         self.assertEqual(table_def.incremental, True)
         self.assertEqual(table_def.primary_key, ['x'])
-        # self.assertEqual(table_def.write_always, True)
+        self.assertEqual(table_def.write_always, True)
         self.assertEqual(table_def.delimiter, '\t')
         self.assertEqual(table_def.enclosure, '\'')
         self.assertEqual(table_def.table_metadata.column_metadata, {'x': {'foo': 'gogo'}})

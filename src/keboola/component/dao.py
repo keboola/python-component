@@ -1156,7 +1156,7 @@ class TableDefinition(IODefinition):
                 schema=cls.return_schema_from_manifest(manifest),
                 incremental=manifest.get('incremental'),
                 primary_key=manifest.get('primary_key'),
-                # write_always=manifest.get('write_always'),
+                write_always=manifest.get('write_always', False),
                 delimiter=manifest.get('delimiter', ','),
                 enclosure=manifest.get('enclosure', '"'),
                 table_metadata=TableMetadata(manifest),
