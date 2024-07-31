@@ -2408,6 +2408,8 @@ fails.</dd>
                         is_sliced=is_sliced,
                         id=manifest.get(&#39;id&#39;),
                         table_metadata=TableMetadata(manifest),
+                        delimiter=manifest.get(&#39;delimiter&#39;, &#39;,&#39;),
+                        enclosure=manifest.get(&#39;enclosure&#39;, &#39;&#34;&#39;),
                         primary_key=manifest.get(&#39;primary_key&#39;),
                         schema=cls.return_schema_from_manifest(manifest),
                         uri=manifest.get(&#39;uri&#39;),
