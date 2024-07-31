@@ -682,6 +682,7 @@ class TestCommonInterface(unittest.TestCase):
                         'Education', 'Urban', 'US', 'High'],
             'delimiter': ',',
             'enclosure': '"',
+            'incremental': False,
             'write_always': False
         }, old_manifest)
 
@@ -773,13 +774,15 @@ class TestCommonInterface(unittest.TestCase):
                               ],
                               'delimiter': '\t',
                               'enclosure': "'",
+                              'incremental': True,
                               'primary_key': [
                                 'x'
                               ],
                               'write_always': False,
                               'delete_where_column': 'Advertising',
                               'delete_where_values': ['Video', 'Search'],
-                              'delete_where_operator': 'eq'
+                              'delete_where_operator': 'eq',
+                              'destination': 'out.c-main.Leads'
         }, old_manifest)
 
     def test_separator_delimiter_dtypes(self):
@@ -799,6 +802,7 @@ class TestCommonInterface(unittest.TestCase):
             'enclosure': '\'',
             'manifest_type': 'out',
             'has_header': False,
+            'incremental': True,
             'schema': [
                 {'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
                 {'name': 'Sales', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
@@ -815,7 +819,8 @@ class TestCommonInterface(unittest.TestCase):
                 {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}],
             'delete_where_column': 'Advertising',
             'delete_where_values': ['Video', 'Search'],
-            'delete_where_operator': 'eq'
+            'delete_where_operator': 'eq',
+            'destination': 'out.c-main.Leads'
         }, new_manifest)
 
         del os.environ['KBC_DATA_TYPE_SUPPORT']

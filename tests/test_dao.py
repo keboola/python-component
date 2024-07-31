@@ -198,7 +198,7 @@ class TestTableDefinition(unittest.TestCase):
 
         res = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample_output_header.csv.manifest'))
         res_manifest = res.get_manifest_dictionary()
-        self.assertDictEqual({'delimiter': ',', 'enclosure': '"', 'primary_key': ['x'], 'write_always': False},
+        self.assertDictEqual({'delimiter': ',', 'enclosure': '"', 'incremental': True, 'primary_key': ['x'], 'write_always': False},
                              res_manifest)
 
     def test_table_manifest_minimal(self):
