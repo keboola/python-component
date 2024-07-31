@@ -2151,6 +2151,15 @@ fails.</dd>
         self.delete_where_column = None
         self.delete_where_operator = None
 
+        if kwargs.get(&#39;delete_where_values&#39;):
+            self.delete_where_values = kwargs[&#39;delete_where_values&#39;]
+
+        if kwargs.get(&#39;delete_where_column&#39;):
+            self.delete_where_column = kwargs[&#39;delete_where_column&#39;]
+
+        if kwargs.get(&#39;delete_where_operator&#39;):
+            self.delete_where_operator = kwargs[&#39;delete_where_operator&#39;]
+
         self.set_delete_where_from_dict(delete_where)
         self.write_always = write_always
 
@@ -2421,7 +2430,10 @@ fails.</dd>
                         is_alias=manifest.get(&#39;is_alias&#39;),
                         force_legacy_mode=force_legacy_mode,
                         indexed_columns=manifest.get(&#39;indexed_columns&#39;),
-                        attributes=manifest.get(&#39;attributes&#39;)
+                        attributes=manifest.get(&#39;attributes&#39;),
+                        delete_where_values=manifest.get(&#39;delete_where_values&#39;),
+                        delete_where_column=manifest.get(&#39;delete_where_column&#39;),
+                        delete_where_operator=manifest.get(&#39;delete_where_operator&#39;)
                         )
 
         return table_def
