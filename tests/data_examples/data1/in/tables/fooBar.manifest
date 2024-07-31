@@ -1,7 +1,7 @@
 {
     "id": "in.c-main.test2",
     "uri": "https:\/\/connection.keboola.com\/\/v2\/storage\/tables\/in.c-main.test2",
-    "name": "test2",
+    "name": "fooBar",
     "primary_key": [],
     "indexed_columns": [],
     "created": "2015-09-22T17:04:52+0200",
