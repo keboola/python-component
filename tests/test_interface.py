@@ -776,7 +776,10 @@ class TestCommonInterface(unittest.TestCase):
                               'primary_key': [
                                 'x'
                               ],
-                              'write_always': False
+                              'write_always': False,
+                              'delete_where_column': 'Advertising',
+                              'delete_where_values': ['Video', 'Search'],
+                              'delete_where_operator': 'eq'
         }, old_manifest)
 
     def test_separator_delimiter_dtypes(self):
@@ -809,7 +812,10 @@ class TestCommonInterface(unittest.TestCase):
                 {'name': 'Education', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
                 {'name': 'Urban', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
                 {'name': 'US', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
+                {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}],
+            'delete_where_column': 'Advertising',
+            'delete_where_values': ['Video', 'Search'],
+            'delete_where_operator': 'eq'
         }, new_manifest)
 
         del os.environ['KBC_DATA_TYPE_SUPPORT']

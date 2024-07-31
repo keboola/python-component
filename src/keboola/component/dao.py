@@ -849,6 +849,15 @@ class TableDefinition(IODefinition):
         self.delete_where_column = None
         self.delete_where_operator = None
 
+        if kwargs.get('delete_where_values'):
+            self.delete_where_values = kwargs['delete_where_values']
+
+        if kwargs.get('delete_where_column'):
+            self.delete_where_column = kwargs['delete_where_column']
+
+        if kwargs.get('delete_where_operator'):
+            self.delete_where_operator = kwargs['delete_where_operator']
+
         self.set_delete_where_from_dict(delete_where)
         self.write_always = write_always
 
@@ -1119,7 +1128,10 @@ class TableDefinition(IODefinition):
                         is_alias=manifest.get('is_alias'),
                         force_legacy_mode=force_legacy_mode,
                         indexed_columns=manifest.get('indexed_columns'),
-                        attributes=manifest.get('attributes')
+                        attributes=manifest.get('attributes'),
+                        delete_where_values=manifest.get('delete_where_values'),
+                        delete_where_column=manifest.get('delete_where_column'),
+                        delete_where_operator=manifest.get('delete_where_operator')
                         )
 
         return table_def
