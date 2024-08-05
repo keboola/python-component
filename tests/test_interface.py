@@ -11,6 +11,8 @@ class TestCommonInterface(unittest.TestCase):
         path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             'data_examples', 'data1')
         os.environ["KBC_DATADIR"] = path
+        os.environ['KBC_STACKID'] = 'connection.keboola.com'
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2'
 
     def test_all_env_variables_initialized(self):
         # set all variables
@@ -112,8 +114,9 @@ class TestCommonInterface(unittest.TestCase):
     def test_legacy_queue(self):
         os.environ['KBC_PROJECT_FEATURE_GATES'] = ''
         ci = CommonInterface()
-        # with no env default to v2
-        self.assertEqual(False, ci.is_legacy_queue)
+
+        # with no KBC_PROJECT_FEATURE_GATES env default to legacy queue
+        self.assertEqual(True, ci.is_legacy_queue)
 
         # otherwise check for queuev2
         os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2;someoterfeature'
@@ -122,6 +125,10 @@ class TestCommonInterface(unittest.TestCase):
         # If feature gates exists but doesn't contain queuev2 it's old queue
         os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someoterfeature'
         self.assertEqual(True, ci.is_legacy_queue)
+
+        # when running locally default to queue v2
+        os.environ['KBC_STACKID'] = ''
+        self.assertEqual(False, ci.is_legacy_queue)
 
     def test_create_and_write_table_manifest_deprecated(self):
         ci = CommonInterface()

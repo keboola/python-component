@@ -909,9 +909,11 @@ class CommonInterface:
         Returns:
 
         """
-        features = os.environ.get('KBC_PROJECT_FEATURE_GATES')
+        features = os.environ.get('KBC_PROJECT_FEATURE_GATES', '')
+        running_in_kbc = os.environ.get('KBC_STACKID')
+
         is_legacy_queue = True
-        if not features or 'queuev2' in features:
+        if not running_in_kbc or 'queuev2' in features:
             is_legacy_queue = False
         return is_legacy_queue
 

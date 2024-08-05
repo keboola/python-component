@@ -936,9 +936,11 @@ is established in following order:</p>
         Returns:
 
         &#34;&#34;&#34;
-        features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;)
+        features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;, &#39;&#39;)
+        running_in_kbc = os.environ.get(&#39;KBC_STACKID&#39;)
+
         is_legacy_queue = True
-        if not features or &#39;queuev2&#39; in features:
+        if not running_in_kbc or &#39;queuev2&#39; in features:
             is_legacy_queue = False
         return is_legacy_queue
 
@@ -1205,9 +1207,11 @@ def is_legacy_queue(self) -&gt; bool:
     Returns:
 
     &#34;&#34;&#34;
-    features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;)
+    features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;, &#39;&#39;)
+    running_in_kbc = os.environ.get(&#39;KBC_STACKID&#39;)
+
     is_legacy_queue = True
-    if not features or &#39;queuev2&#39; in features:
+    if not running_in_kbc or &#39;queuev2&#39; in features:
         is_legacy_queue = False
     return is_legacy_queue</code></pre>
 </details>
