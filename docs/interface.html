@@ -991,8 +991,8 @@ is established in following order:</p>
 
     def _expects_legacy_manifest(self) -&gt; bool:
         running_in_kbc = self.environment_variables.stack_id or False
-        legacy_manifest = (running_in_kbc
-                           and self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;))
+        legacy_manifest = (running_in_kbc and
+                           self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;))
 
         om_override = self.configuration.config_data.get(&#39;storage&#39;, {}).get(&#39;output&#39;, {}).get(&#39;data_type_support&#39;)
         if om_override:
