@@ -936,8 +936,8 @@ is established in following order:</p>
         Returns:
 
         &#34;&#34;&#34;
-        features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;, &#39;&#39;)
-        running_in_kbc = os.environ.get(&#39;KBC_STACKID&#39;)
+        features = self.environment_variables.project_features
+        running_in_kbc = self.environment_variables.stack_id or False
 
         is_legacy_queue = True
         if not running_in_kbc or &#39;queuev2&#39; in features:
@@ -990,7 +990,10 @@ is established in following order:</p>
             json.dump(manifest, manifest_file)
 
     def _expects_legacy_manifest(self) -&gt; bool:
-        legacy_manifest = self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;)
+        running_in_kbc = self.environment_variables.stack_id or False
+        legacy_manifest = (running_in_kbc
+                           and self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;))
+
         om_override = self.configuration.config_data.get(&#39;storage&#39;, {}).get(&#39;output&#39;, {}).get(&#39;data_type_support&#39;)
         if om_override:
             legacy_manifest = om_override not in (&#39;authoritative&#39;, &#39;hints&#39;)
@@ -1207,8 +1210,8 @@ def is_legacy_queue(self) -&gt; bool:
     Returns:
 
     &#34;&#34;&#34;
-    features = os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;, &#39;&#39;)
-    running_in_kbc = os.environ.get(&#39;KBC_STACKID&#39;)
+    features = self.environment_variables.project_features
+    running_in_kbc = self.environment_variables.stack_id or False
 
     is_legacy_queue = True
     if not running_in_kbc or &#39;queuev2&#39; in features:
