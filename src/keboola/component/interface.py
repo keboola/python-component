@@ -55,7 +55,8 @@ def init_environment_variables() -> dao.EnvironmentVariables:
                                     real_user=os.environ.get('KBC_REALUSER', None),
                                     logger_addr=os.environ.get('KBC_LOGGER_ADDR', None),
                                     logger_port=os.environ.get('KBC_LOGGER_PORT', None),
-                                    data_type_support=os.environ.get('KBC_DATA_TYPE_SUPPORT', None)
+                                    data_type_support=os.environ.get('KBC_DATA_TYPE_SUPPORT', None),
+                                    project_features=os.environ.get('KBC_PROJECT_FEATURE_GATES', '')
                                     )
 
 
@@ -909,8 +910,8 @@ class CommonInterface:
         Returns:
 
         """
-        features = os.environ.get('KBC_PROJECT_FEATURE_GATES', '')
-        running_in_kbc = os.environ.get('KBC_STACKID')
+        features = self.environment_variables.project_features
+        running_in_kbc = self.environment_variables.stack_id or False
 
         is_legacy_queue = True
         if not running_in_kbc or 'queuev2' in features:
@@ -963,7 +964,10 @@ class CommonInterface:
             json.dump(manifest, manifest_file)
 
     def _expects_legacy_manifest(self) -> bool:
-        legacy_manifest = self.environment_variables.data_type_support not in ('authoritative', 'hints')
+        running_in_kbc = self.environment_variables.stack_id or False
+        legacy_manifest = (running_in_kbc
+                           and self.environment_variables.data_type_support not in ('authoritative', 'hints'))
+
         om_override = self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support')
         if om_override:
             legacy_manifest = om_override not in ('authoritative', 'hints')

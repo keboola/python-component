@@ -120,14 +120,17 @@ class TestCommonInterface(unittest.TestCase):
 
         # otherwise check for queuev2
         os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2;someoterfeature'
+        ci = CommonInterface()
         self.assertEqual(False, ci.is_legacy_queue)
 
         # If feature gates exists but doesn't contain queuev2 it's old queue
         os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someoterfeature'
+        ci = CommonInterface()
         self.assertEqual(True, ci.is_legacy_queue)
 
         # when running locally default to queue v2
         os.environ['KBC_STACKID'] = ''
+        ci = CommonInterface()
         self.assertEqual(False, ci.is_legacy_queue)
 
     def test_create_and_write_table_manifest_deprecated(self):

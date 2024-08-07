@@ -66,6 +66,7 @@ class EnvironmentVariables:
     logger_port: str
 
     data_type_support: str
+    project_features: str
 
 
 class SupportedDataTypes(str, Enum):
