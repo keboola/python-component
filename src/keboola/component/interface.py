@@ -904,6 +904,10 @@ class CommonInterface:
         return os.path.join(self.data_folder_path, 'in', 'files')
 
     @property
+    def _running_in_kbc(self):
+        return self.environment_variables.stack_id or False
+
+    @property
     def is_legacy_queue(self) -> bool:
         """
         Check if the project is running on legacy queue (v1)
@@ -911,10 +915,9 @@ class CommonInterface:
 
         """
         features = self.environment_variables.project_features
-        running_in_kbc = self.environment_variables.stack_id or False
 
         is_legacy_queue = True
-        if not running_in_kbc or 'queuev2' in features:
+        if not self._running_in_kbc or 'queuev2' in features:
             is_legacy_queue = False
         return is_legacy_queue
 
@@ -964,9 +967,8 @@ class CommonInterface:
             json.dump(manifest, manifest_file)
 
     def _expects_legacy_manifest(self) -> bool:
-        running_in_kbc = self.environment_variables.stack_id or False
         legacy_manifest =\
-            (running_in_kbc and self.environment_variables.data_type_support not in ('authoritative', 'hints'))
+            (self._running_in_kbc and self.environment_variables.data_type_support not in ('authoritative', 'hints'))
 
         om_override = self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support')
         if om_override:
