@@ -930,6 +930,10 @@ is established in following order:</p>
         return os.path.join(self.data_folder_path, &#39;in&#39;, &#39;files&#39;)
 
     @property
+    def _running_in_kbc(self):
+        return self.environment_variables.stack_id or False
+
+    @property
     def is_legacy_queue(self) -&gt; bool:
         &#34;&#34;&#34;
         Check if the project is running on legacy queue (v1)
@@ -937,10 +941,9 @@ is established in following order:</p>
 
         &#34;&#34;&#34;
         features = self.environment_variables.project_features
-        running_in_kbc = self.environment_variables.stack_id or False
 
         is_legacy_queue = True
-        if not running_in_kbc or &#39;queuev2&#39; in features:
+        if not self._running_in_kbc or &#39;queuev2&#39; in features:
             is_legacy_queue = False
         return is_legacy_queue
 
@@ -990,9 +993,8 @@ is established in following order:</p>
             json.dump(manifest, manifest_file)
 
     def _expects_legacy_manifest(self) -&gt; bool:
-        running_in_kbc = self.environment_variables.stack_id or False
         legacy_manifest =\
-            (running_in_kbc and self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;))
+            (self._running_in_kbc and self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;))
 
         om_override = self.configuration.config_data.get(&#39;storage&#39;, {}).get(&#39;output&#39;, {}).get(&#39;data_type_support&#39;)
         if om_override:
@@ -1211,10 +1213,9 @@ def is_legacy_queue(self) -&gt; bool:
 
     &#34;&#34;&#34;
     features = self.environment_variables.project_features
-    running_in_kbc = self.environment_variables.stack_id or False
 
     is_legacy_queue = True
-    if not running_in_kbc or &#39;queuev2&#39; in features:
+    if not self._running_in_kbc or &#39;queuev2&#39; in features:
         is_legacy_queue = False
     return is_legacy_queue</code></pre>
 </details>
