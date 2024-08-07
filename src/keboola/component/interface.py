@@ -965,8 +965,8 @@ class CommonInterface:
 
     def _expects_legacy_manifest(self) -> bool:
         running_in_kbc = self.environment_variables.stack_id or False
-        legacy_manifest = (running_in_kbc and
-                           self.environment_variables.data_type_support not in ('authoritative', 'hints'))
+        legacy_manifest =\
+            (running_in_kbc and self.environment_variables.data_type_support not in ('authoritative', 'hints'))
 
         om_override = self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support')
         if om_override:
