@@ -345,7 +345,7 @@ class DataType:
 </dd>
 <dt id="keboola.component.dao.EnvironmentVariables"><code class="flex name class">
 <span>class <span class="ident">EnvironmentVariables</span></span>
-<span>(</span><span>data_dir: str, run_id: str, project_id: str, stack_id: str, config_id: str, component_id: str, config_row_id: str, branch_id: str, staging_file_provider: str, project_name: str, token_id: str, token_desc: str, token: str, url: str, real_user: str, logger_addr: str, logger_port: str, data_type_support: str)</span>
+<span>(</span><span>data_dir: str, run_id: str, project_id: str, stack_id: str, config_id: str, component_id: str, config_row_id: str, branch_id: str, staging_file_provider: str, project_name: str, token_id: str, token_desc: str, token: str, url: str, real_user: str, logger_addr: str, logger_port: str, data_type_support: str, project_features: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Dataclass for variables available in the docker environment
@@ -380,7 +380,8 @@ class EnvironmentVariables:
     logger_addr: str
     logger_port: str
 
-    data_type_support: str</code></pre>
+    data_type_support: str
+    project_features: str</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -413,6 +414,10 @@ class EnvironmentVariables:
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.EnvironmentVariables.logger_port"><code class="name">var <span class="ident">logger_port</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="keboola.component.dao.EnvironmentVariables.project_features"><code class="name">var <span class="ident">project_features</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -4131,6 +4136,7 @@ class TableOutputMapping(SubscriptableDataclass):
 <li><code><a title="keboola.component.dao.EnvironmentVariables.data_type_support" href="#keboola.component.dao.EnvironmentVariables.data_type_support">data_type_support</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.logger_addr" href="#keboola.component.dao.EnvironmentVariables.logger_addr">logger_addr</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.logger_port" href="#keboola.component.dao.EnvironmentVariables.logger_port">logger_port</a></code></li>
+<li><code><a title="keboola.component.dao.EnvironmentVariables.project_features" href="#keboola.component.dao.EnvironmentVariables.project_features">project_features</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.project_id" href="#keboola.component.dao.EnvironmentVariables.project_id">project_id</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.project_name" href="#keboola.component.dao.EnvironmentVariables.project_name">project_name</a></code></li>
 <li><code><a title="keboola.component.dao.EnvironmentVariables.real_user" href="#keboola.component.dao.EnvironmentVariables.real_user">real_user</a></code></li>
