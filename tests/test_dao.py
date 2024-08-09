@@ -402,7 +402,7 @@ class TestTableDefinition(unittest.TestCase):
         manifest = td.get_manifest_dictionary(legacy_queue=False)
         self.assertTrue('write_always' in manifest)
 
-    def test_new_manifest(self):
+    def test_new_manifest_full(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
                                     schema=['foo', 'bar'],
                                     destination='some-destination',
@@ -411,7 +411,8 @@ class TestTableDefinition(unittest.TestCase):
                                     incremental=True,
                                     delete_where={'column': 'lilly',
                                                   'values': ['a', 'b'],
-                                                  'operator': 'eq'}
+                                                  'operator': 'eq'},
+                                    description='some description'
                                     )
         # add metadata
         table_def.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
@@ -432,7 +433,7 @@ class TestTableDefinition(unittest.TestCase):
             'delete_where_column': 'lilly',
             'delete_where_values': ['a', 'b'],
             'delete_where_operator': 'eq',
-            'table_metadata': {'bar': 'kochba'},
+            'table_metadata': {'KBC.description': "some description", 'bar': 'kochba'},
             'schema': [
                 {'name': 'foo', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
                 {'name': 'bar', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]

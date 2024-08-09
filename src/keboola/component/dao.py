@@ -577,7 +577,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
                 to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata', 'metadata']
                 attributes = list(set(attributes).difference(to_remove))
 
-                to_add = ['manifest_type', 'has_header', 'description', 'table_metadata', 'schema']
+                to_add = ['manifest_type', 'has_header', 'table_metadata', 'schema']
                 attributes.extend(to_add)
 
         elif stage == 'in':
@@ -788,6 +788,7 @@ class TableDefinition(IODefinition):
                  stage: Optional[str] = 'out',
                  write_always: Optional[bool] = False,
                  has_header: Optional[bool] = None,
+                 description: Optional[str] = None,
                  # input
                  **kwargs
                  ):
@@ -815,6 +816,7 @@ class TableDefinition(IODefinition):
             write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
             schema: (dict|lis[str]) Mapping of column names andColumnDefinition objects, or a list of names
+            description: str: Table description
 
         """
         super().__init__(full_path)
@@ -845,6 +847,8 @@ class TableDefinition(IODefinition):
         if not table_metadata:
             table_metadata = TableMetadata()
         self.table_metadata = table_metadata
+        if description:
+            self.table_metadata.add_table_description(description)
 
         self.delete_where_values = None
         self.delete_where_column = None
@@ -894,6 +898,7 @@ class TableDefinition(IODefinition):
                                 delete_where: Optional[dict] = None,
                                 write_always: Optional[bool] = False,
                                 schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
+                                description: Optional[str] = None,
                                 **kwargs
                                 ):
         """
@@ -914,6 +919,7 @@ class TableDefinition(IODefinition):
             delete_where (Optional[dict]): Criteria for row deletion in incremental loads. Defaults to None.
             write_always (Optional[bool]): If True, the table will be saved to storage even if the job fails.
             schema (Optional[List[ColumnDefinition]]): Dictionary of ColumnDefinition objects.
+            description (Optional[str]): The description of the table. Defaults to None.
 
         Returns:
             TableDefinition: An instance of TableDefinition configured for output tables.
@@ -929,6 +935,7 @@ class TableDefinition(IODefinition):
                    delete_where=delete_where,
                    write_always=write_always,
                    schema=schema,
+                   description=description,
                    **kwargs
                    )
 
@@ -1255,7 +1262,6 @@ class TableDefinition(IODefinition):
             'column_metadata': self.table_metadata._get_legacy_column_metadata_for_manifest(),
             'manifest_type': manifest_type,
             'has_header': self.has_header,
-            'description': None,
             'table_metadata': self.table_metadata.get_table_metadata_for_manifest(),
             'delete_where_column': self.delete_where_column,
             'delete_where_values': self.delete_where_values,
