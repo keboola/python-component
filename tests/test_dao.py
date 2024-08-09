@@ -94,7 +94,7 @@ class TestTableMetadata(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             tmetadata.add_column_data_type('col', 'invalid type')
 
-    def test_table_description_metadata_for_manifest_is_valid(self):
+    def test_table_description_metadata_for_legacy_manifest_is_valid(self):
         tmetadata = TableMetadata()
 
         table_metadata = [{
@@ -109,6 +109,17 @@ class TestTableMetadata(unittest.TestCase):
         tmetadata.add_table_description("Description of table")
         tmetadata.add_table_metadata("custom_key", "custom_value")
         self.assertEqual(tmetadata.get_table_metadata_for_manifest(legacy_manifest=True), table_metadata)
+
+    def test_table_description_metadata_for_manifest_is_valid(self):
+        tmetadata = TableMetadata()
+
+        table_metadata = {"KBC.description": "Description of table",
+                          "custom_key": "custom_value"
+                          }
+
+        tmetadata.add_table_description("Description of table")
+        tmetadata.add_table_metadata("custom_key", "custom_value")
+        self.assertEqual(tmetadata.get_table_metadata_for_manifest(legacy_manifest=False), table_metadata)
 
     def test_build_from_manifest_valid(self):
         raw_manifest = {
@@ -150,15 +161,14 @@ class TestTableDefinition(unittest.TestCase):
             table_def.get_manifest_dictionary(legacy_manifest=True))
 
     def test_legacy_order_in(self):
-
         table_def = TableDefinition("data",
                                     metadata=TableMetadata({
-                                                                "id": "228956",
-                                                                "key": "KBC.createdBy.component.id",
-                                                                "value": "keboola.python-transformation",
-                                                                "provider": "system",
-                                                                "timestamp": "2017-05-26 00:39:07"
-                                                            }),
+                                        "id": "228956",
+                                        "key": "KBC.createdBy.component.id",
+                                        "value": "keboola.python-transformation",
+                                        "provider": "system",
+                                        "timestamp": "2017-05-26 00:39:07"
+                                    }),
                                     stage='in',
                                     is_sliced=False,
                                     schema=["id", "name", "text"],
@@ -167,7 +177,9 @@ class TestTableDefinition(unittest.TestCase):
                                     last_import_date="2015-01-25T01:35:14+0100")
 
         self.assertEqual(
-            {'columns': ['id', 'name', 'text'], 'created': '2015-01-25T01:35:14+0100', 'last_change_date': '2015-01-25T01:35:14+0100', 'last_import_date': '2015-01-25T01:35:14+0100', 'name': 'data'},
+            {'columns': ['id', 'name', 'text'], 'created': '2015-01-25T01:35:14+0100',
+             'last_change_date': '2015-01-25T01:35:14+0100', 'last_import_date': '2015-01-25T01:35:14+0100',
+             'name': 'data'},
             table_def.get_manifest_dictionary(legacy_manifest=True))
 
     def test_out_old_to_new_has_headers_sliced(self):
@@ -198,8 +210,9 @@ class TestTableDefinition(unittest.TestCase):
 
         res = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample_output_header.csv.manifest'))
         res_manifest = res.get_manifest_dictionary()
-        self.assertDictEqual({'delimiter': ',', 'enclosure': '"', 'incremental': True, 'primary_key': ['x'], 'write_always': False},
-                             res_manifest)
+        self.assertDictEqual(
+            {'delimiter': ',', 'enclosure': '"', 'incremental': True, 'primary_key': ['x'], 'write_always': False},
+            res_manifest)
 
     def test_table_manifest_minimal(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
@@ -419,7 +432,7 @@ class TestTableDefinition(unittest.TestCase):
             'delete_where_column': 'lilly',
             'delete_where_values': ['a', 'b'],
             'delete_where_operator': 'eq',
-            'table_metadata': [{'bar': 'kochba'}],
+            'table_metadata': {'bar': 'kochba'},
             'schema': [
                 {'name': 'foo', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
                 {'name': 'bar', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
@@ -615,7 +628,6 @@ class TestTableDefinition(unittest.TestCase):
         self.assertEqual(table_def.delete_where_column, 'Advertising')
         self.assertEqual(table_def.delete_where_values, ['Video', 'Search'])
         self.assertEqual(table_def.delete_where_operator, 'eq')
-
 
 
 class TestFileDefinition(unittest.TestCase):

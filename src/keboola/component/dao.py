@@ -1,5 +1,6 @@
 # Python 3.7 support
 from __future__ import annotations
+
 import dataclasses
 import json
 import logging
@@ -11,7 +12,6 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import List, Union, Dict, Optional, OrderedDict as TypeOrderedDict
-
 
 from deprecated import deprecated
 
@@ -207,8 +207,8 @@ class TableMetadata:
                                     'value': self.table_metadata[key]}
                                    for key in self.table_metadata]
         else:
-            final_metadata_list = [{key: self.table_metadata[key]}
-                                   for key in self.table_metadata]
+            final_metadata_list = {key: self.table_metadata[key]
+                                   for key in self.table_metadata}
 
         return final_metadata_list
 

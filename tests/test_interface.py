@@ -376,7 +376,7 @@ class TestCommonInterface(unittest.TestCase):
                         {'data_type': {'base': {'type': 'STRING'}},
                          'name': 'bar',
                          'nullable': True}],
-             'table_metadata': [{'bar': 'kochba'}],
+             'table_metadata': {'bar': 'kochba'},
              'write_always': False},
             config
         )
