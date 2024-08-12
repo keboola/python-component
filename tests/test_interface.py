@@ -382,6 +382,50 @@ class TestCommonInterface(unittest.TestCase):
         )
         os.remove(manifest_filename)
 
+    def test_legacy_column_metadata_ignored_on_new_schema(self):
+        # TODO: this is not implemented on purpose
+        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+        ci = CommonInterface()
+        # create table def
+        out_table = ci.create_out_table_definition('some-table.csv',
+                                                   columns=['foo', 'bar'],
+                                                   destination='some-destination',
+                                                   primary_key=['foo'],
+                                                   incremental=True,
+                                                   delete_where={'column': 'lilly',
+                                                                 'values': ['a', 'b'],
+                                                                 'operator': 'eq'}
+                                                   )
+        # this will be ignored
+        out_table.table_metadata.add_table_metadata('bar', 'kochba')
+        # this will be ignored
+        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        # this will be ignored
+        out_table.table_metadata.add_column_data_type('bar', 'NUMERIC')
+
+        # write
+        ci.write_manifest(out_table)
+
+        del os.environ['KBC_DATA_TYPE_SUPPORT']
+        manifest_filename = out_table.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {'destination': 'some-destination',
+             'incremental': True,
+             'manifest_type': 'out',
+             'write_always': False,
+             'delimiter': ',',
+             'enclosure': '"',
+             'metadata': {'bar': 'kochba'},
+             'has_header': False,
+             'delete_where_column': 'lilly', 'delete_where_values': ['a', 'b'], 'delete_where_operator': 'eq',
+             'schema': [
+                 {'name': 'foo', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
+                 {'name': 'bar', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]},
+            config
+        )
+
     def test_get_input_tables_definition(self):
         ci = CommonInterface()
 
@@ -675,7 +719,8 @@ class TestCommonInterface(unittest.TestCase):
         }, old_manifest)
 
     def test_convert_new_to_old_manifest_storage_param(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data_storage_parameter_data_types')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples',
+                            'data_storage_parameter_data_types')
         os.environ["KBC_DATADIR"] = path
         os.environ['KBC_DATA_TYPE_SUPPORT'] = 'authoritative'
 
@@ -722,7 +767,7 @@ class TestCommonInterface(unittest.TestCase):
             'primary_key': ['x'],
             'column_metadata': {'x': [{'key': 'foo', 'value': 'gogo'}]},
             'columns': ['x', 'Sales', 'CompPrice', 'Income', 'Advertising', 'Population', 'Price', 'ShelveLoc', 'Age',
-                         'Education', 'Urban', 'US', 'High']
+                        'Education', 'Urban', 'US', 'High']
         }, old_manifest)
 
     def test_full_input_manifest_dtypes_support(self):
@@ -754,7 +799,7 @@ class TestCommonInterface(unittest.TestCase):
             'primary_key': ['x'],
             'column_metadata': {'x': [{'key': 'foo', 'value': 'gogo'}]},
             'columns': ['x', 'Sales', 'CompPrice', 'Income', 'Advertising', 'Population', 'Price', 'ShelveLoc', 'Age',
-                         'Education', 'Urban', 'US', 'High']
+                        'Education', 'Urban', 'US', 'High']
         }, old_manifest)
 
     def test_separator_delimiter(self):
@@ -767,32 +812,32 @@ class TestCommonInterface(unittest.TestCase):
         old_manifest = tables[0].get_manifest_dictionary('out', legacy_manifest=True)
 
         self.assertEqual({
-                              'columns': [
-                                'x',
-                                'Sales',
-                                'CompPrice',
-                                'Income',
-                                'Advertising',
-                                'Population',
-                                'Price',
-                                'ShelveLoc',
-                                'Age',
-                                'Education',
-                                'Urban',
-                                'US',
-                                'High'
-                              ],
-                              'delimiter': '\t',
-                              'enclosure': "'",
-                              'incremental': True,
-                              'primary_key': [
-                                'x'
-                              ],
-                              'write_always': False,
-                              'delete_where_column': 'Advertising',
-                              'delete_where_values': ['Video', 'Search'],
-                              'delete_where_operator': 'eq',
-                              'destination': 'out.c-main.Leads'
+            'columns': [
+                'x',
+                'Sales',
+                'CompPrice',
+                'Income',
+                'Advertising',
+                'Population',
+                'Price',
+                'ShelveLoc',
+                'Age',
+                'Education',
+                'Urban',
+                'US',
+                'High'
+            ],
+            'delimiter': '\t',
+            'enclosure': "'",
+            'incremental': True,
+            'primary_key': [
+                'x'
+            ],
+            'write_always': False,
+            'delete_where_column': 'Advertising',
+            'delete_where_values': ['Video', 'Search'],
+            'delete_where_operator': 'eq',
+            'destination': 'out.c-main.Leads'
         }, old_manifest)
 
     def test_separator_delimiter_dtypes(self):

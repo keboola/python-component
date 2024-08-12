@@ -249,6 +249,18 @@ class ComponentBase(ABC, CommonInterface):
             raise AttributeError(f"The defined action {action} is not implemented!") from e
         return action_method()
 
+    def _generate_table_metadata_legacy(self, table_schema: ts.TableSchema) -> dao.TableMetadata:
+        """
+            Generates a TableMetadata object for the table definition using a TableSchema object.
+
+        """
+        table_metadata = dao.TableMetadata()
+        if table_schema.description:
+            table_metadata.add_table_description(table_schema.description)
+        table_metadata.add_column_descriptions({field.name: field.description for field in table_schema.fields})
+        table_metadata = self._add_field_data_types_to_table_metadata(table_schema, table_metadata)
+        return table_metadata
+
     def create_out_table_definition_from_schema(self, table_schema: ts.TableSchema, is_sliced: bool = False,
                                                 destination: str = '', incremental: bool = None,
                                                 enclosure: str = '"', delimiter: str = ',',
@@ -271,18 +283,33 @@ class ComponentBase(ABC, CommonInterface):
                 TableDefinition object initialized with all table metadata defined in a schema
 
         """
-        schema = self._generate_schema_definition(table_schema)
-        return self.create_out_table_definition(name=table_schema.csv_name,
-                                                columns=table_schema.field_names,
-                                                primary_key=table_schema.primary_keys,
-                                                schema=schema,
-                                                is_sliced=is_sliced,
-                                                destination=destination,
-                                                incremental=incremental,
-                                                enclosure=enclosure,
-                                                delimiter=delimiter,
-                                                delete_where=delete_where,
-                                                description=table_schema.description)
+        if self._expects_legacy_manifest():
+            table_metadata = self._generate_table_metadata_legacy(table_schema)
+            table_def = self.create_out_table_definition(name=table_schema.csv_name,
+                                                         columns=table_schema.field_names,
+                                                         primary_key=table_schema.primary_keys,
+                                                         table_metadata=table_metadata,
+                                                         is_sliced=is_sliced,
+                                                         destination=destination,
+                                                         incremental=incremental,
+                                                         enclosure=enclosure,
+                                                         delimiter=delimiter,
+                                                         delete_where=delete_where)
+        else:
+            schema = self._generate_schema_definition(table_schema)
+
+            table_def = self.create_out_table_definition(name=table_schema.csv_name,
+                                                         primary_key=table_schema.primary_keys,
+                                                         schema=schema,
+                                                         is_sliced=is_sliced,
+                                                         destination=destination,
+                                                         incremental=incremental,
+                                                         enclosure=enclosure,
+                                                         delimiter=delimiter,
+                                                         delete_where=delete_where,
+                                                         description=table_schema.description)
+
+        return table_def
 
     def get_table_schema_by_name(self, schema_name: str,
                                  schema_folder_path: Optional[str] = None) -> ts.TableSchema:

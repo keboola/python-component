@@ -404,6 +404,8 @@ class TableMetadata:
         """
         self.table_metadata = {**self.table_metadata, **{key: value}}
 
+    @deprecated(version='1.5.1', reason="Column metadata ere moved to dao.TableDefinition.schema property."
+                                        "Please use the dao.ColumnDefinition.metadata")
     def add_column_metadata(self, column: str, key: str, value: Union[str, bool, int], backend="base"):
         """
         Add/Updates column metadata and ensures the Key is unique.
@@ -417,6 +419,8 @@ class TableMetadata:
 
         # self.schema = [ColumnDefinition(name=column, data_type={backend: DataType(type=value)})]
 
+    @deprecated(version='1.5.1', reason="Column metadata ere moved to dao.TableDefinition.schema property."
+                                        "Please use the dao.ColumnDefinition.metadata")
     def add_multiple_column_metadata(self, column_metadata: Dict[str, List[dict]]):
         """
         Add key-value pairs to column metadata.
@@ -826,7 +830,7 @@ class TableDefinition(IODefinition):
         # initialize manifest properties
         self._destination = None
         self.destination = destination
-        self._schema = dict()
+        self._schema: Dict[str, ColumnDefinition] = dict()
 
         if schema:
             self.schema = schema
@@ -1268,6 +1272,7 @@ class TableDefinition(IODefinition):
             'schema': [col.to_dict(name)
                        for name, col in self.schema.items()] if isinstance(self.schema, (OrderedDict, dict)) else []
         }
+
         if legacy_manifest or self.stage == 'in':
             fields['columns'] = self.column_names
 

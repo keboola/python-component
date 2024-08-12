@@ -14,7 +14,7 @@
     },
     {
       "name": "product_id",
-      "base_type": "STRING",
+      "base_type": "NUMERIC",
       "description": "Id of the product in order"
     },
     {
