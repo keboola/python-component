@@ -63,7 +63,7 @@ class TestCommonInterface(unittest.TestCase):
                              'enclosure': '"',
                              'has_header': False,
                              'manifest_type': 'out',
-                             'metadata': {'KBC.description': 'this table holds data on orders'},
+                             'table_metadata': {'KBC.description': 'this table holds data on orders'},
                              'schema': [{'data_type': {'base': {'type': 'STRING'}},
                                          'description': 'ID of the order',
                                          'name': 'id',

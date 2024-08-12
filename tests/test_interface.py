@@ -379,7 +379,7 @@ class TestCommonInterface(unittest.TestCase):
                         {'data_type': {'base': {'type': 'STRING'}},
                          'name': 'bar',
                          'nullable': True}],
-             'metadata': {'KBC.description': 'some-description', 'bar': 'kochba'},
+             'table_metadata': {'KBC.description': 'some-description', 'bar': 'kochba'},
              'write_always': False},
             config
         )
@@ -420,7 +420,7 @@ class TestCommonInterface(unittest.TestCase):
              'write_always': False,
              'delimiter': ',',
              'enclosure': '"',
-             'metadata': {'bar': 'kochba'},
+             'table_metadata': {'bar': 'kochba'},
              'has_header': False,
              'delete_where_column': 'lilly', 'delete_where_values': ['a', 'b'], 'delete_where_operator': 'eq',
              'schema': [

@@ -433,7 +433,7 @@ class TestTableDefinition(unittest.TestCase):
             'delete_where_column': 'lilly',
             'delete_where_values': ['a', 'b'],
             'delete_where_operator': 'eq',
-            'metadata': {'KBC.description': "some description", 'bar': 'kochba'},
+            'table_metadata': {'KBC.description': "some description", 'bar': 'kochba'},
             'schema': [
                 {'name': 'foo', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
                 {'name': 'bar', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
