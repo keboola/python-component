@@ -183,7 +183,8 @@ class TestCommonInterface(unittest.TestCase):
                                                    delete_where={'column': 'lilly',
                                                                  'values': ['a', 'b'],
                                                                  'operator': 'eq'},
-                                                   write_always=True
+                                                   write_always=True,
+                                                   description='some-description'
                                                    )
         out_table.table_metadata.add_table_metadata('bar', 'kochba')
         out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
@@ -202,7 +203,8 @@ class TestCommonInterface(unittest.TestCase):
                 'write_always': True,
                 'delimiter': ',',
                 'enclosure': '"',
-                'metadata': [{'key': 'bar', 'value': 'kochba'}],
+                'metadata': [{'key': 'KBC.description', 'value': 'some-description'},
+                             {'key': 'bar', 'value': 'kochba'}],
                 'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
                 'delete_where_column': 'lilly',
                 'delete_where_values': ['a', 'b'],
@@ -344,6 +346,7 @@ class TestCommonInterface(unittest.TestCase):
                                                    schema=['foo', 'bar'],
                                                    has_header=True,
                                                    destination='some-destination',
+                                                   description='some-description',
                                                    primary_key=['foo'],
                                                    incremental=True,
                                                    delete_where={'column': 'lilly',
@@ -376,7 +379,7 @@ class TestCommonInterface(unittest.TestCase):
                         {'data_type': {'base': {'type': 'STRING'}},
                          'name': 'bar',
                          'nullable': True}],
-             'metadata': {'bar': 'kochba'},
+             'metadata': {'KBC.description': 'some-description', 'bar': 'kochba'},
              'write_always': False},
             config
         )

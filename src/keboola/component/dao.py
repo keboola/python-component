@@ -212,7 +212,7 @@ class TableMetadata:
 
         return final_metadata_list
 
-    @deprecated(version='1.5.1', reason="Please use schema instead of Table Metadata")
+    @deprecated(version='1.5.1', reason="Please use schema instead of Column Metadata")
     def get_column_metadata_for_manifest(self) -> dict:
         """
                 Returns column metadata dict as required by the
@@ -258,6 +258,7 @@ class TableMetadata:
         return final_column_metadata
 
     @property
+    @deprecated(version='1.5.1', reason="Please use TableDefinition.description instead of TableMetadata")
     def table_description(self) -> str:
         """
         Returns table description (KBC.description)

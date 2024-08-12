@@ -338,7 +338,8 @@ class CommonInterface:
                                  write_always: bool = False,
                                  schema: Union[
                                      OrderedDict[str, ColumnDefinition], list[str]] = None,
-                                 has_header: Optional[bool] = None) -> dao.TableDefinition:
+                                 has_header: Optional[bool] = None,
+                                 description: Optional[str] = None) -> dao.TableDefinition:
         """
                 Helper method for dao.TableDefinition creation along with the "manifest".
                 It initializes path according to the storage_stage type.
@@ -381,6 +382,7 @@ class CommonInterface:
                                    primary_key=primary_key,
                                    columns=columns,
                                    incremental=incremental,
+                                   description=description,
                                    table_metadata=table_metadata,
                                    enclosure=enclosure,
                                    delimiter=delimiter,
@@ -441,6 +443,7 @@ class CommonInterface:
                                     delete_where: dict = None,
                                     write_always: bool = False,
                                     has_header: Optional[bool] = None,
+                                    description: Optional[str] = None,
                                     **kwargs
                                     ) -> dao.TableDefinition:
         """
@@ -464,6 +467,7 @@ class CommonInterface:
                            fails.
                            has_header:Optional[bool] = flag whether the header is present in the file,
                                 if None legacy method is used
+                           description: Table description
         """
 
         return self._create_table_definition(name=name,
@@ -479,7 +483,8 @@ class CommonInterface:
                                              delete_where=delete_where,
                                              write_always=write_always,
                                              schema=schema,
-                                             has_header=has_header)
+                                             has_header=has_header,
+                                             description=description)
 
     # # File processing
 
