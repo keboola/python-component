@@ -271,17 +271,18 @@ class ComponentBase(ABC, CommonInterface):
                 TableDefinition object initialized with all table metadata defined in a schema
 
         """
-        table_metadata = self._generate_table_metadata(table_schema)
+        schema = self._generate_schema_definition(table_schema)
         return self.create_out_table_definition(name=table_schema.csv_name,
                                                 columns=table_schema.field_names,
                                                 primary_key=table_schema.primary_keys,
-                                                table_metadata=table_metadata,
+                                                schema=schema,
                                                 is_sliced=is_sliced,
                                                 destination=destination,
                                                 incremental=incremental,
                                                 enclosure=enclosure,
                                                 delimiter=delimiter,
-                                                delete_where=delete_where)
+                                                delete_where=delete_where,
+                                                description=table_schema.description)
 
     def get_table_schema_by_name(self, schema_name: str,
                                  schema_folder_path: Optional[str] = None) -> ts.TableSchema:
@@ -324,18 +325,24 @@ class ComponentBase(ABC, CommonInterface):
                                     "from a schema. If a schema folder path is not defined, the schemas folder must be"
                                     " located in the 'src' directory of a component : src/schemas")
 
-    def _generate_table_metadata(self, table_schema: ts.TableSchema) -> dao.TableMetadata:
+    def _generate_schema_definition(self, table_schema: ts.TableSchema) -> Dict[str, dao.ColumnDefinition]:
         """
             Generates a TableMetadata object for the table definition using a TableSchema object.
 
         """
-        table_metadata = dao.TableMetadata()
-        if table_schema.description:
-            table_metadata.add_table_description(table_schema.description)
-        table_metadata.add_column_descriptions({field.name: field.description for field in table_schema.fields})
-        table_metadata = self._add_field_data_types_to_table_metadata(table_schema, table_metadata)
+        column_definitions = {}
+        for field in table_schema.fields:
+            if field.base_type:
+                data_types = dao.BaseType(field.base_type,
+                                          length=field.length,
+                                          default=field.default)
+            else:
+                data_types = dao.BaseType()
+            column_definitions[field.name] = dao.ColumnDefinition(data_types=data_types,
+                                                                  nullable=field.nullable,
+                                                                  description=field.description)
 
-        return table_metadata
+        return column_definitions
 
     @staticmethod
     def _add_field_data_types_to_table_metadata(table_schema: ts.TableSchema,

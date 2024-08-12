@@ -574,10 +574,10 @@ class SupportedManifestAttributes(SubscriptableDataclass):
             exclude = self.out_legacy_exclude
 
             if not legacy_manifest:
-                to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata', 'metadata']
+                to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata']
                 attributes = list(set(attributes).difference(to_remove))
 
-                to_add = ['manifest_type', 'has_header', 'table_metadata', 'schema']
+                to_add = ['manifest_type', 'has_header', 'metadata', 'schema']
                 attributes.extend(to_add)
 
         elif stage == 'in':
@@ -1258,11 +1258,10 @@ class TableDefinition(IODefinition):
             'write_always': self.write_always,
             'delimiter': self.delimiter,
             'enclosure': self.enclosure,
-            'metadata': self.table_metadata.get_table_metadata_for_manifest(legacy_manifest=True),
+            'metadata': self.table_metadata.get_table_metadata_for_manifest(legacy_manifest=legacy_manifest),
             'column_metadata': self.table_metadata._get_legacy_column_metadata_for_manifest(),
             'manifest_type': manifest_type,
             'has_header': self.has_header,
-            'table_metadata': self.table_metadata.get_table_metadata_for_manifest(),
             'delete_where_column': self.delete_where_column,
             'delete_where_values': self.delete_where_values,
             'delete_where_operator': self.delete_where_operator,

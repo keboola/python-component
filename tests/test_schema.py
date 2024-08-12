@@ -46,7 +46,7 @@ class TestCommonInterface(unittest.TestCase):
                                                       'value': 'Quantity of the product in order'},
                                                      {'key': 'KBC.datatype.basetype', 'value': 'STRING'},
                                                      {'key': 'KBC.datatype.nullable', 'value': False}]}}
-        self.assertEqual(manifest_dict, expected_manifest)
+        self.assertEqual(expected_manifest, manifest_dict)
 
     def test_invalid_column_schema_raises_key_error(self):
         with self.assertRaises(KeyError):
