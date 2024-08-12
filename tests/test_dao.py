@@ -144,6 +144,16 @@ class TestTableMetadata(unittest.TestCase):
         self.assertEqual(table_metadata.column_metadata, expected_tmetadata.column_metadata)
         self.assertEqual(table_metadata.table_metadata, expected_tmetadata.table_metadata)
 
+    def test_build_manifest_legacy_none_metadata_skipped(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    destination='some-destination',
+                                    incremental=True,
+                                    table_metadata=TableMetadata()
+                                    )
+        table_def.table_metadata.add_column_metadata('foo', 'KBC.description', None)
+
+        self.assertDictEqual({}, table_def.table_metadata.column_metadata)
+
 
 class TestTableDefinition(unittest.TestCase):
 
@@ -354,6 +364,33 @@ class TestTableDefinition(unittest.TestCase):
         self.assertEqual(expected_table_def.full_path, table_def.full_path)
         self.assertEqual(expected_table_def.name, table_def.name)
         self.assertEqual(expected_table_def.is_sliced, table_def.is_sliced)
+
+    def test_build_manifest_legacy_none_metadata_skipped(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    destination='some-destination',
+                                    incremental=True,
+                                    table_metadata=TableMetadata()
+                                    )
+        table_def.table_metadata.add_column_metadata('foo', 'KBC.description', None)
+        expected = {'delimiter': ',', 'destination': 'some-destination', 'enclosure': '"', 'incremental': True,
+                    'write_always': False}
+        manifest_dict = table_def.get_manifest_dictionary('out', legacy_manifest=True)
+        self.assertDictEqual(expected, manifest_dict)
+
+    def test_build_manifest_new_to_legacy_none_metadata_skipped(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    destination='some-destination',
+                                    incremental=True,
+                                    schema={
+                                        'foo': ColumnDefinition(metadata={'KBC.description': None, 'some': 'value'})},
+                                    )
+        table_def.table_metadata.add_column_metadata('foo', 'KBC.description', '')
+        expected = {'column_metadata': {}, 'columns': ['foo'], 'delimiter': ',', 'destination': 'some-destination',
+                    'enclosure': '"',
+                    'incremental': True,
+                    'write_always': False}
+        manifest_dict = table_def.get_manifest_dictionary('out', legacy_manifest=True)
+        self.assertDictEqual(expected, manifest_dict)
 
     def test_table_manifest_error_destination(self):
         with self.assertRaises(TypeError):

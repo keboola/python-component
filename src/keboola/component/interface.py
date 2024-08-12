@@ -18,7 +18,7 @@ from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
 
 from . import dao
-from .dao import ColumnDefinition
+from .dao import ColumnDefinition, TableDefinition
 from .exceptions import UserException
 
 
@@ -429,13 +429,11 @@ class CommonInterface:
                                              delete_where=delete_where,
                                              schema=schema)
 
-    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], OrderedDict[str, ColumnDefinition], List[str]]
-
     def create_out_table_definition(self, name: str,
                                     is_sliced: bool = False,
                                     destination: str = '',
                                     primary_key: List[str] = None,
-                                    schema: SCHEMA_TYPE = None,
+                                    schema: TableDefinition.SCHEMA_TYPE = None,
                                     incremental: bool = None,
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = '"',
@@ -961,7 +959,6 @@ class CommonInterface:
         """
 
         if not legacy_manifest:
-
             legacy_manifest = self._expects_legacy_manifest()
 
         manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
@@ -972,7 +969,7 @@ class CommonInterface:
             json.dump(manifest, manifest_file)
 
     def _expects_legacy_manifest(self) -> bool:
-        legacy_manifest =\
+        legacy_manifest = \
             (self._running_in_kbc and self.environment_variables.data_type_support not in ('authoritative', 'hints'))
 
         om_override = self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support')

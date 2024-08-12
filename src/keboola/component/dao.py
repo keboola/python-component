@@ -251,8 +251,8 @@ class TableMetadata:
                 final_column_metadata[column] = list()
 
             column_metadata = [{'key': key,
-                                'value': column_metadata_dicts[key]} for key in
-                               column_metadata_dicts]
+                                'value': value} for key, value in
+                               column_metadata_dicts.items() if value not in [None, '']]
             final_column_metadata[column].extend(column_metadata)
 
         return final_column_metadata
@@ -403,6 +403,8 @@ class TableMetadata:
                 Args:
 
         """
+        if value is None:
+            return
         self.table_metadata = {**self.table_metadata, **{key: value}}
 
     @deprecated(version='1.5.1', reason="Column metadata ere moved to dao.TableDefinition.schema property."
@@ -413,6 +415,8 @@ class TableMetadata:
         Args:
 
         """
+        if value is None:
+            return
         if not self.column_metadata.get(column):
             self.column_metadata[column] = dict()
 
@@ -778,13 +782,14 @@ class TableDefinition(IODefinition):
 
     MANIFEST_ATTRIBUTES = {'in': INPUT_MANIFEST_ATTRIBUTES,
                            'out': OUTPUT_MANIFEST_ATTRIBUTES}
+    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], TypeOrderedDict[str, ColumnDefinition], List[str]]
 
     def __init__(self, name: str,
                  full_path: Optional[Union[str, None]] = None,
                  is_sliced: Optional[bool] = False,
                  destination: Optional[str] = '',
                  primary_key: Optional[List[str]] = None,
-                 schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
+                 schema: SCHEMA_TYPE = None,
                  incremental: Optional[bool] = None,
                  table_metadata: Optional[TableMetadata] = None,
                  enclosure: Optional[str] = '"',
@@ -902,7 +907,7 @@ class TableDefinition(IODefinition):
                                 delimiter: Optional[str] = ',',
                                 delete_where: Optional[dict] = None,
                                 write_always: Optional[bool] = False,
-                                schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
+                                schema: SCHEMA_TYPE = None,
                                 description: Optional[str] = None,
                                 **kwargs
                                 ):
