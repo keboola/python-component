@@ -718,6 +718,7 @@ class TestCommonInterface(unittest.TestCase):
                         'Education', 'Urban', 'US', 'High'],
             'delimiter': ',',
             'enclosure': '"',
+            'incremental': False,
             'write_always': False
         }, old_manifest)
 

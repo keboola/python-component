@@ -204,11 +204,11 @@ class TableMetadata:
         """
         if legacy_manifest:
             final_metadata_list = [{'key': key,
-                                    'value': self.table_metadata[key]}
-                                   for key in self.table_metadata]
+                                    'value': value}
+                                   for key, value in self.table_metadata.items() if value not in [None, '']]
         else:
-            final_metadata_list = {key: self.table_metadata[key]
-                                   for key in self.table_metadata}
+            final_metadata_list = {key: value
+                                   for key, value in self.table_metadata.items() if value not in [None, '']}
 
         return final_metadata_list
 
@@ -1172,7 +1172,7 @@ class TableDefinition(IODefinition):
                 name=name,
                 destination=manifest.get('destination'),
                 schema=cls.return_schema_from_manifest(manifest),
-                incremental=manifest.get('incremental'),
+                incremental=manifest.get('incremental', False),
                 primary_key=manifest.get('primary_key'),
                 write_always=manifest.get('write_always', False),
                 delimiter=manifest.get('delimiter', ','),
@@ -1404,8 +1404,8 @@ class TableDefinition(IODefinition):
 
     @incremental.setter
     def incremental(self, incremental: bool):
-        if incremental:
-            self._incremental = True
+        if incremental is not None:
+            self._incremental = incremental
 
     @property
     def write_always(self) -> bool:

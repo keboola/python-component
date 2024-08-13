@@ -328,6 +328,7 @@ class TestTableDefinition(unittest.TestCase):
         expected_table_def = TableDefinition(name='orphaned.csv',
                                              full_path=os.path.join(sample_path, 'orphaned.csv'),
                                              is_sliced=False,
+                                             incremental=False
                                              )
 
         self.assertEqual(expected_table_def.full_path, table_def.full_path)
@@ -391,6 +392,23 @@ class TestTableDefinition(unittest.TestCase):
                     'write_always': False}
         manifest_dict = table_def.get_manifest_dictionary('out', legacy_manifest=True)
         self.assertDictEqual(expected, manifest_dict)
+
+    def test_incremental_defaults_to_false(self):
+        source_m = {
+            'columns': ['x', 'Sales', 'CompPrice', 'Income', 'Advertising', 'Population', 'Price', 'ShelveLoc', 'Age',
+                        'Education', 'Urban', 'US', 'High'],
+            'delimiter': ',',
+            'enclosure': '"',
+            'write_always': False
+        }
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file_path = temp_file.name
+
+        with open(temp_file_path, 'w') as f:
+            json.dump(source_m, f)
+        td = TableDefinition.build_from_manifest(temp_file_path)
+
+        self.assertEqual(td.incremental, False)
 
     def test_table_manifest_error_destination(self):
         with self.assertRaises(TypeError):
