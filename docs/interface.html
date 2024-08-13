@@ -364,7 +364,8 @@ is established in following order:</p>
                                  write_always: bool = False,
                                  schema: Union[
                                      OrderedDict[str, ColumnDefinition], list[str]] = None,
-                                 has_header: Optional[bool] = None) -&gt; dao.TableDefinition:
+                                 has_header: Optional[bool] = None,
+                                 description: Optional[str] = None) -&gt; dao.TableDefinition:
         &#34;&#34;&#34;
                 Helper method for dao.TableDefinition creation along with the &#34;manifest&#34;.
                 It initializes path according to the storage_stage type.
@@ -407,6 +408,7 @@ is established in following order:</p>
                                    primary_key=primary_key,
                                    columns=columns,
                                    incremental=incremental,
+                                   description=description,
                                    table_metadata=table_metadata,
                                    enclosure=enclosure,
                                    delimiter=delimiter,
@@ -453,13 +455,11 @@ is established in following order:</p>
                                              delete_where=delete_where,
                                              schema=schema)
 
-    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], OrderedDict[str, ColumnDefinition], List[str]]
-
     def create_out_table_definition(self, name: str,
                                     is_sliced: bool = False,
                                     destination: str = &#39;&#39;,
                                     primary_key: List[str] = None,
-                                    schema: SCHEMA_TYPE = None,
+                                    schema: TableDefinition.SCHEMA_TYPE = None,
                                     incremental: bool = None,
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = &#39;&#34;&#39;,
@@ -467,6 +467,7 @@ is established in following order:</p>
                                     delete_where: dict = None,
                                     write_always: bool = False,
                                     has_header: Optional[bool] = None,
+                                    description: Optional[str] = None,
                                     **kwargs
                                     ) -&gt; dao.TableDefinition:
         &#34;&#34;&#34;
@@ -490,6 +491,7 @@ is established in following order:</p>
                            fails.
                            has_header:Optional[bool] = flag whether the header is present in the file,
                                 if None legacy method is used
+                           description: Table description
         &#34;&#34;&#34;
 
         return self._create_table_definition(name=name,
@@ -505,7 +507,8 @@ is established in following order:</p>
                                              delete_where=delete_where,
                                              write_always=write_always,
                                              schema=schema,
-                                             has_header=has_header)
+                                             has_header=has_header,
+                                             description=description)
 
     # # File processing
 
@@ -982,7 +985,6 @@ is established in following order:</p>
         &#34;&#34;&#34;
 
         if not legacy_manifest:
-
             legacy_manifest = self._expects_legacy_manifest()
 
         manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
@@ -993,7 +995,7 @@ is established in following order:</p>
             json.dump(manifest, manifest_file)
 
     def _expects_legacy_manifest(self) -&gt; bool:
-        legacy_manifest =\
+        legacy_manifest = \
             (self._running_in_kbc and self.environment_variables.data_type_support not in (&#39;authoritative&#39;, &#39;hints&#39;))
 
         om_override = self.configuration.config_data.get(&#39;storage&#39;, {}).get(&#39;output&#39;, {}).get(&#39;data_type_support&#39;)
@@ -1111,10 +1113,6 @@ is established in following order:</p>
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.LOGGING_TYPE_STD"><code class="name">var <span class="ident">LOGGING_TYPE_STD</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="keboola.component.interface.CommonInterface.SCHEMA_TYPE"><code class="name">var <span class="ident">SCHEMA_TYPE</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1300,7 +1298,7 @@ It initializes path in data/files/out/ folder.</p>
 </dl></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.create_out_table_definition"><code class="name flex">
-<span>def <span class="ident">create_out_table_definition</span></span>(<span>self, name: str, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, schema: SCHEMA_TYPE = None, incremental: bool = None, table_metadata: dao.TableMetadata = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None, write_always: bool = False, has_header: Optional[bool] = None, **kwargs)</span>
+<span>def <span class="ident">create_out_table_definition</span></span>(<span>self, name: str, is_sliced: bool = False, destination: str = '', primary_key: List[str] = None, schema: TableDefinition.SCHEMA_TYPE = None, incremental: bool = None, table_metadata: dao.TableMetadata = None, enclosure: str = '"', delimiter: str = ',', delete_where: dict = None, write_always: bool = False, has_header: Optional[bool] = None, description: Optional[str] = None, **kwargs) ‑> <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper method for output dao.TableDefinition creation along with the "manifest".
@@ -1331,10 +1329,12 @@ It initializes path in data/tables/out/ folder.</p>
 <dd>Dict with settings for deleting rows</dd>
 <dt><strong><code>write_always</code></strong></dt>
 <dd>Bool: If true, the table will be saved to Storage even when the job execution</dd>
-</dl>
-<p>fails.
-has_header:Optional[bool] = flag whether the header is present in the file,
-if None legacy method is used</p></div>
+<dt>fails.</dt>
+<dt>has_header:Optional[bool] = flag whether the header is present in the file,</dt>
+<dt>if None legacy method is used</dt>
+<dt><strong><code>description</code></strong></dt>
+<dd>Table description</dd>
+</dl></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.get_input_file_definitions_grouped_by_name"><code class="name flex">
 <span>def <span class="ident">get_input_file_definitions_grouped_by_name</span></span>(<span>self, orphaned_manifests=False, only_latest_files=True, tags: List[str] = None) ‑> Dict[str, List[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>]]</span>
@@ -1966,7 +1966,6 @@ def tables_output_mapping(self) -&gt; List[dao.TableOutputMapping]:
 <ul class="">
 <li><code><a title="keboola.component.interface.CommonInterface.LOGGING_TYPE_GELF" href="#keboola.component.interface.CommonInterface.LOGGING_TYPE_GELF">LOGGING_TYPE_GELF</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.LOGGING_TYPE_STD" href="#keboola.component.interface.CommonInterface.LOGGING_TYPE_STD">LOGGING_TYPE_STD</a></code></li>
-<li><code><a title="keboola.component.interface.CommonInterface.SCHEMA_TYPE" href="#keboola.component.interface.CommonInterface.SCHEMA_TYPE">SCHEMA_TYPE</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.configuration" href="#keboola.component.interface.CommonInterface.configuration">configuration</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.create_in_table_definition" href="#keboola.component.interface.CommonInterface.create_in_table_definition">create_in_table_definition</a></code></li>
 <li><code><a title="keboola.component.interface.CommonInterface.create_out_file_definition" href="#keboola.component.interface.CommonInterface.create_out_file_definition">create_out_file_definition</a></code></li>
