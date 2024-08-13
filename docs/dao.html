@@ -2471,7 +2471,7 @@ fails.</dd>
                 name=name,
                 destination=manifest.get(&#39;destination&#39;),
                 schema=cls.return_schema_from_manifest(manifest),
-                incremental=manifest.get(&#39;incremental&#39;),
+                incremental=manifest.get(&#39;incremental&#39;, False),
                 primary_key=manifest.get(&#39;primary_key&#39;),
                 write_always=manifest.get(&#39;write_always&#39;, False),
                 delimiter=manifest.get(&#39;delimiter&#39;, &#39;,&#39;),
@@ -2703,8 +2703,8 @@ fails.</dd>
 
     @incremental.setter
     def incremental(self, incremental: bool):
-        if incremental:
-            self._incremental = True
+        if incremental is not None:
+            self._incremental = incremental
 
     @property
     def write_always(self) -&gt; bool:
@@ -3568,11 +3568,11 @@ manifest['column_metadata'] = tm.get_column_metadata_for_manifest()
         &#34;&#34;&#34;
         if legacy_manifest:
             final_metadata_list = [{&#39;key&#39;: key,
-                                    &#39;value&#39;: self.table_metadata[key]}
-                                   for key in self.table_metadata]
+                                    &#39;value&#39;: value}
+                                   for key, value in self.table_metadata.items() if value not in [None, &#39;&#39;]]
         else:
-            final_metadata_list = {key: self.table_metadata[key]
-                                   for key in self.table_metadata}
+            final_metadata_list = {key: value
+                                   for key, value in self.table_metadata.items() if value not in [None, &#39;&#39;]}
 
         return final_metadata_list
 
