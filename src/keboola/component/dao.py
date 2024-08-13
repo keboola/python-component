@@ -1,5 +1,6 @@
 # Python 3.7 support
 from __future__ import annotations
+
 import dataclasses
 import json
 import logging
@@ -11,7 +12,6 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import List, Union, Dict, Optional, OrderedDict as TypeOrderedDict
-
 
 from deprecated import deprecated
 
@@ -204,15 +204,15 @@ class TableMetadata:
         """
         if legacy_manifest:
             final_metadata_list = [{'key': key,
-                                    'value': self.table_metadata[key]}
-                                   for key in self.table_metadata]
+                                    'value': value}
+                                   for key, value in self.table_metadata.items() if value not in [None, '']]
         else:
-            final_metadata_list = [{key: self.table_metadata[key]}
-                                   for key in self.table_metadata]
+            final_metadata_list = {key: value
+                                   for key, value in self.table_metadata.items() if value not in [None, '']}
 
         return final_metadata_list
 
-    @deprecated(version='1.5.1', reason="Please use schema instead of Table Metadata")
+    @deprecated(version='1.5.1', reason="Please use schema instead of Column Metadata")
     def get_column_metadata_for_manifest(self) -> dict:
         """
                 Returns column metadata dict as required by the
@@ -251,13 +251,14 @@ class TableMetadata:
                 final_column_metadata[column] = list()
 
             column_metadata = [{'key': key,
-                                'value': column_metadata_dicts[key]} for key in
-                               column_metadata_dicts]
+                                'value': value} for key, value in
+                               column_metadata_dicts.items() if value not in [None, '']]
             final_column_metadata[column].extend(column_metadata)
 
         return final_column_metadata
 
     @property
+    @deprecated(version='1.5.1', reason="Please use TableDefinition.description instead of TableMetadata")
     def table_description(self) -> str:
         """
         Returns table description (KBC.description)
@@ -402,14 +403,20 @@ class TableMetadata:
                 Args:
 
         """
+        if value is None:
+            return
         self.table_metadata = {**self.table_metadata, **{key: value}}
 
+    @deprecated(version='1.5.1', reason="Column metadata ere moved to dao.TableDefinition.schema property."
+                                        "Please use the dao.ColumnDefinition.metadata")
     def add_column_metadata(self, column: str, key: str, value: Union[str, bool, int], backend="base"):
         """
         Add/Updates column metadata and ensures the Key is unique.
         Args:
 
         """
+        if value is None:
+            return
         if not self.column_metadata.get(column):
             self.column_metadata[column] = dict()
 
@@ -417,6 +424,8 @@ class TableMetadata:
 
         # self.schema = [ColumnDefinition(name=column, data_type={backend: DataType(type=value)})]
 
+    @deprecated(version='1.5.1', reason="Column metadata ere moved to dao.TableDefinition.schema property."
+                                        "Please use the dao.ColumnDefinition.metadata")
     def add_multiple_column_metadata(self, column_metadata: Dict[str, List[dict]]):
         """
         Add key-value pairs to column metadata.
@@ -577,7 +586,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
                 to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata', 'metadata']
                 attributes = list(set(attributes).difference(to_remove))
 
-                to_add = ['manifest_type', 'has_header', 'description', 'table_metadata', 'schema']
+                to_add = ['manifest_type', 'has_header', 'table_metadata', 'schema']
                 attributes.extend(to_add)
 
         elif stage == 'in':
@@ -773,13 +782,14 @@ class TableDefinition(IODefinition):
 
     MANIFEST_ATTRIBUTES = {'in': INPUT_MANIFEST_ATTRIBUTES,
                            'out': OUTPUT_MANIFEST_ATTRIBUTES}
+    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], TypeOrderedDict[str, ColumnDefinition], List[str]]
 
     def __init__(self, name: str,
                  full_path: Optional[Union[str, None]] = None,
                  is_sliced: Optional[bool] = False,
                  destination: Optional[str] = '',
                  primary_key: Optional[List[str]] = None,
-                 schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
+                 schema: SCHEMA_TYPE = None,
                  incremental: Optional[bool] = None,
                  table_metadata: Optional[TableMetadata] = None,
                  enclosure: Optional[str] = '"',
@@ -788,6 +798,7 @@ class TableDefinition(IODefinition):
                  stage: Optional[str] = 'out',
                  write_always: Optional[bool] = False,
                  has_header: Optional[bool] = None,
+                 description: Optional[str] = None,
                  # input
                  **kwargs
                  ):
@@ -815,6 +826,7 @@ class TableDefinition(IODefinition):
             write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
             schema: (dict|lis[str]) Mapping of column names andColumnDefinition objects, or a list of names
+            description: str: Table description
 
         """
         super().__init__(full_path)
@@ -824,7 +836,7 @@ class TableDefinition(IODefinition):
         # initialize manifest properties
         self._destination = None
         self.destination = destination
-        self._schema = dict()
+        self._schema: Dict[str, ColumnDefinition] = dict()
 
         if schema:
             self.schema = schema
@@ -845,6 +857,8 @@ class TableDefinition(IODefinition):
         if not table_metadata:
             table_metadata = TableMetadata()
         self.table_metadata = table_metadata
+        if description:
+            self.table_metadata.add_table_description(description)
 
         self.delete_where_values = None
         self.delete_where_column = None
@@ -893,7 +907,8 @@ class TableDefinition(IODefinition):
                                 delimiter: Optional[str] = ',',
                                 delete_where: Optional[dict] = None,
                                 write_always: Optional[bool] = False,
-                                schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
+                                schema: SCHEMA_TYPE = None,
+                                description: Optional[str] = None,
                                 **kwargs
                                 ):
         """
@@ -914,6 +929,7 @@ class TableDefinition(IODefinition):
             delete_where (Optional[dict]): Criteria for row deletion in incremental loads. Defaults to None.
             write_always (Optional[bool]): If True, the table will be saved to storage even if the job fails.
             schema (Optional[List[ColumnDefinition]]): Dictionary of ColumnDefinition objects.
+            description (Optional[str]): The description of the table. Defaults to None.
 
         Returns:
             TableDefinition: An instance of TableDefinition configured for output tables.
@@ -929,6 +945,7 @@ class TableDefinition(IODefinition):
                    delete_where=delete_where,
                    write_always=write_always,
                    schema=schema,
+                   description=description,
                    **kwargs
                    )
 
@@ -1155,7 +1172,7 @@ class TableDefinition(IODefinition):
                 name=name,
                 destination=manifest.get('destination'),
                 schema=cls.return_schema_from_manifest(manifest),
-                incremental=manifest.get('incremental'),
+                incremental=manifest.get('incremental', False),
                 primary_key=manifest.get('primary_key'),
                 write_always=manifest.get('write_always', False),
                 delimiter=manifest.get('delimiter', ','),
@@ -1255,7 +1272,6 @@ class TableDefinition(IODefinition):
             'column_metadata': self.table_metadata._get_legacy_column_metadata_for_manifest(),
             'manifest_type': manifest_type,
             'has_header': self.has_header,
-            'description': None,
             'table_metadata': self.table_metadata.get_table_metadata_for_manifest(),
             'delete_where_column': self.delete_where_column,
             'delete_where_values': self.delete_where_values,
@@ -1263,6 +1279,7 @@ class TableDefinition(IODefinition):
             'schema': [col.to_dict(name)
                        for name, col in self.schema.items()] if isinstance(self.schema, (OrderedDict, dict)) else []
         }
+
         if legacy_manifest or self.stage == 'in':
             fields['columns'] = self.column_names
 
@@ -1387,8 +1404,8 @@ class TableDefinition(IODefinition):
 
     @incremental.setter
     def incremental(self, incremental: bool):
-        if incremental:
-            self._incremental = True
+        if incremental is not None:
+            self._incremental = incremental
 
     @property
     def write_always(self) -> bool:

@@ -18,7 +18,7 @@ from pygelf import GelfUdpHandler, GelfTcpHandler
 from pytz import utc
 
 from . import dao
-from .dao import ColumnDefinition
+from .dao import ColumnDefinition, TableDefinition
 from .exceptions import UserException
 
 
@@ -338,7 +338,8 @@ class CommonInterface:
                                  write_always: bool = False,
                                  schema: Union[
                                      OrderedDict[str, ColumnDefinition], list[str]] = None,
-                                 has_header: Optional[bool] = None) -> dao.TableDefinition:
+                                 has_header: Optional[bool] = None,
+                                 description: Optional[str] = None) -> dao.TableDefinition:
         """
                 Helper method for dao.TableDefinition creation along with the "manifest".
                 It initializes path according to the storage_stage type.
@@ -381,6 +382,7 @@ class CommonInterface:
                                    primary_key=primary_key,
                                    columns=columns,
                                    incremental=incremental,
+                                   description=description,
                                    table_metadata=table_metadata,
                                    enclosure=enclosure,
                                    delimiter=delimiter,
@@ -427,13 +429,11 @@ class CommonInterface:
                                              delete_where=delete_where,
                                              schema=schema)
 
-    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], OrderedDict[str, ColumnDefinition], List[str]]
-
     def create_out_table_definition(self, name: str,
                                     is_sliced: bool = False,
                                     destination: str = '',
                                     primary_key: List[str] = None,
-                                    schema: SCHEMA_TYPE = None,
+                                    schema: TableDefinition.SCHEMA_TYPE = None,
                                     incremental: bool = None,
                                     table_metadata: dao.TableMetadata = None,
                                     enclosure: str = '"',
@@ -441,6 +441,7 @@ class CommonInterface:
                                     delete_where: dict = None,
                                     write_always: bool = False,
                                     has_header: Optional[bool] = None,
+                                    description: Optional[str] = None,
                                     **kwargs
                                     ) -> dao.TableDefinition:
         """
@@ -464,6 +465,7 @@ class CommonInterface:
                            fails.
                            has_header:Optional[bool] = flag whether the header is present in the file,
                                 if None legacy method is used
+                           description: Table description
         """
 
         return self._create_table_definition(name=name,
@@ -479,7 +481,8 @@ class CommonInterface:
                                              delete_where=delete_where,
                                              write_always=write_always,
                                              schema=schema,
-                                             has_header=has_header)
+                                             has_header=has_header,
+                                             description=description)
 
     # # File processing
 
@@ -956,7 +959,6 @@ class CommonInterface:
         """
 
         if not legacy_manifest:
-
             legacy_manifest = self._expects_legacy_manifest()
 
         manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
@@ -967,7 +969,7 @@ class CommonInterface:
             json.dump(manifest, manifest_file)
 
     def _expects_legacy_manifest(self) -> bool:
-        legacy_manifest =\
+        legacy_manifest = \
             (self._running_in_kbc and self.environment_variables.data_type_support not in ('authoritative', 'hints'))
 
         om_override = self.configuration.config_data.get('storage', {}).get('output', {}).get('data_type_support')

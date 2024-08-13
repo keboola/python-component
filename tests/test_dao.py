@@ -94,7 +94,7 @@ class TestTableMetadata(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             tmetadata.add_column_data_type('col', 'invalid type')
 
-    def test_table_description_metadata_for_manifest_is_valid(self):
+    def test_table_description_metadata_for_legacy_manifest_is_valid(self):
         tmetadata = TableMetadata()
 
         table_metadata = [{
@@ -109,6 +109,17 @@ class TestTableMetadata(unittest.TestCase):
         tmetadata.add_table_description("Description of table")
         tmetadata.add_table_metadata("custom_key", "custom_value")
         self.assertEqual(tmetadata.get_table_metadata_for_manifest(legacy_manifest=True), table_metadata)
+
+    def test_table_description_metadata_for_manifest_is_valid(self):
+        tmetadata = TableMetadata()
+
+        table_metadata = {"KBC.description": "Description of table",
+                          "custom_key": "custom_value"
+                          }
+
+        tmetadata.add_table_description("Description of table")
+        tmetadata.add_table_metadata("custom_key", "custom_value")
+        self.assertEqual(tmetadata.get_table_metadata_for_manifest(legacy_manifest=False), table_metadata)
 
     def test_build_from_manifest_valid(self):
         raw_manifest = {
@@ -133,6 +144,16 @@ class TestTableMetadata(unittest.TestCase):
         self.assertEqual(table_metadata.column_metadata, expected_tmetadata.column_metadata)
         self.assertEqual(table_metadata.table_metadata, expected_tmetadata.table_metadata)
 
+    def test_build_manifest_legacy_none_metadata_skipped(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    destination='some-destination',
+                                    incremental=True,
+                                    table_metadata=TableMetadata()
+                                    )
+        table_def.table_metadata.add_column_metadata('foo', 'KBC.description', None)
+
+        self.assertDictEqual({}, table_def.table_metadata.column_metadata)
+
 
 class TestTableDefinition(unittest.TestCase):
 
@@ -150,15 +171,14 @@ class TestTableDefinition(unittest.TestCase):
             table_def.get_manifest_dictionary(legacy_manifest=True))
 
     def test_legacy_order_in(self):
-
         table_def = TableDefinition("data",
                                     metadata=TableMetadata({
-                                                                "id": "228956",
-                                                                "key": "KBC.createdBy.component.id",
-                                                                "value": "keboola.python-transformation",
-                                                                "provider": "system",
-                                                                "timestamp": "2017-05-26 00:39:07"
-                                                            }),
+                                        "id": "228956",
+                                        "key": "KBC.createdBy.component.id",
+                                        "value": "keboola.python-transformation",
+                                        "provider": "system",
+                                        "timestamp": "2017-05-26 00:39:07"
+                                    }),
                                     stage='in',
                                     is_sliced=False,
                                     schema=["id", "name", "text"],
@@ -167,7 +187,9 @@ class TestTableDefinition(unittest.TestCase):
                                     last_import_date="2015-01-25T01:35:14+0100")
 
         self.assertEqual(
-            {'columns': ['id', 'name', 'text'], 'created': '2015-01-25T01:35:14+0100', 'last_change_date': '2015-01-25T01:35:14+0100', 'last_import_date': '2015-01-25T01:35:14+0100', 'name': 'data'},
+            {'columns': ['id', 'name', 'text'], 'created': '2015-01-25T01:35:14+0100',
+             'last_change_date': '2015-01-25T01:35:14+0100', 'last_import_date': '2015-01-25T01:35:14+0100',
+             'name': 'data'},
             table_def.get_manifest_dictionary(legacy_manifest=True))
 
     def test_out_old_to_new_has_headers_sliced(self):
@@ -198,8 +220,9 @@ class TestTableDefinition(unittest.TestCase):
 
         res = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample_output_header.csv.manifest'))
         res_manifest = res.get_manifest_dictionary()
-        self.assertDictEqual({'delimiter': ',', 'enclosure': '"', 'incremental': True, 'primary_key': ['x'], 'write_always': False},
-                             res_manifest)
+        self.assertDictEqual(
+            {'delimiter': ',', 'enclosure': '"', 'incremental': True, 'primary_key': ['x'], 'write_always': False},
+            res_manifest)
 
     def test_table_manifest_minimal(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
@@ -305,6 +328,7 @@ class TestTableDefinition(unittest.TestCase):
         expected_table_def = TableDefinition(name='orphaned.csv',
                                              full_path=os.path.join(sample_path, 'orphaned.csv'),
                                              is_sliced=False,
+                                             incremental=False
                                              )
 
         self.assertEqual(expected_table_def.full_path, table_def.full_path)
@@ -341,6 +365,50 @@ class TestTableDefinition(unittest.TestCase):
         self.assertEqual(expected_table_def.full_path, table_def.full_path)
         self.assertEqual(expected_table_def.name, table_def.name)
         self.assertEqual(expected_table_def.is_sliced, table_def.is_sliced)
+
+    def test_build_manifest_legacy_none_metadata_skipped(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    destination='some-destination',
+                                    incremental=True,
+                                    table_metadata=TableMetadata()
+                                    )
+        table_def.table_metadata.add_column_metadata('foo', 'KBC.description', None)
+        expected = {'delimiter': ',', 'destination': 'some-destination', 'enclosure': '"', 'incremental': True,
+                    'write_always': False}
+        manifest_dict = table_def.get_manifest_dictionary('out', legacy_manifest=True)
+        self.assertDictEqual(expected, manifest_dict)
+
+    def test_build_manifest_new_to_legacy_none_metadata_skipped(self):
+        table_def = TableDefinition("testDef", "somepath", is_sliced=False,
+                                    destination='some-destination',
+                                    incremental=True,
+                                    schema={
+                                        'foo': ColumnDefinition(metadata={'KBC.description': None, 'some': 'value'})},
+                                    )
+        table_def.table_metadata.add_column_metadata('foo', 'KBC.description', '')
+        expected = {'column_metadata': {}, 'columns': ['foo'], 'delimiter': ',', 'destination': 'some-destination',
+                    'enclosure': '"',
+                    'incremental': True,
+                    'write_always': False}
+        manifest_dict = table_def.get_manifest_dictionary('out', legacy_manifest=True)
+        self.assertDictEqual(expected, manifest_dict)
+
+    def test_incremental_defaults_to_false(self):
+        source_m = {
+            'columns': ['x', 'Sales', 'CompPrice', 'Income', 'Advertising', 'Population', 'Price', 'ShelveLoc', 'Age',
+                        'Education', 'Urban', 'US', 'High'],
+            'delimiter': ',',
+            'enclosure': '"',
+            'write_always': False
+        }
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file_path = temp_file.name
+
+        with open(temp_file_path, 'w') as f:
+            json.dump(source_m, f)
+        td = TableDefinition.build_from_manifest(temp_file_path)
+
+        self.assertEqual(td.incremental, False)
 
     def test_table_manifest_error_destination(self):
         with self.assertRaises(TypeError):
@@ -389,7 +457,7 @@ class TestTableDefinition(unittest.TestCase):
         manifest = td.get_manifest_dictionary(legacy_queue=False)
         self.assertTrue('write_always' in manifest)
 
-    def test_new_manifest(self):
+    def test_new_manifest_full(self):
         table_def = TableDefinition("testDef", "somepath", is_sliced=False,
                                     schema=['foo', 'bar'],
                                     destination='some-destination',
@@ -398,7 +466,8 @@ class TestTableDefinition(unittest.TestCase):
                                     incremental=True,
                                     delete_where={'column': 'lilly',
                                                   'values': ['a', 'b'],
-                                                  'operator': 'eq'}
+                                                  'operator': 'eq'},
+                                    description='some description'
                                     )
         # add metadata
         table_def.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
@@ -419,7 +488,7 @@ class TestTableDefinition(unittest.TestCase):
             'delete_where_column': 'lilly',
             'delete_where_values': ['a', 'b'],
             'delete_where_operator': 'eq',
-            'table_metadata': [{'bar': 'kochba'}],
+            'table_metadata': {'KBC.description': "some description", 'bar': 'kochba'},
             'schema': [
                 {'name': 'foo', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
                 {'name': 'bar', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
@@ -615,7 +684,6 @@ class TestTableDefinition(unittest.TestCase):
         self.assertEqual(table_def.delete_where_column, 'Advertising')
         self.assertEqual(table_def.delete_where_values, ['Video', 'Search'])
         self.assertEqual(table_def.delete_where_operator, 'eq')
-
 
 
 class TestFileDefinition(unittest.TestCase):
