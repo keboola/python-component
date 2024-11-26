@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.1">
+<meta name="generator" content="pdoc3 0.11.2">
 <title>keboola.component.dao API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
@@ -50,7 +50,7 @@ Returns: dataclass of specified type</p></div>
 <dl>
 <dt id="keboola.component.dao.BaseType"><code class="flex name class">
 <span>class <span class="ident">BaseType</span></span>
-<span>(</span><span>dtype: <a title="keboola.component.dao.SupportedDataTypes" href="#keboola.component.dao.SupportedDataTypes">SupportedDataTypes</a> = SupportedDataTypes.STRING, length: Optional[str] = None, default: Optional[str] = None)</span>
+<span>(</span><span>dtype: <a title="keboola.component.dao.SupportedDataTypes" href="#keboola.component.dao.SupportedDataTypes">SupportedDataTypes</a> = SupportedDataTypes.STRING,<br>length: Optional[str] = None,<br>default: Optional[str] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>dict() -&gt; new empty dictionary
@@ -156,7 +156,7 @@ dict(one=1, two=2)</p></div>
 </dd>
 <dt id="keboola.component.dao.ColumnDefinition"><code class="flex name class">
 <span>class <span class="ident">ColumnDefinition</span></span>
-<span>(</span><span>data_types: Optional[Union[Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>], <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a>]] = &lt;factory&gt;, nullable: Optional[bool] = True, primary_key: Optional[bool] = False, description: Optional[str] = None, metadata: Optional[Dict[str, str]] = None)</span>
+<span>(</span><span>data_types: Optional[Union[Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>], <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a>]] = &lt;factory&gt;,<br>nullable: Optional[bool] = True,<br>primary_key: Optional[bool] = False,<br>description: Optional[str] = None,<br>metadata: Optional[Dict[str, str]] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Represents the definition of a column within a table schema.</p>
@@ -252,7 +252,7 @@ class ColumnDefinition:
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="keboola.component.dao.ColumnDefinition.data_types"><code class="name">var <span class="ident">data_types</span> : Union[Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>], <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a>, ForwardRef(None)]</code></dt>
+<dt id="keboola.component.dao.ColumnDefinition.data_types"><code class="name">var <span class="ident">data_types</span> : Optional[Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>] | <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -276,7 +276,7 @@ class ColumnDefinition:
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.ColumnDefinition.add_datatype"><code class="name flex">
-<span>def <span class="ident">add_datatype</span></span>(<span>self, backend: str, data_type: <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>)</span>
+<span>def <span class="ident">add_datatype</span></span>(<span>self,<br>backend: str,<br>data_type: <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -294,7 +294,7 @@ class ColumnDefinition:
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.ColumnDefinition.update_datatype"><code class="name flex">
-<span>def <span class="ident">update_datatype</span></span>(<span>self, backend: str, data_type: <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>)</span>
+<span>def <span class="ident">update_datatype</span></span>(<span>self,<br>backend: str,<br>data_type: <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -345,7 +345,7 @@ class DataType:
 </dd>
 <dt id="keboola.component.dao.EnvironmentVariables"><code class="flex name class">
 <span>class <span class="ident">EnvironmentVariables</span></span>
-<span>(</span><span>data_dir: str, run_id: str, project_id: str, stack_id: str, config_id: str, component_id: str, config_row_id: str, branch_id: str, staging_file_provider: str, project_name: str, token_id: str, token_desc: str, token: str, url: str, real_user: str, logger_addr: str, logger_port: str, data_type_support: str, project_features: str)</span>
+<span>(</span><span>data_dir: str,<br>run_id: str,<br>project_id: str,<br>stack_id: str,<br>config_id: str,<br>component_id: str,<br>config_row_id: str,<br>branch_id: str,<br>staging_file_provider: str,<br>project_name: str,<br>token_id: str,<br>token_desc: str,<br>token: str,<br>url: str,<br>real_user: str,<br>logger_addr: str,<br>logger_port: str,<br>data_type_support: str,<br>project_features: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Dataclass for variables available in the docker environment
@@ -465,7 +465,7 @@ class EnvironmentVariables:
 </dd>
 <dt id="keboola.component.dao.FileDefinition"><code class="flex name class">
 <span>class <span class="ident">FileDefinition</span></span>
-<span>(</span><span>full_path: str, stage: Optional[str] = 'out', tags: Optional[List[str]] = None, is_public: Optional[bool] = False, is_permanent: Optional[bool] = False, is_encrypted: Optional[bool] = False, notify: Optional[bool] = False, id: Optional[str] = None, s3: Optional[dict] = None, abs: Optional[dict] = None, created: Optional[str] = None, size_bytes: Optional[int] = None, max_age_days: Optional[int] = None)</span>
+<span>(</span><span>full_path: str,<br>stage: Optional[str] = 'out',<br>tags: Optional[List[str]] = None,<br>is_public: Optional[bool] = False,<br>is_permanent: Optional[bool] = False,<br>is_encrypted: Optional[bool] = False,<br>notify: Optional[bool] = False,<br>id: Optional[str] = None,<br>s3: Optional[dict] = None,<br>abs: Optional[dict] = None,<br>created: Optional[str] = None,<br>size_bytes: Optional[int] = None,<br>max_age_days: Optional[int] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>File definition class. It is used as a container for <code>{in/out}/files/</code> files.
@@ -930,7 +930,7 @@ E.g. file.jpg if <code>file.jpg.manifest</code> is provided.</p>
 (optional) Full path of the file <a href="https://developers.keboola.com/extend/common-interface/manifest-files/#files">manifest</a></p></div>
 </dd>
 <dt id="keboola.component.dao.FileDefinition.build_input_definition"><code class="name flex">
-<span>def <span class="ident">build_input_definition</span></span>(<span>full_path: str, id: Optional[str] = None, s3: Optional[dict] = None, abs: Optional[dict] = None, created: Optional[str] = None, size_bytes: Optional[int] = None, max_age_days: Optional[int] = None)</span>
+<span>def <span class="ident">build_input_definition</span></span>(<span>full_path: str,<br>id: Optional[str] = None,<br>s3: Optional[dict] = None,<br>abs: Optional[dict] = None,<br>created: Optional[str] = None,<br>size_bytes: Optional[int] = None,<br>max_age_days: Optional[int] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Factory method to create an instance of FileDefinition for input files.</p>
@@ -958,7 +958,7 @@ creation date, size in bytes, and the maximum age in days before the file is con
 <p>An instance of FileDefinition configured for input files.</p></div>
 </dd>
 <dt id="keboola.component.dao.FileDefinition.build_output_definition"><code class="name flex">
-<span>def <span class="ident">build_output_definition</span></span>(<span>full_path: str, tags: Optional[List[str]] = None, is_public: Optional[bool] = False, is_permanent: Optional[bool] = False, is_encrypted: Optional[bool] = False, notify: Optional[bool] = False)</span>
+<span>def <span class="ident">build_output_definition</span></span>(<span>full_path: str,<br>tags: Optional[List[str]] = None,<br>is_public: Optional[bool] = False,<br>is_permanent: Optional[bool] = False,<br>is_encrypted: Optional[bool] = False,<br>notify: Optional[bool] = False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Factory method to create an instance of FileDefinition for output files.</p>
@@ -1145,7 +1145,7 @@ def user_tags(self) -&gt; List[str]:
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.FileDefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = None, legacy_queue: bool = False, legacy_manifest: Optional[bool] = None) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self,<br>manifest_type: Optional[str] = None,<br>legacy_queue: bool = False,<br>legacy_manifest: Optional[bool] = None) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
@@ -1225,7 +1225,7 @@ class FileInputMapping(SubscriptableDataclass):
 </dd>
 <dt id="keboola.component.dao.FileOutputMapping"><code class="flex name class">
 <span>class <span class="ident">FileOutputMapping</span></span>
-<span>(</span><span>source: str, is_public: bool = False, is_permanent: bool = False, tags: List[str] = &lt;factory&gt;)</span>
+<span>(</span><span>source: str,<br>is_public: bool = False,<br>is_permanent: bool = False,<br>tags: List[str] = &lt;factory&gt;)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Abstraction of <a href="https://developers.keboola.com/extend/common-interface/config-file/#files">output mapping definition</a> in the config file</p></div>
@@ -1490,7 +1490,7 @@ def stage(self) -&gt; str:
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.IODefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = None, legacy_queue: bool = False, legacy_manifest: Optional[bool] = None) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self,<br>manifest_type: Optional[str] = None,<br>legacy_queue: bool = False,<br>legacy_manifest: Optional[bool] = None) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1781,7 +1781,7 @@ class SubscriptableDataclass:
 </dd>
 <dt id="keboola.component.dao.SupportedManifestAttributes"><code class="flex name class">
 <span>class <span class="ident">SupportedManifestAttributes</span></span>
-<span>(</span><span>out_attributes: List[str], in_attributes: List[str], out_legacy_exclude: List[str] = &lt;factory&gt;, in_legacy_exclude: List[str] = &lt;factory&gt;)</span>
+<span>(</span><span>out_attributes: List[str],<br>in_attributes: List[str],<br>out_legacy_exclude: List[str] = &lt;factory&gt;,<br>in_legacy_exclude: List[str] = &lt;factory&gt;)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>SupportedManifestAttributes(out_attributes: 'List[str]', in_attributes: 'List[str]', out_legacy_exclude: 'List[str]' = <factory>, in_legacy_exclude: 'List[str]' = <factory>)</p></div>
@@ -1848,7 +1848,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.SupportedManifestAttributes.get_attributes_by_stage"><code class="name flex">
-<span>def <span class="ident">get_attributes_by_stage</span></span>(<span>self, stage: "Literal['in', 'out']", legacy_queue: bool = False, legacy_manifest: bool = False) ‑> List[str]</span>
+<span>def <span class="ident">get_attributes_by_stage</span></span>(<span>self,<br>stage: "Literal['in', 'out']",<br>legacy_queue: bool = False,<br>legacy_manifest: bool = False) ‑> List[str]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1857,7 +1857,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
 </dd>
 <dt id="keboola.component.dao.TableColumnTypes"><code class="flex name class">
 <span>class <span class="ident">TableColumnTypes</span></span>
-<span>(</span><span>source: str, type: str, destination: str, length: int, nullable: bool, convert_empty_values_to_null: bool)</span>
+<span>(</span><span>source: str,<br>type: str,<br>destination: str,<br>length: int,<br>nullable: bool,<br>convert_empty_values_to_null: bool)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Abstraction of <a href="&lt;https://developers.keboola.com/extend/common-interface/config-file/#input-mapping&gt;
@@ -1916,7 +1916,7 @@ class TableColumnTypes(SubscriptableDataclass):
 </dd>
 <dt id="keboola.component.dao.TableDefinition"><code class="flex name class">
 <span>class <span class="ident">TableDefinition</span></span>
-<span>(</span><span>name: str, full_path: Optional[Union[str, None]] = None, is_sliced: Optional[bool] = False, destination: Optional[str] = '', primary_key: Optional[List[str]] = None, schema: SCHEMA_TYPE = None, incremental: Optional[bool] = None, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, stage: Optional[str] = 'out', write_always: Optional[bool] = False, has_header: Optional[bool] = None, description: Optional[str] = None, **kwargs)</span>
+<span>(</span><span>name: str,<br>full_path: Optional[Union[str, None]] = None,<br>is_sliced: Optional[bool] = False,<br>destination: Optional[str] = '',<br>primary_key: Optional[List[str]] = None,<br>schema: SCHEMA_TYPE = None,<br>incremental: Optional[bool] = None,<br>table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None,<br>enclosure: Optional[str] = '"',<br>delimiter: Optional[str] = ',',<br>delete_where: Optional[dict] = None,<br>stage: Optional[str] = 'out',<br>write_always: Optional[bool] = False,<br>has_header: Optional[bool] = None,<br>description: Optional[str] = None,<br>**kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Table definition class. It is used as a container for <code>in/tables/</code> files.
@@ -2904,7 +2904,7 @@ if the counterpart table is not found.</p>
 table with no input manifest.</p></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.build_input_definition"><code class="name flex">
-<span>def <span class="ident">build_input_definition</span></span>(<span>name: str, full_path: Optional[Union[str, None]] = None, is_sliced: Optional[bool] = False, destination: Optional[str] = '', primary_key: Optional[List[str]] = None, columns: Optional[List[str]] = None, incremental: Optional[bool] = None, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, stage: Optional[str] = 'in', write_always: Optional[bool] = False, schema: Optional[Union[TypeOrderedDict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>], list[str]]] = None, rows_count: Optional[int] = None, data_size_bytes: Optional[int] = None, is_alias: Optional[bool] = False, uri: Optional[str] = None, id: Optional[str] = '', created: Optional[str] = None, last_change_date: Optional[str] = None, last_import_date: Optional[str] = None, **kwargs)</span>
+<span>def <span class="ident">build_input_definition</span></span>(<span>name: str,<br>full_path: Optional[Union[str, None]] = None,<br>is_sliced: Optional[bool] = False,<br>destination: Optional[str] = '',<br>primary_key: Optional[List[str]] = None,<br>columns: Optional[List[str]] = None,<br>incremental: Optional[bool] = None,<br>table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None,<br>enclosure: Optional[str] = '"',<br>delimiter: Optional[str] = ',',<br>delete_where: Optional[dict] = None,<br>stage: Optional[str] = 'in',<br>write_always: Optional[bool] = False,<br>schema: Optional[Union[TypeOrderedDict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>], list[str]]] = None,<br>rows_count: Optional[int] = None,<br>data_size_bytes: Optional[int] = None,<br>is_alias: Optional[bool] = False,<br>uri: Optional[str] = None,<br>id: Optional[str] = '',<br>created: Optional[str] = None,<br>last_change_date: Optional[str] = None,<br>last_import_date: Optional[str] = None,<br>**kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Factory method for creating a TableDefinition instance for input tables.</p>
@@ -2966,7 +2966,7 @@ including metadata and schema definitions.</p>
 </dl></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.build_output_definition"><code class="name flex">
-<span>def <span class="ident">build_output_definition</span></span>(<span>name: str, destination: Optional[str] = '', columns: Optional[List[str]] = None, primary_key: Optional[List[str]] = None, incremental: Optional[bool] = False, table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None, enclosure: Optional[str] = '"', delimiter: Optional[str] = ',', delete_where: Optional[dict] = None, write_always: Optional[bool] = False, schema: SCHEMA_TYPE = None, description: Optional[str] = None, **kwargs)</span>
+<span>def <span class="ident">build_output_definition</span></span>(<span>name: str,<br>destination: Optional[str] = '',<br>columns: Optional[List[str]] = None,<br>primary_key: Optional[List[str]] = None,<br>incremental: Optional[bool] = False,<br>table_metadata: Optional[<a title="keboola.component.dao.TableMetadata" href="#keboola.component.dao.TableMetadata">TableMetadata</a>] = None,<br>enclosure: Optional[str] = '"',<br>delimiter: Optional[str] = ',',<br>delete_where: Optional[dict] = None,<br>write_always: Optional[bool] = False,<br>schema: SCHEMA_TYPE = None,<br>description: Optional[str] = None,<br>**kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Factory method for creating a TableDefinition instance for output tables.</p>
@@ -3271,14 +3271,14 @@ def write_always(self) -&gt; bool:
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.TableDefinition.add_column"><code class="name flex">
-<span>def <span class="ident">add_column</span></span>(<span>self, name: str, definition: <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a> = ColumnDefinition(data_types={'base': DataType(dtype='STRING', length=None, default=None)}, nullable=True, primary_key=False, description=None, metadata=None))</span>
+<span>def <span class="ident">add_column</span></span>(<span>self,<br>name: str,<br>definition: <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a> = ColumnDefinition(data_types={'base': DataType(dtype='STRING', length=None, default=None)}, nullable=True, primary_key=False, description=None, metadata=None))</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Add column definition, accepts either ColumnDefinition or a string
 (in which case the base type STRING will be used).</p></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.add_columns"><code class="name flex">
-<span>def <span class="ident">add_columns</span></span>(<span>self, columns: Union[List[str], Dict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>]])</span>
+<span>def <span class="ident">add_columns</span></span>(<span>self,<br>columns: Union[List[str], Dict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>]])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3296,7 +3296,7 @@ def write_always(self) -&gt; bool:
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.get_manifest_dictionary"><code class="name flex">
-<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self, manifest_type: Optional[str] = None, legacy_queue: bool = False, legacy_manifest: Optional[bool] = None) ‑> dict</span>
+<span>def <span class="ident">get_manifest_dictionary</span></span>(<span>self,<br>manifest_type: Optional[str] = None,<br>legacy_queue: bool = False,<br>legacy_manifest: Optional[bool] = None) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
@@ -3335,13 +3335,13 @@ the attributes, some are not shared.</p>
 <p>Manifest dict</p></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.update_column"><code class="name flex">
-<span>def <span class="ident">update_column</span></span>(<span>self, name: str, column_definition: <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>)</span>
+<span>def <span class="ident">update_column</span></span>(<span>self,<br>name: str,<br>column_definition: <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 <dt id="keboola.component.dao.TableDefinition.update_columns"><code class="name flex">
-<span>def <span class="ident">update_columns</span></span>(<span>self, columns: Dict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>])</span>
+<span>def <span class="ident">update_columns</span></span>(<span>self,<br>columns: Dict[str, <a title="keboola.component.dao.ColumnDefinition" href="#keboola.component.dao.ColumnDefinition">ColumnDefinition</a>])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3361,7 +3361,7 @@ the attributes, some are not shared.</p>
 </dd>
 <dt id="keboola.component.dao.TableInputMapping"><code class="flex name class">
 <span>class <span class="ident">TableInputMapping</span></span>
-<span>(</span><span>source: str = '', destination: str = None, limit: int = None, columns: List[str] = &lt;factory&gt;, where_values: List[str] = None, full_path: str = None, where_operator: str = '', days: int = 0, column_types: List[<a title="keboola.component.dao.TableColumnTypes" href="#keboola.component.dao.TableColumnTypes">TableColumnTypes</a>] = None)</span>
+<span>(</span><span>source: str = '',<br>destination: str = None,<br>limit: int = None,<br>columns: List[str] = &lt;factory&gt;,<br>where_values: List[str] = None,<br>full_path: str = None,<br>where_operator: str = '',<br>days: int = 0,<br>column_types: List[<a title="keboola.component.dao.TableColumnTypes" href="#keboola.component.dao.TableColumnTypes">TableColumnTypes</a>] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Abstraction of <a href="https://developers.keboola.com/extend/common-interface/config-file/#tables">input mapping definition</a> in the config file</p></div>
@@ -3888,7 +3888,7 @@ def table_description(self) -&gt; str:
 <h3>Methods</h3>
 <dl>
 <dt id="keboola.component.dao.TableMetadata.add_column_data_type"><code class="name flex">
-<span>def <span class="ident">add_column_data_type</span></span>(<span>self, column: str, data_type: Union[<a title="keboola.component.dao.SupportedDataTypes" href="#keboola.component.dao.SupportedDataTypes">SupportedDataTypes</a>, str], source_data_type: str = None, nullable: bool = False, length: str = None, default=None)</span>
+<span>def <span class="ident">add_column_data_type</span></span>(<span>self,<br>column: str,<br>data_type: Union[<a title="keboola.component.dao.SupportedDataTypes" href="#keboola.component.dao.SupportedDataTypes">SupportedDataTypes</a>, str],<br>source_data_type: str = None,<br>nullable: bool = False,<br>length: str = None,<br>default=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Add single column data type</p>
@@ -3916,7 +3916,7 @@ def table_description(self) -&gt; str:
 <p>ValueError when the provided data_type is not recognized</p></div>
 </dd>
 <dt id="keboola.component.dao.TableMetadata.add_column_data_types"><code class="name flex">
-<span>def <span class="ident">add_column_data_types</span></span>(<span>self, column_types: Dict[str, Union[<a title="keboola.component.dao.SupportedDataTypes" href="#keboola.component.dao.SupportedDataTypes">SupportedDataTypes</a>, str]])</span>
+<span>def <span class="ident">add_column_data_types</span></span>(<span>self,<br>column_types: Dict[str, Union[<a title="keboola.component.dao.SupportedDataTypes" href="#keboola.component.dao.SupportedDataTypes">SupportedDataTypes</a>, str]])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Add column types metadata. Note that only supported datatypes
@@ -4023,7 +4023,7 @@ Returns:TableMetadata</p></div>
 </dd>
 <dt id="keboola.component.dao.TableOutputMapping"><code class="flex name class">
 <span>class <span class="ident">TableOutputMapping</span></span>
-<span>(</span><span>source: str, destination: str, incremental: bool = False, columns: str = '', primary_key: str = '', delete_where_column: str = '', delete_where_operator: str = '', delete_where_values: str = '', delimiter: str = '', enclosure: str = '')</span>
+<span>(</span><span>source: str,<br>destination: str,<br>incremental: bool = False,<br>columns: str = '',<br>primary_key: str = '',<br>delete_where_column: str = '',<br>delete_where_operator: str = '',<br>delete_where_values: str = '',<br>delimiter: str = '',<br>enclosure: str = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Abstraction of <a href="https://developers.keboola.com/extend/common-interface/config-file/#tables">output mapping definition</a> in the config file</p></div>
@@ -4391,7 +4391,7 @@ class TableOutputMapping(SubscriptableDataclass):
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.2</a>.</p>
 </footer>
 </body>
 </html>
