@@ -134,10 +134,14 @@ class CommonInterface:
         args, unknown = argparser.parse_known_args()
         data_folder_path = args.data_dir
 
-        if data_folder_path == '' and self.environment_variables.data_dir:
-            data_folder_path = self.environment_variables.data_dir
-        elif data_folder_path == '':
-            data_folder_path = '/data/'
+        if not data_folder_path:
+            cwd = Path(os.getcwd())
+            if self.environment_variables.data_dir:
+                data_folder_path = self.environment_variables.data_dir
+            elif cwd.resolve().joinpath('data').is_dir():
+                data_folder_path = cwd.resolve().joinpath('data').as_posix()
+            elif cwd.resolve().parent.joinpath('data').is_dir():
+                data_folder_path = cwd.resolve().parent.joinpath('data').as_posix()
 
         return data_folder_path
 
