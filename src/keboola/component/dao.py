@@ -505,7 +505,6 @@ class ColumnDefinition:
     Represents the definition of a column within a table schema.
 
     Attributes:
-        name (Optional[str]): The name of the column. Defaults to None.
         data_types (Optional[Union[Dict[str, DataType], BaseType]]): Data types of the column for specified backend.
         This can be a specific `DataType` or a `BaseType`, or a dictionary mapping from a string to one of these types.
         Defaults to BaseType.String.
