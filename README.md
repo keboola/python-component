@@ -79,8 +79,11 @@ e.g.
 - All Environment variables are loaded
 
 The optional parameter `data_folder_path` of the constructor is the path to the data directory. If not
-provided, [`KBC_DATADIR` environment variable](/extend/common-interface/environment/#environment-variables) will be
-used.
+provided it will be determined in this order:
+1.   [`KBC_DATADIR` environment variable](/extend/common-interface/environment/#environment-variables) if present
+2. -d / --data argument from the command line if present
+3. data folder inside the current working directory if present
+4. data folder inside the parent directory of the current working directory if present
 
 The class can be either extended or just instantiated and manipulated like object. The `CommonInterface` class is
 exposed in the `keboola.component` namespace:
@@ -163,7 +166,7 @@ first_table = input_tables[0]
 logging.info(f'The first table named: "{first_table.name}" is at path: {first_table.full_path}')
 
 # get information from table manifest
-logging.info(f'The first table has following columns defined in the manifest {first_table.columns}')
+logging.info(f'The first table has following columns defined in the manifest {first_table.column_names}')
 
 ```
 
@@ -223,7 +226,7 @@ ci = CommonInterface(data_folder_path='data')
 
 # create container for the result
 out = ci.create_out_table_definition("testDef",
-                                     columns=['foo', 'bar'],
+                                     schema=['foo', 'bar'],
                                      destination='some-destination',
                                      primary_key=['foo'],
                                      incremental=True,
@@ -622,7 +625,7 @@ class Component(ComponentBase):
         product_schema = self.get_table_schema_by_name('product')
         product_table = self.create_out_table_definition_from_schema(product_schema)
         with open(product_table.full_path, 'w') as outfile:
-            writer = csv.DictWriter(outfile, fieldnames=product_table.columns)
+            writer = csv.DictWriter(outfile, fieldnames=product_table.column_names)
             writer.writerows(DUMMY_PRODUCT_DATA)
         self.write_manifest(product_table)
  ```
