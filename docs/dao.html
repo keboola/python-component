@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.2">
+<meta name="generator" content="pdoc3 0.11.3">
 <title>keboola.component.dao API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
@@ -162,8 +162,6 @@ dict(one=1, two=2)</p></div>
 <div class="desc"><p>Represents the definition of a column within a table schema.</p>
 <h2 id="attributes">Attributes</h2>
 <dl>
-<dt><strong><code>name</code></strong> :&ensp;<code>Optional[str]</code></dt>
-<dd>The name of the column. Defaults to None.</dd>
 <dt><strong><code>data_types</code></strong> :&ensp;<code>Optional[Union[Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>], <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a>]]</code></dt>
 <dd>Data types of the column for specified backend.</dd>
 <dt>This can be a specific <code><a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a></code> or a <code><a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a></code>, or a dictionary mapping from a string to one of these types.</dt>
@@ -187,7 +185,6 @@ class ColumnDefinition:
     Represents the definition of a column within a table schema.
 
     Attributes:
-        name (Optional[str]): The name of the column. Defaults to None.
         data_types (Optional[Union[Dict[str, DataType], BaseType]]): Data types of the column for specified backend.
         This can be a specific `DataType` or a `BaseType`, or a dictionary mapping from a string to one of these types.
         Defaults to BaseType.String.
@@ -252,23 +249,23 @@ class ColumnDefinition:
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="keboola.component.dao.ColumnDefinition.data_types"><code class="name">var <span class="ident">data_types</span> : Optional[Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>] | <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a>]</code></dt>
+<dt id="keboola.component.dao.ColumnDefinition.data_types"><code class="name">var <span class="ident">data_types</span> : Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>] | <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a> | None</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="keboola.component.dao.ColumnDefinition.description"><code class="name">var <span class="ident">description</span> : Optional[str]</code></dt>
+<dt id="keboola.component.dao.ColumnDefinition.description"><code class="name">var <span class="ident">description</span> : str | None</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="keboola.component.dao.ColumnDefinition.metadata"><code class="name">var <span class="ident">metadata</span> : Optional[Dict[str, str]]</code></dt>
+<dt id="keboola.component.dao.ColumnDefinition.metadata"><code class="name">var <span class="ident">metadata</span> : Dict[str, str] | None</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="keboola.component.dao.ColumnDefinition.nullable"><code class="name">var <span class="ident">nullable</span> : Optional[bool]</code></dt>
+<dt id="keboola.component.dao.ColumnDefinition.nullable"><code class="name">var <span class="ident">nullable</span> : bool | None</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="keboola.component.dao.ColumnDefinition.primary_key"><code class="name">var <span class="ident">primary_key</span> : Optional[bool]</code></dt>
+<dt id="keboola.component.dao.ColumnDefinition.primary_key"><code class="name">var <span class="ident">primary_key</span> : bool | None</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -329,7 +326,7 @@ class DataType:
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="keboola.component.dao.DataType.default"><code class="name">var <span class="ident">default</span> : Optional[str]</code></dt>
+<dt id="keboola.component.dao.DataType.default"><code class="name">var <span class="ident">default</span> : str | None</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -337,7 +334,7 @@ class DataType:
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="keboola.component.dao.DataType.length"><code class="name">var <span class="ident">length</span> : Optional[str]</code></dt>
+<dt id="keboola.component.dao.DataType.length"><code class="name">var <span class="ident">length</span> : str | None</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -4391,7 +4388,7 @@ class TableOutputMapping(SubscriptableDataclass):
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.3</a>.</p>
 </footer>
 </body>
 </html>
