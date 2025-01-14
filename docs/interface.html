@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.3">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>keboola.component.interface API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -37,6 +48,39 @@ hljs.highlightAll();
 <span>def <span class="ident">init_environment_variables</span></span>(<span>) ‑> <a title="keboola.component.dao.EnvironmentVariables" href="dao.html#keboola.component.dao.EnvironmentVariables">EnvironmentVariables</a></span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def init_environment_variables() -&gt; dao.EnvironmentVariables:
+    &#34;&#34;&#34;
+    Initializes environment variables available in the docker environment
+        https://developers.keboola.com/extend/common-interface/environment/#environment-variables
+
+    Returns:
+        dao.EnvironmentVariables:
+    &#34;&#34;&#34;
+    return dao.EnvironmentVariables(data_dir=os.environ.get(&#39;KBC_DATADIR&#39;, None),
+                                    run_id=os.environ.get(&#39;KBC_RUNID&#39;, None),
+                                    project_id=os.environ.get(&#39;KBC_PROJECTID&#39;, None),
+                                    stack_id=os.environ.get(&#39;KBC_STACKID&#39;, None),
+                                    config_id=os.environ.get(&#39;KBC_CONFIGID&#39;, None),
+                                    component_id=os.environ.get(&#39;KBC_COMPONENTID&#39;, None),
+                                    config_row_id=os.environ.get(&#39;KBC_CONFIGROWID&#39;, None),
+                                    branch_id=os.environ.get(&#39;KBC_BRANCHID&#39;, None),
+                                    staging_file_provider=os.environ.get(&#39;KBC_STAGING_FILE_PROVIDER&#39;, None),
+                                    project_name=os.environ.get(&#39;KBC_PROJECTNAME&#39;, None),
+                                    token_id=os.environ.get(&#39;KBC_TOKENID&#39;, None),
+                                    token_desc=os.environ.get(&#39;KBC_TOKENDESC&#39;, None),
+                                    token=os.environ.get(&#39;KBC_TOKEN&#39;, None),
+                                    url=os.environ.get(&#39;KBC_URL&#39;, None),
+                                    real_user=os.environ.get(&#39;KBC_REALUSER&#39;, None),
+                                    logger_addr=os.environ.get(&#39;KBC_LOGGER_ADDR&#39;, None),
+                                    logger_port=os.environ.get(&#39;KBC_LOGGER_PORT&#39;, None),
+                                    data_type_support=os.environ.get(&#39;KBC_DATA_TYPE_SUPPORT&#39;, None),
+                                    project_features=os.environ.get(&#39;KBC_PROJECT_FEATURE_GATES&#39;, &#39;&#39;)
+                                    )</code></pre>
+</details>
 <div class="desc"><p>Initializes environment variables available in the docker environment
 <a href="https://developers.keboola.com/extend/common-interface/environment/#environment-variables">https://developers.keboola.com/extend/common-interface/environment/#environment-variables</a></p>
 <h2 id="returns">Returns</h2>
@@ -46,6 +90,17 @@ hljs.highlightAll();
 <span>def <span class="ident">register_csv_dialect</span></span>(<span>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def register_csv_dialect():
+    &#34;&#34;&#34;
+    Register the KBC CSV dialect
+    &#34;&#34;&#34;
+    csv.register_dialect(&#39;kbc&#39;, lineterminator=&#39;\n&#39;, delimiter=&#39;,&#39;,
+                         quotechar=&#39;&#34;&#39;)</code></pre>
+</details>
 <div class="desc"><p>Register the KBC CSV dialect</p></div>
 </dd>
 </dl>
@@ -58,30 +113,6 @@ hljs.highlightAll();
 <span>(</span><span>data_folder_path: str = None, log_level=20, logging_type=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A class handling standard tasks related to the
-<a href="https://developers.keboola.com/extend/common-interface/">Keboola Common Interface</a>
-e.g. config load, validation, component state, I/O handling, I/O metadata and manifest files.</p>
-<p>It initializes the environment inject into the Docker container the KBC component runs in and abstracts the tasks
-related to the Common Interface interaction.</p>
-<h2 id="attributes">Attributes</h2>
-<p>data_folder_path (str):
-Full path to the /data folder
-Initializes the CommonInterface environment. If the data_folder_path is not specified the folder
-is established in following order:</p>
-<ul>
-<li>From provided argument if present: <code>-d</code> or <code>--data</code></li>
-<li>From environment variable if present (KBC_DATADIR)</li>
-<li>Defaults to /data/ if none of the above is specified</li>
-</ul>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>data_folder_path</code></strong> :&ensp;<code>str</code></dt>
-<dd>path to a data folder.</dd>
-<dt><strong><code>log_level</code></strong> :&ensp;<code>int</code></dt>
-<dd>logging.INFO or logging.DEBUG</dd>
-<dt><strong><code>logging_type</code></strong> :&ensp;<code>str</code></dt>
-<dd>optional 'std' or 'gelf', if left empty determined automatically</dd>
-</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1106,6 +1137,30 @@ is established in following order:</p>
         &#34;&#34;&#34;
         self.write_manifests(table_definitions, legacy_manifest=True)</code></pre>
 </details>
+<div class="desc"><p>A class handling standard tasks related to the
+<a href="https://developers.keboola.com/extend/common-interface/">Keboola Common Interface</a>
+e.g. config load, validation, component state, I/O handling, I/O metadata and manifest files.</p>
+<p>It initializes the environment inject into the Docker container the KBC component runs in and abstracts the tasks
+related to the Common Interface interaction.</p>
+<h2 id="attributes">Attributes</h2>
+<p>data_folder_path (str):
+Full path to the /data folder
+Initializes the CommonInterface environment. If the data_folder_path is not specified the folder
+is established in following order:</p>
+<ul>
+<li>From provided argument if present: <code>-d</code> or <code>--data</code></li>
+<li>From environment variable if present (KBC_DATADIR)</li>
+<li>Defaults to /data/ if none of the above is specified</li>
+</ul>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>data_folder_path</code></strong> :&ensp;<code>str</code></dt>
+<dd>path to a data folder.</dd>
+<dt><strong><code>log_level</code></strong> :&ensp;<code>int</code></dt>
+<dd>logging.INFO or logging.DEBUG</dd>
+<dt><strong><code>logging_type</code></strong> :&ensp;<code>str</code></dt>
+<dd>optional 'std' or 'gelf', if left empty determined automatically</dd>
+</dl></div>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="keboola.component.base.ComponentBase" href="base.html#keboola.component.base.ComponentBase">ComponentBase</a></li>
@@ -1127,6 +1182,42 @@ is established in following order:</p>
 <span>def <span class="ident">set_default_logger</span></span>(<span>log_level: int = 20)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def set_default_logger(log_level: int = logging.INFO):  # noqa: E301
+    &#34;&#34;&#34;
+    Sets default console logger.
+
+    Args:
+        log_level: logging level, default: &#39;logging.INFO&#39;
+
+    Returns:
+        Logger object
+
+    &#34;&#34;&#34;
+
+    class InfoFilter(logging.Filter):
+        def filter(self, rec):
+            return rec.levelno in (logging.DEBUG, logging.INFO)
+
+    hd1 = logging.StreamHandler(sys.stdout)
+    hd1.addFilter(InfoFilter())
+    hd2 = logging.StreamHandler(sys.stderr)
+    hd2.setLevel(logging.WARNING)
+
+    logging.getLogger().setLevel(log_level)
+    # remove default handler
+    for h in logging.getLogger().handlers:
+        logging.getLogger().removeHandler(h)
+    logging.getLogger().addHandler(hd1)
+    logging.getLogger().addHandler(hd2)
+
+    logger = logging.getLogger()
+    return logger</code></pre>
+</details>
 <div class="desc"><p>Sets default console logger.</p>
 <h2 id="args">Args</h2>
 <dl>
@@ -1140,6 +1231,52 @@ is established in following order:</p>
 <span>def <span class="ident">set_gelf_logger</span></span>(<span>log_level: int = 20,<br>transport_layer='TCP',<br>stdout=False,<br>include_extra_fields=True,<br>**gelf_kwargs)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def set_gelf_logger(log_level: int = logging.INFO, transport_layer=&#39;TCP&#39;,
+                    stdout=False, include_extra_fields=True, **gelf_kwargs):  # noqa: E301
+    &#34;&#34;&#34;
+    Sets gelf console logger. Handler for console output is not included by default,
+    for testing in non-gelf environments use stdout=True.
+
+    Args:
+        log_level: logging level, default: &#39;logging.INFO&#39;
+        transport_layer: &#39;TCP&#39; or &#39;UDP&#39;, default:&#39;UDP
+        stdout: if set to True, Stout handler is also included
+        include_extra_fields:
+            Include extra GELF fields in the log messages.
+            e.g. logging.warning(&#39;Some warning&#39;,
+                                 extra={&#34;additional_info&#34;: &#34;Extra info to be displayed in the detail&#34;}
+
+    Returns: Logger object
+    &#34;&#34;&#34;
+    # remove existing handlers
+    for h in logging.getLogger().handlers:
+        logging.getLogger().removeHandler(h)
+    if stdout:
+        CommonInterface.set_default_logger(log_level)
+
+    # gelf handler setup
+    gelf_kwargs[&#39;include_extra_fields&#39;] = include_extra_fields
+
+    host = os.getenv(&#39;KBC_LOGGER_ADDR&#39;, &#39;localhost&#39;)
+    port = os.getenv(&#39;KBC_LOGGER_PORT&#39;, 12201)
+    if transport_layer == &#39;TCP&#39;:
+        gelf = GelfTcpHandler(host=host, port=port, **gelf_kwargs)
+    elif transport_layer == &#39;UDP&#39;:
+        gelf = GelfUdpHandler(host=host, port=port, **gelf_kwargs)
+    else:
+        raise ValueError(F&#39;Unsupported gelf transport layer: {transport_layer}. Choose TCP or UDP&#39;)
+
+    logging.getLogger().setLevel(log_level)
+    logging.getLogger().addHandler(gelf)
+
+    logger = logging.getLogger()
+    return logger</code></pre>
+</details>
 <div class="desc"><p>Sets gelf console logger. Handler for console output is not included by default,
 for testing in non-gelf environments use stdout=True.</p>
 <h2 id="args">Args</h2>
@@ -1162,7 +1299,6 @@ Returns: Logger object</p></div>
 <dl>
 <dt id="keboola.component.interface.CommonInterface.configuration"><code class="name">prop <span class="ident">configuration</span></code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1174,10 +1310,10 @@ def configuration(self):
 
     return Configuration(self.data_folder_path)</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.files_in_path"><code class="name">prop <span class="ident">files_in_path</span></code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1186,10 +1322,10 @@ def configuration(self):
 def files_in_path(self):
     return os.path.join(self.data_folder_path, &#39;in&#39;, &#39;files&#39;)</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.files_out_path"><code class="name">prop <span class="ident">files_out_path</span></code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1198,11 +1334,10 @@ def files_in_path(self):
 def files_out_path(self):
     return os.path.join(self.data_folder_path, &#39;out&#39;, &#39;files&#39;)</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.is_legacy_queue"><code class="name">prop <span class="ident">is_legacy_queue</span> : bool</code></dt>
 <dd>
-<div class="desc"><p>Check if the project is running on legacy queue (v1)
-Returns:</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1221,10 +1356,11 @@ def is_legacy_queue(self) -&gt; bool:
         is_legacy_queue = False
     return is_legacy_queue</code></pre>
 </details>
+<div class="desc"><p>Check if the project is running on legacy queue (v1)
+Returns:</p></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.tables_in_path"><code class="name">prop <span class="ident">tables_in_path</span></code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1233,10 +1369,10 @@ def is_legacy_queue(self) -&gt; bool:
 def tables_in_path(self):
     return os.path.join(self.data_folder_path, &#39;in&#39;, &#39;tables&#39;)</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 <dt id="keboola.component.interface.CommonInterface.tables_out_path"><code class="name">prop <span class="ident">tables_out_path</span></code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1245,6 +1381,7 @@ def tables_in_path(self):
 def tables_out_path(self):
     return os.path.join(self.data_folder_path, &#39;out&#39;, &#39;tables&#39;)</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -1253,6 +1390,46 @@ def tables_out_path(self):
 <span>def <span class="ident">create_in_table_definition</span></span>(<span>self,<br>name: str,<br>is_sliced: bool = False,<br>destination: str = '',<br>primary_key: List[str] = None,<br>columns: List[str] = None,<br>incremental: bool = None,<br>table_metadata: dao.TableMetadata = None,<br>delete_where: str = None,<br>schema: List[ColumnDefinition] = None) ‑> <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a></span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_in_table_definition(self, name: str,
+                               is_sliced: bool = False,
+                               destination: str = &#39;&#39;,
+                               primary_key: List[str] = None,
+                               columns: List[str] = None,
+                               incremental: bool = None,
+                               table_metadata: dao.TableMetadata = None,
+                               delete_where: str = None,
+                               schema: List[ColumnDefinition] = None) -&gt; dao.TableDefinition:
+    &#34;&#34;&#34;
+                   Helper method for input dao.TableDefinition creation along with the &#34;manifest&#34;.
+                   It initializes path in data/tables/in/ folder.
+
+                   Args:
+                       name: Table / file name. e.g. `&#39;my_table.csv&#39;`.
+                       is_sliced: True if the full_path points to a folder with sliced tables
+                       destination: String name of the table in Storage.
+                       primary_key: List with names of columns used for primary key.
+                       columns: List of columns for headless CSV files
+                       incremental: Set to true to enable incremental loading
+                       table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata
+                       delete_where: Dict with settings for deleting rows
+                       schema: Table schema
+    &#34;&#34;&#34;
+
+    return self._create_table_definition(name=name,
+                                         storage_stage=&#39;in&#39;,
+                                         is_sliced=is_sliced,
+                                         destination=destination,
+                                         primary_key=primary_key,
+                                         columns=columns,
+                                         incremental=incremental,
+                                         table_metadata=table_metadata,
+                                         delete_where=delete_where,
+                                         schema=schema)</code></pre>
+</details>
 <div class="desc"><p>Helper method for input dao.TableDefinition creation along with the "manifest".
 It initializes path in data/tables/in/ folder.</p>
 <h2 id="args">Args</h2>
@@ -1281,6 +1458,40 @@ It initializes path in data/tables/in/ folder.</p>
 <span>def <span class="ident">create_out_file_definition</span></span>(<span>self,<br>name: str,<br>tags: List[str] = None,<br>is_public: bool = False,<br>is_permanent: bool = False,<br>is_encrypted: bool = False,<br>notify: bool = False) ‑> <a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a></span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_out_file_definition(self, name: str,
+                               tags: List[str] = None,
+                               is_public: bool = False,
+                               is_permanent: bool = False,
+                               is_encrypted: bool = False,
+                               notify: bool = False) -&gt; dao.FileDefinition:
+    &#34;&#34;&#34;
+                   Helper method for input dao.FileDefinition creation along with the &#34;manifest&#34;.
+                   It initializes path in data/files/out/ folder.
+
+                   Args:
+                            name (str): Name of the file, e.g. file.jpg.
+                            tags (list):
+                                List of tags that are assigned to this file
+                            is_public: When true, the file URL will be permanent and publicly accessible.
+                            is_permanent: Keeps a file forever. If false, the file will be deleted after default
+                            period of time (e.g.
+                            15 days)
+                            is_encrypted: If true, the file content will be encrypted in the storage.
+                            notify: Notifies project administrators that a file was uploaded.
+    &#34;&#34;&#34;
+
+    return self._create_file_definition(name=name,
+                                        storage_stage=&#39;out&#39;,
+                                        tags=tags,
+                                        is_public=is_public,
+                                        is_permanent=is_permanent,
+                                        is_encrypted=is_encrypted,
+                                        notify=notify)</code></pre>
+</details>
 <div class="desc"><p>Helper method for input dao.FileDefinition creation along with the "manifest".
 It initializes path in data/files/out/ folder.</p>
 <h2 id="args">Args</h2>
@@ -1305,6 +1516,65 @@ It initializes path in data/files/out/ folder.</p>
 <span>def <span class="ident">create_out_table_definition</span></span>(<span>self,<br>name: str,<br>is_sliced: bool = False,<br>destination: str = '',<br>primary_key: List[str] = None,<br>schema: TableDefinition.SCHEMA_TYPE = None,<br>incremental: bool = None,<br>table_metadata: dao.TableMetadata = None,<br>enclosure: str = '"',<br>delimiter: str = ',',<br>delete_where: dict = None,<br>write_always: bool = False,<br>has_header: Optional[bool] = None,<br>description: Optional[str] = None,<br>**kwargs) ‑> <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a></span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_out_table_definition(self, name: str,
+                                is_sliced: bool = False,
+                                destination: str = &#39;&#39;,
+                                primary_key: List[str] = None,
+                                schema: TableDefinition.SCHEMA_TYPE = None,
+                                incremental: bool = None,
+                                table_metadata: dao.TableMetadata = None,
+                                enclosure: str = &#39;&#34;&#39;,
+                                delimiter: str = &#39;,&#39;,
+                                delete_where: dict = None,
+                                write_always: bool = False,
+                                has_header: Optional[bool] = None,
+                                description: Optional[str] = None,
+                                **kwargs
+                                ) -&gt; dao.TableDefinition:
+    &#34;&#34;&#34;
+                   Helper method for output dao.TableDefinition creation along with the &#34;manifest&#34;.
+                   It initializes path in data/tables/out/ folder.
+
+                   Args:
+                       name: Table / file name. e.g. `&#39;my_table.csv&#39;`.
+                       is_sliced: True if the full_path points to a folder with sliced tables
+                       destination: String name of the table in Storage.
+                       primary_key: List with names of columns used for primary key.
+                       schema: List of columns or mapping of column names and ColumnDefinition objects.
+                        if list of strings is provided, the columns will be created with default settings
+                        (BaseType.string)
+                       incremental: Set to true to enable incremental loading
+                       table_metadata: &lt;.dao.TableMetadata&gt; object containing column and table metadata
+                       enclosure: str: CSV enclosure, by default &#34;
+                       delimiter: str: CSV delimiter, by default ,
+                       delete_where: Dict with settings for deleting rows
+                       write_always: Bool: If true, the table will be saved to Storage even when the job execution
+                       fails.
+                       has_header:Optional[bool] = flag whether the header is present in the file,
+                            if None legacy method is used
+                       description: Table description
+    &#34;&#34;&#34;
+
+    return self._create_table_definition(name=name,
+                                         storage_stage=&#39;out&#39;,
+                                         is_sliced=is_sliced,
+                                         destination=destination,
+                                         primary_key=primary_key,
+                                         columns=kwargs.get(&#39;columns&#39;),
+                                         incremental=incremental,
+                                         table_metadata=table_metadata,
+                                         enclosure=enclosure,
+                                         delimiter=delimiter,
+                                         delete_where=delete_where,
+                                         write_always=write_always,
+                                         schema=schema,
+                                         has_header=has_header,
+                                         description=description)</code></pre>
+</details>
 <div class="desc"><p>Helper method for output dao.TableDefinition creation along with the "manifest".
 It initializes path in data/tables/out/ folder.</p>
 <h2 id="args">Args</h2>
@@ -1344,6 +1614,27 @@ It initializes path in data/tables/out/ folder.</p>
 <span>def <span class="ident">get_input_file_definitions_grouped_by_name</span></span>(<span>self, orphaned_manifests=False, only_latest_files=True, tags: List[str] = None) ‑> Dict[str, List[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>]]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_input_file_definitions_grouped_by_name(self, orphaned_manifests=False, only_latest_files=True,
+                                               tags: List[str] = None) -&gt; Dict[str, List[dao.FileDefinition]]:
+    &#34;&#34;&#34;
+    Convenience method returning lists of files in dictionary grouped by file name.
+
+    Args:
+        orphaned_manifests (bool): If True, manifests without corresponding files are fetched. Otherwise
+                a ValueError is raised.
+        only_latest_files (bool): If True, only latest versions of each files are included.
+        tags (List[str]): optional list of tags. If specified only files with matching tag group will be fetched.
+
+    Returns:
+
+    &#34;&#34;&#34;
+    file_definitions = self.get_input_files_definitions(orphaned_manifests, only_latest_files, tags)
+    return self.__group_files_by_name(file_definitions)</code></pre>
+</details>
 <div class="desc"><p>Convenience method returning lists of files in dictionary grouped by file name.</p>
 <h2 id="args">Args</h2>
 <dl>
@@ -1361,6 +1652,36 @@ a ValueError is raised.</dd>
 <span>def <span class="ident">get_input_file_definitions_grouped_by_tag_group</span></span>(<span>self,<br>orphaned_manifests=False,<br>only_latest_files=True,<br>tags: List[str] = None,<br>include_system_tags=False) ‑> Dict[str, List[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>]]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_input_file_definitions_grouped_by_tag_group(self, orphaned_manifests=False,
+                                                    only_latest_files=True,
+                                                    tags: List[str] = None,
+                                                    include_system_tags=False) \
+        -&gt; Dict[str, List[dao.FileDefinition]]:
+    &#34;&#34;&#34;
+    Convenience method returning lists of files in dictionary grouped by tag group.
+
+    (tag group is string built from alphabetically ordered and concatenated tags, e.g. &#39;tag1;tag2&#39;
+
+    Args:
+        orphaned_manifests (bool): If True, manifests without corresponding files are fetched. Otherwise
+                a ValueError is raised.
+        only_latest_files (bool): If True, only latest versions of each files are included.
+        tags (List[str]): optional list of tags. If specified only files containing specified tags will be fetched.
+        include_system_tags (bool): optional flag that will use system generated tags in groups as well.
+                               See FileDefinition.SYSTEM_TAG_PREFIXES
+
+    Returns:
+        Dict[str,List[dao.FileDefinition]] indexed by tag group =&gt; string built from alphabetically ordered
+        and concatenated tags, e.g. `tag1;tag2`
+
+    &#34;&#34;&#34;
+    file_definitions = self.get_input_files_definitions(orphaned_manifests, only_latest_files, tags)
+    return self.__group_file_defs_by_tag_group(file_definitions, include_system_tags=include_system_tags)</code></pre>
+</details>
 <div class="desc"><p>Convenience method returning lists of files in dictionary grouped by tag group.</p>
 <p>(tag group is string built from alphabetically ordered and concatenated tags, e.g. 'tag1;tag2'</p>
 <h2 id="args">Args</h2>
@@ -1384,6 +1705,61 @@ and concatenated tags, e.g. <code>tag1;tag2</code></p></div>
 <span>def <span class="ident">get_input_files_definitions</span></span>(<span>self,<br>orphaned_manifests=False,<br>only_latest_files=True,<br>tags: Optional[List[str]] = None) ‑> List[<a title="keboola.component.dao.FileDefinition" href="dao.html#keboola.component.dao.FileDefinition">FileDefinition</a>]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_input_files_definitions(self, orphaned_manifests=False,
+                                only_latest_files=True,
+                                tags: Optional[List[str]] = None) -&gt; List[dao.FileDefinition]:
+    &#34;&#34;&#34;
+    Return dao.FileDefinition objects by scanning the `data/in/files` folder.
+
+    The dao.FileDefinition will contain full path of the source file, it&#39;s name and manifest.
+
+    By default only latest versions of each file are included.
+
+    By default, orphaned manifests are skipped, otherwise fails with ValueError.
+
+    A filter may be specified to match only some tags. All files containing specified tags will be returned.
+
+
+    See Also: keboola.component.dao.FileDefinition
+
+    Args:
+        orphaned_manifests (bool): If True, manifests without corresponding files are fetched. Otherwise
+        a ValueError is raised.
+        only_latest_files (bool): If True, only latest versions of each files are included.
+        tags (List[str]): optional list of tags. If specified only files with matching tag group will be fetched.
+
+    Returns: List[dao.TableDefinition]
+
+    &#34;&#34;&#34;
+
+    in_files = [f for f in glob.glob(self.files_in_path + &#34;/**&#34;, recursive=False) if
+                not f.endswith(&#39;.manifest&#39;)]
+    file_defs = list()
+    for t in in_files:
+        manifest_path = t + &#39;.manifest&#39;
+
+        file_defs.append(dao.FileDefinition.build_from_manifest(manifest_path))
+
+    if orphaned_manifests:
+        files_w_manifest = [t.full_path for t in file_defs]
+        manifest_files = [f for f in glob.glob(self.tables_in_path + &#34;/**.manifest&#34;, recursive=False)
+                          if Path(f).name not in files_w_manifest]
+        for t in manifest_files:
+            p = Path(t)
+
+            if p.is_dir():
+                # skip folders that do not have matching manifest
+                logging.warning(f&#39;Manifest {t} is folder,s skipping!&#39;)
+                continue
+
+            file_defs.append(dao.FileDefinition.build_from_manifest(t))
+
+    return self._filter_files(file_defs, tags, only_latest_files)</code></pre>
+</details>
 <div class="desc"><p>Return dao.FileDefinition objects by scanning the <code>data/in/files</code> folder.</p>
 <p>The dao.FileDefinition will contain full path of the source file, it's name and manifest.</p>
 <p>By default only latest versions of each file are included.</p>
@@ -1406,6 +1782,32 @@ and concatenated tags, e.g. <code>tag1;tag2</code></p></div>
 <span>def <span class="ident">get_input_table_definition_by_name</span></span>(<span>self, table_name: str) ‑> <a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a></span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_input_table_definition_by_name(self, table_name: str) -&gt; dao.TableDefinition:
+    &#34;&#34;&#34;
+    Return dao.TableDefinition object by table name.
+
+    If nor the table itself or it&#39;s manifest exists, a ValueError is thrown.
+
+    The dao.TableDefinition will contain full path of the source file, it&#39;s name and manifest (if present). It also
+    provides methods for updating the manifest metadata.
+
+    Args:
+        table_name: Destination table name (name of .csv file). e.g. input.csv
+
+    Returns:
+        dao.TableDefinition
+    &#34;&#34;&#34;
+    manifest_path = os.path.join(
+        self.tables_in_path,
+        table_name + &#39;.manifest&#39;
+    )
+
+    return dao.TableDefinition.build_from_manifest(manifest_path)</code></pre>
+</details>
 <div class="desc"><p>Return dao.TableDefinition object by table name.</p>
 <p>If nor the table itself or it's manifest exists, a ValueError is thrown.</p>
 <p>The dao.TableDefinition will contain full path of the source file, it's name and manifest (if present). It also
@@ -1422,6 +1824,61 @@ provides methods for updating the manifest metadata.</p>
 <span>def <span class="ident">get_input_tables_definitions</span></span>(<span>self, orphaned_manifests=False) ‑> List[<a title="keboola.component.dao.TableDefinition" href="dao.html#keboola.component.dao.TableDefinition">TableDefinition</a>]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_input_tables_definitions(self, orphaned_manifests=False) -&gt; List[dao.TableDefinition]:
+    &#34;&#34;&#34;
+    Return dao.TableDefinition objects by scanning the `data/in/tables` folder.
+
+    The dao.TableDefinition will contain full path of the source file, it&#39;s name and manifest (if present). It also
+    provides methods for updating the manifest metadata.
+
+    By default, orphaned manifests are skipped.
+
+
+    See Also: keboola.component.dao.dao.TableDefinition
+
+    Args:
+        orphaned_manifests (bool): If True, manifests without corresponding files are fetched. This is useful in
+        in scenarios where [workspaces exchange](
+        https://developers.keboola.com/extend/common-interface/folders/#exchanging-data-via-workspace) is used
+        e.g. when only manifest files are present in the `data/in/tables` folder.
+
+    Returns: List[dao.TableDefinition]
+
+    &#34;&#34;&#34;
+
+    table_files = [f for f in glob.glob(self.tables_in_path + &#34;/**&#34;, recursive=False) if
+                   not f.endswith(&#39;.manifest&#39;)]
+    table_defs = list()
+    for t in table_files:
+        p = Path(t)
+        manifest_path = t + &#39;.manifest&#39;
+
+        if p.is_dir() and not Path(manifest_path).exists():
+            # skip folders that do not have matching manifest
+            logging.warning(f&#39;Folder {t} does not have matching manifest, it will be ignored!&#39;)
+            continue
+
+        table_defs.append(dao.TableDefinition.build_from_manifest(manifest_path))
+
+    if orphaned_manifests:
+        files_w_manifest = [t.name + &#39;.manifest&#39; for t in table_defs]
+        manifest_files = [f for f in glob.glob(self.tables_in_path + &#34;/**.manifest&#34;, recursive=False)
+                          if Path(f).name not in files_w_manifest]
+        for t in manifest_files:
+            p = Path(t)
+
+            if p.is_dir():
+                # skip folders that do not have matching manifest
+                logging.warning(f&#39;Manifest {t} is folder,s skipping!&#39;)
+                continue
+
+            table_defs.append(dao.TableDefinition.build_from_manifest(t))
+    return table_defs</code></pre>
+</details>
 <div class="desc"><p>Return dao.TableDefinition objects by scanning the <code>data/in/tables</code> folder.</p>
 <p>The dao.TableDefinition will contain full path of the source file, it's name and manifest (if present). It also
 provides methods for updating the manifest metadata.</p>
@@ -1440,6 +1897,33 @@ Returns: List[dao.TableDefinition]</p></div>
 <span>def <span class="ident">get_state_file</span></span>(<span>self) ‑> dict</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_state_file(self) -&gt; dict:
+    &#34;&#34;&#34;
+
+    Returns dict representation of state file or empty dict if not present
+
+    Returns:
+        dict:
+
+    &#34;&#34;&#34;
+    logging.info(&#39;Loading state file..&#39;)
+    state_file_path = os.path.join(self.data_folder_path, &#39;in&#39;, &#39;state.json&#39;)
+    if not os.path.isfile(state_file_path):
+        logging.info(&#39;State file not found. First run?&#39;)
+        return {}
+    try:
+        with open(state_file_path, &#39;r&#39;) \
+                as state_file:
+            return json.load(state_file)
+    except (OSError, IOError):
+        raise ValueError(
+            &#34;State file state.json unable to read &#34;
+        )</code></pre>
+</details>
 <div class="desc"><p>Returns dict representation of state file or empty dict if not present</p>
 <h2 id="returns">Returns</h2>
 <p>dict:</p></div>
@@ -1448,6 +1932,53 @@ Returns: List[dao.TableDefinition]</p></div>
 <span>def <span class="ident">validate_configuration_parameters</span></span>(<span>self, mandatory_params=None)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def validate_configuration_parameters(self, mandatory_params=None):
+    &#34;&#34;&#34;
+            Validates config parameters based on provided mandatory parameters.
+            All provided parameters must be present in config to pass.
+            ex1.:
+            par1 = &#39;par1&#39;
+            par2 = &#39;par2&#39;
+            mandatory_params = [par1, par2]
+            Validation will fail when one of the above parameters is not found
+
+            Two levels of nesting:
+            Parameters can be grouped as arrays par3 = [groupPar1, groupPar2]
+            =&gt; at least one of the pars has to be present
+            ex2.
+            par1 = &#39;par1&#39;
+            par2 = &#39;par2&#39;
+            par3 = &#39;par3&#39;
+            groupPar1 = &#39;groupPar1&#39;
+            groupPar2 = &#39;groupPar2&#39;
+            group1 = [groupPar1, groupPar2]
+            group3 = [par3, group1]
+            mandatory_params = [par1, par2, group1]
+
+            Folowing logical expression is evaluated:
+            Par1 AND Par2 AND (groupPar1 OR groupPar2)
+
+            ex3
+            par1 = &#39;par1&#39;
+            par2 = &#39;par2&#39;
+            par3 = &#39;par3&#39;
+            groupPar1 = &#39;groupPar1&#39;
+            groupPar2 = &#39;groupPar2&#39;
+            group1 = [groupPar1, groupPar2]
+            group3 = [par3, group1]
+            mandatory_params = [par1, par2, group3]
+
+            Following logical expression is evaluated:
+            par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
+            &#34;&#34;&#34;
+    if not mandatory_params:
+        mandatory_params = []
+    return self._validate_parameters(self.configuration.parameters, mandatory_params, &#39;config parameters&#39;)</code></pre>
+</details>
 <div class="desc"><p>Validates config parameters based on provided mandatory parameters.
 All provided parameters must be present in config to pass.
 ex1.:
@@ -1485,6 +2016,52 @@ par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))</p></div>
 <span>def <span class="ident">validate_image_parameters</span></span>(<span>self, mandatory_params)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def validate_image_parameters(self, mandatory_params):
+    &#34;&#34;&#34;
+            Validates image parameters based on provided mandatory parameters.
+            All provided parameters must be present in config to pass.
+            ex1.:
+            par1 = &#39;par1&#39;
+            par2 = &#39;par2&#39;
+            mandatory_params = [par1, par2]
+            Validation will fail when one of the above parameters is not found
+
+            Two levels of nesting:
+            Parameters can be grouped as arrays par3 = [groupPar1, groupPar2]
+            =&gt; at least one of the pars has to be present
+            ex2.
+            par1 = &#39;par1&#39;
+            par2 = &#39;par2&#39;
+            par3 = &#39;par3&#39;
+            groupPar1 = &#39;groupPar1&#39;
+            groupPar2 = &#39;groupPar2&#39;
+            group1 = [groupPar1, groupPar2]
+            group3 = [par3, group1]
+            mandatory_params = [par1, par2, group1]
+
+            Folowing logical expression is evaluated:
+            Par1 AND Par2 AND (groupPar1 OR groupPar2)
+
+            ex3
+            par1 = &#39;par1&#39;
+            par2 = &#39;par2&#39;
+            par3 = &#39;par3&#39;
+            groupPar1 = &#39;groupPar1&#39;
+            groupPar2 = &#39;groupPar2&#39;
+            group1 = [groupPar1, groupPar2]
+            group3 = [par3, group1]
+            mandatory_params = [par1, par2, group3]
+
+            Following logical expression is evaluated:
+            par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))
+            &#34;&#34;&#34;
+    return self._validate_parameters(self.configuration.image_parameters,
+                                     mandatory_params, &#39;image/stack parameters&#39;)</code></pre>
+</details>
 <div class="desc"><p>Validates image parameters based on provided mandatory parameters.
 All provided parameters must be present in config to pass.
 ex1.:
@@ -1522,6 +2099,37 @@ par1 AND par2 AND (par3 OR (groupPar1 AND groupPar2))</p></div>
 <span>def <span class="ident">write_filedef_manifest</span></span>(<span>self, file_definition: dao.FileDefinition)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifest function&#34;)
+def write_filedef_manifest(self, file_definition: dao.FileDefinition):
+    &#34;&#34;&#34;
+    Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.
+
+
+    ** Usage:**
+
+    ```python
+    from keboola.component import CommonInterface
+    from keboola.component import dao
+
+    ci = CommonInterface()
+
+    # build table definition
+    file_def = ci.create_out_file_definition(name=&#39;my_file.xml&#39;, tags=[&#39;tag&#39;, &#39;tag2&#39;])
+    ci.write_filedef_manifest(file_def)
+    ```
+
+    Args:
+        file_definition (dao.FileDefinition): Initialized dao.FileDefinition object containing manifest.
+
+    Returns:
+
+    &#34;&#34;&#34;
+    self.write_manifest(file_definition)</code></pre>
+</details>
 <div class="desc"><p>Write a table manifest from dao.FileDefinition. Creates the appropriate manifest file in the proper location.</p>
 <p>** Usage:**</p>
 <pre><code class="language-python">from keboola.component import CommonInterface
@@ -1544,6 +2152,22 @@ ci.write_filedef_manifest(file_def)
 <span>def <span class="ident">write_filedef_manifests</span></span>(<span>self, file_definitions: List[dao.FileDefinition])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifests function&#34;)
+def write_filedef_manifests(self, file_definitions: List[dao.FileDefinition]):
+    &#34;&#34;&#34;
+    Process all table definition objects and create appropriate manifest files.
+    Args:
+        file_definitions:
+
+    Returns:
+
+    &#34;&#34;&#34;
+    self.write_manifests(file_definitions)</code></pre>
+</details>
 <div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
 <h2 id="args">Args</h2>
 <p>file_definitions:
@@ -1553,6 +2177,54 @@ Returns:</p></div>
 <span>def <span class="ident">write_manifest</span></span>(<span>self,<br>io_definition: Union[dao.FileDefinition, dao.TableDefinition],<br>legacy_manifest: Optional[bool] = None)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_manifest(self, io_definition: Union[dao.FileDefinition, dao.TableDefinition],
+                   legacy_manifest: Optional[bool] = None):
+    &#34;&#34;&#34;
+    Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
+
+
+    ** Usage:**
+
+    ```python
+    from keboola.component import CommonInterface
+    from keboola.component import dao
+
+    ci = CommonInterface()
+
+    # build table definition
+    table_def = ci.create_out_table_definition(name=&#39;my_new_table&#39;, mytable.csv&#39;
+                            , incremental = True
+                            , table_metadata = tm
+                            ))
+    ci.write_manifest(table_def)
+
+    # build file definition
+    file_def = ci.create_out_file_definition(name=&#39;my_file.xml&#39;, tags=[&#39;tag&#39;, &#39;tag2&#39;])
+    ci.write_manifest(file_def)
+    ```
+
+    Args:
+        io_definition Union[dao.FileDefinition, dao.TableDefinition]: Initialized dao.IODefinition
+         object containing manifest.
+
+    Returns:
+
+    &#34;&#34;&#34;
+
+    if not legacy_manifest:
+        legacy_manifest = self._expects_legacy_manifest()
+
+    manifest = io_definition.get_manifest_dictionary(legacy_queue=self.is_legacy_queue,
+                                                     legacy_manifest=legacy_manifest)
+    # make dirs if not exist
+    os.makedirs(os.path.dirname(io_definition.full_path), exist_ok=True)
+    with open(io_definition.full_path + &#39;.manifest&#39;, &#39;w&#39;) as manifest_file:
+        json.dump(manifest, manifest_file)</code></pre>
+</details>
 <div class="desc"><p>Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.</p>
 <p>** Usage:**</p>
 <pre><code class="language-python">from keboola.component import CommonInterface
@@ -1580,6 +2252,24 @@ Returns:</p></div>
 <span>def <span class="ident">write_manifests</span></span>(<span>self,<br>io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]],<br>legacy_manifest: Optional[bool] = None)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_manifests(self, io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]],
+                    legacy_manifest: Optional[bool] = None):
+    &#34;&#34;&#34;
+    Process all table definition objects and create appropriate manifest files.
+    Args:
+        io_definitions:
+        legacy_manifest: If True, creates a legacy manifest otherwise, uses the new format if available in project.
+
+    Returns:
+
+    &#34;&#34;&#34;
+    for io_def in io_definitions:
+        self.write_manifest(io_def, legacy_manifest=legacy_manifest)</code></pre>
+</details>
 <div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
 <h2 id="args">Args</h2>
 <dl>
@@ -1593,6 +2283,22 @@ Returns:</p></div>
 <span>def <span class="ident">write_state_file</span></span>(<span>self, state_dict: dict)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_state_file(self, state_dict: dict):
+    &#34;&#34;&#34;
+    Stores [state file](https://developers.keboola.com/extend/common-interface/config-file/#state-file).
+    Args:
+        state_dict (dict):
+    &#34;&#34;&#34;
+    if not isinstance(state_dict, dict):
+        raise TypeError(&#39;Dictionary expected as a state file datatype!&#39;)
+
+    with open(os.path.join(self.configuration.data_dir, &#39;out&#39;, &#39;state.json&#39;), &#39;w+&#39;) as state_file:
+        json.dump(state_dict, state_file)</code></pre>
+</details>
 <div class="desc"><p>Stores <a href="https://developers.keboola.com/extend/common-interface/config-file/#state-file">state file</a>.</p>
 <h2 id="args">Args</h2>
 <p>state_dict (dict):</p></div>
@@ -1601,6 +2307,42 @@ Returns:</p></div>
 <span>def <span class="ident">write_tabledef_manifest</span></span>(<span>self, table_definition: dao.TableDefinition)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifest function&#34;)
+def write_tabledef_manifest(self, table_definition: dao.TableDefinition):
+    &#34;&#34;&#34;
+    Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.
+
+
+    ** Usage:**
+
+    ```python
+    from keboola.component import CommonInterface
+    from keboola.component import dao
+
+    ci = CommonInterface()
+    tm = dao.TableMetadata()
+    tm.add_table_description(&#34;My new table&#34;)
+
+    # build table definition
+    table_def = ci.create_out_table_definition(name=&#39;my_new_table&#39;, mytable.csv&#39;
+                            , incremental = True
+                            , table_metadata = tm
+                            ))
+    ci.write_tabledef_manifest(table_def)
+    ```
+
+    Args:
+        table_definition (dao.TableDefinition): Initialized dao.TableDefinition object containing manifest.
+
+    Returns:
+
+    &#34;&#34;&#34;
+    self.write_manifest(table_definition, legacy_manifest=True)</code></pre>
+</details>
 <div class="desc"><p>Write a table manifest from dao.TableDefinition. Creates the appropriate manifest file in the proper location.</p>
 <p>** Usage:**</p>
 <pre><code class="language-python">from keboola.component import CommonInterface
@@ -1628,6 +2370,22 @@ ci.write_tabledef_manifest(table_def)
 <span>def <span class="ident">write_tabledef_manifests</span></span>(<span>self, table_definitions: List[dao.TableDefinition])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@deprecated(version=&#39;1.3.0&#39;, reason=&#34;You should use write_manifests function&#34;)
+def write_tabledef_manifests(self, table_definitions: List[dao.TableDefinition]):
+    &#34;&#34;&#34;
+    Process all table definition objects and create appropriate manifest files.
+    Args:
+        table_definitions:
+
+    Returns:
+
+    &#34;&#34;&#34;
+    self.write_manifests(table_definitions, legacy_manifest=True)</code></pre>
+</details>
 <div class="desc"><p>Process all table definition objects and create appropriate manifest files.</p>
 <h2 id="args">Args</h2>
 <p>table_definitions:
@@ -1640,12 +2398,6 @@ Returns:</p></div>
 <span>(</span><span>data_folder_path: str)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Class representing configuration file generated and read
-by KBC for docker applications
-See docs:
-<a href="https://developers.keboola.com/extend/common-interface/config-file/">https://developers.keboola.com/extend/common-interface/config-file/</a></p>
-<h2 id="args">Args</h2>
-<p>data_folder_path (object):</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1786,14 +2538,16 @@ See docs:
             files.append(om)
         return files</code></pre>
 </details>
+<div class="desc"><p>Class representing configuration file generated and read
+by KBC for docker applications
+See docs:
+<a href="https://developers.keboola.com/extend/common-interface/config-file/">https://developers.keboola.com/extend/common-interface/config-file/</a></p>
+<h2 id="args">Args</h2>
+<p>data_folder_path (object):</p></div>
 <h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.interface.Configuration.files_input_mapping"><code class="name">prop <span class="ident">files_input_mapping</span> : List[dao.FileInputMapping]</code></dt>
 <dd>
-<div class="desc"><p>List of file <a href="https://developers.keboola.com/extend/common-interface/config-file/#files">input mappings</a></p>
-<p>Files specified in the configuration file (defined on component's input mapping). (from configuration[
-'storage'] section.
-Returns: List[FileInputMapping]</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1815,13 +2569,13 @@ def files_input_mapping(self) -&gt; List[dao.FileInputMapping]:
         files.append(om)
     return files</code></pre>
 </details>
+<div class="desc"><p>List of file <a href="https://developers.keboola.com/extend/common-interface/config-file/#files">input mappings</a></p>
+<p>Files specified in the configuration file (defined on component's input mapping). (from configuration[
+'storage'] section.
+Returns: List[FileInputMapping]</p></div>
 </dd>
 <dt id="keboola.component.interface.Configuration.files_output_mapping"><code class="name">prop <span class="ident">files_output_mapping</span> : List[dao.FileOutputMapping]</code></dt>
 <dd>
-<div class="desc"><p>List of file <a href="https://developers.keboola.com/extend/common-interface/config-file/#files">output mappings</a></p>
-<p>Get files which are supposed to be returned when the application finishes. (from configuration[
-'storage'] section.
-Returns:</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1843,11 +2597,13 @@ def files_output_mapping(self) -&gt; List[dao.FileOutputMapping]:
         files.append(om)
     return files</code></pre>
 </details>
+<div class="desc"><p>List of file <a href="https://developers.keboola.com/extend/common-interface/config-file/#files">output mappings</a></p>
+<p>Get files which are supposed to be returned when the application finishes. (from configuration[
+'storage'] section.
+Returns:</p></div>
 </dd>
 <dt id="keboola.component.interface.Configuration.oauth_credentials"><code class="name">prop <span class="ident">oauth_credentials</span> : dao.OauthCredentials</code></dt>
 <dd>
-<div class="desc"><p>Returns subscriptable class OauthCredentials</p>
-<p>Returns: OauthCredentials</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1873,12 +2629,11 @@ def oauth_credentials(self) -&gt; dao.OauthCredentials:
         )
     return credentials</code></pre>
 </details>
+<div class="desc"><p>Returns subscriptable class OauthCredentials</p>
+<p>Returns: OauthCredentials</p></div>
 </dd>
 <dt id="keboola.component.interface.Configuration.tables_input_mapping"><code class="name">prop <span class="ident">tables_input_mapping</span> : List[dao.TableInputMapping]</code></dt>
 <dd>
-<div class="desc"><p>List of table <a href="https://developers.keboola.com/extend/common-interface/config-file/#tables">input mappings</a></p>
-<p>Tables specified in the configuration file.</p>
-<p>Returns: List[TableInputMapping]</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1913,13 +2668,12 @@ def tables_input_mapping(self) -&gt; List[dao.TableInputMapping]:
         tables.append(im)
     return tables</code></pre>
 </details>
+<div class="desc"><p>List of table <a href="https://developers.keboola.com/extend/common-interface/config-file/#tables">input mappings</a></p>
+<p>Tables specified in the configuration file.</p>
+<p>Returns: List[TableInputMapping]</p></div>
 </dd>
 <dt id="keboola.component.interface.Configuration.tables_output_mapping"><code class="name">prop <span class="ident">tables_output_mapping</span> : List[dao.TableOutputMapping]</code></dt>
 <dd>
-<div class="desc"><p>List of table <a href="https://developers.keboola.com/extend/common-interface/config-file/#tables">output mappings</a></p>
-<p>Get tables which are supposed to be returned when the application finishes. (from configuration[
-'storage'] section.
-Returns: List[TableOutputMapping]</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1941,6 +2695,10 @@ def tables_output_mapping(self) -&gt; List[dao.TableOutputMapping]:
         tables.append(om)
     return tables</code></pre>
 </details>
+<div class="desc"><p>List of table <a href="https://developers.keboola.com/extend/common-interface/config-file/#tables">output mappings</a></p>
+<p>Get tables which are supposed to be returned when the application finishes. (from configuration[
+'storage'] section.
+Returns: List[TableOutputMapping]</p></div>
 </dd>
 </dl>
 </dd>
@@ -2014,7 +2772,7 @@ def tables_output_mapping(self) -&gt; List[dao.TableOutputMapping]:
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.3</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>
