@@ -1279,7 +1279,7 @@ class TableDefinition(IODefinition):
                        for name, col in self.schema.items()] if isinstance(self.schema, (OrderedDict, dict)) else []
         }
 
-        if legacy_manifest or self.stage == 'in':
+        if (legacy_manifest and not self.has_header) or self.stage == 'in':
             fields['columns'] = self.column_names
 
         new_dict = fields.copy()
