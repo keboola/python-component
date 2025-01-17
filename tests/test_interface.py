@@ -119,12 +119,12 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(True, ci.is_legacy_queue)
 
         # otherwise check for queuev2
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2;someoterfeature'
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2;someotherfeature'
         ci = CommonInterface()
         self.assertEqual(False, ci.is_legacy_queue)
 
         # If feature gates exists but doesn't contain queuev2 it's old queue
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someoterfeature'
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someotherfeature'
         ci = CommonInterface()
         self.assertEqual(True, ci.is_legacy_queue)
 
@@ -216,7 +216,7 @@ class TestCommonInterface(unittest.TestCase):
 
     def test_create_and_write_table_manifest_old_queue(self):
         # If feature gates exists but doesn't contain queuev2 it's old queue
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someoterfeature'
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someotherfeature'
 
         ci = CommonInterface()
         # create table def
@@ -259,7 +259,7 @@ class TestCommonInterface(unittest.TestCase):
 
     def test_legacy_manifest_without_columns_with_header(self):
         # If feature gates exists but doesn't contain queuev2 it's old queue
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someoterfeature'
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someotherfeature'
 
         ci = CommonInterface()
         # create table def
