@@ -119,12 +119,12 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(True, ci.is_legacy_queue)
 
         # otherwise check for queuev2
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2;someoterfeature'
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2;someotherfeature'
         ci = CommonInterface()
         self.assertEqual(False, ci.is_legacy_queue)
 
         # If feature gates exists but doesn't contain queuev2 it's old queue
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someoterfeature'
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someotherfeature'
         ci = CommonInterface()
         self.assertEqual(True, ci.is_legacy_queue)
 
@@ -216,7 +216,7 @@ class TestCommonInterface(unittest.TestCase):
 
     def test_create_and_write_table_manifest_old_queue(self):
         # If feature gates exists but doesn't contain queuev2 it's old queue
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someoterfeature'
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someotherfeature'
 
         ci = CommonInterface()
         # create table def
@@ -243,6 +243,49 @@ class TestCommonInterface(unittest.TestCase):
             {
                 'destination': 'some-destination',
                 'columns': ['foo', 'bar'],
+                'primary_key': ['foo'],
+                'incremental': True,
+                'delimiter': ',',
+                'enclosure': '"',
+                'metadata': [{'key': 'bar', 'value': 'kochba'}],
+                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
+                'delete_where_column': 'lilly',
+                'delete_where_values': ['a', 'b'],
+                'delete_where_operator': 'eq'
+            },
+            config
+        )
+        os.remove(manifest_filename)
+
+    def test_legacy_manifest_without_columns_with_header(self):
+        # If feature gates exists but doesn't contain queuev2 it's old queue
+        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someotherfeature'
+
+        ci = CommonInterface()
+        # create table def
+        out_table = ci.create_out_table_definition('some-table.csv',
+                                                   columns=['foo', 'bar'],
+                                                   destination='some-destination',
+                                                   primary_key=['foo'],
+                                                   incremental=True,
+                                                   # the write_always will then not be present in the manifest even if set
+                                                   write_always=True,
+                                                   has_header=True,
+                                                   delete_where={'column': 'lilly',
+                                                                 'values': ['a', 'b'],
+                                                                 'operator': 'eq'}
+                                                   )
+        out_table.table_metadata.add_table_metadata('bar', 'kochba')
+        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+
+        # write
+        ci.write_manifest(out_table, legacy_manifest=True)
+        manifest_filename = out_table.full_path + '.manifest'
+        with open(manifest_filename) as manifest_file:
+            config = json.load(manifest_file)
+        self.assertEqual(
+            {
+                'destination': 'some-destination',
                 'primary_key': ['foo'],
                 'incremental': True,
                 'delimiter': ',',
