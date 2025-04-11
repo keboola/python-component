@@ -11,7 +11,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import List, Union, Dict, Optional, OrderedDict as TypeOrderedDict
+from typing import Any, Dict, List, Union
+from typing import OrderedDict as TypeOrderedDict
 
 from deprecated import deprecated
 
@@ -144,7 +145,7 @@ class TableMetadata:
 
     """
 
-    def __init__(self, manifest: dict = None):
+    def __init__(self, manifest: dict | None = None):
         """
 
         Args:
@@ -189,7 +190,7 @@ class TableMetadata:
             value = metadata['value']
             self.add_table_metadata(key, value)
 
-    def get_table_metadata_for_manifest(self, legacy_manifest: bool = False) -> List[dict]:
+    def get_table_metadata_for_manifest(self, legacy_manifest: bool = False) -> dict | list[dict]:
         """
         Returns table metadata list as required by the
         [manifest format]
@@ -266,7 +267,7 @@ class TableMetadata:
         Returns: str
 
         """
-        return self.table_metadata.get(KBCMetadataKeys.description.value)
+        return self.table_metadata.get(KBCMetadataKeys.description.value) or ""
 
     @property
     @deprecated(version='1.5.1', reason="Column datatypes were moved to dao.TableDefinition.schema property."
@@ -327,7 +328,7 @@ class TableMetadata:
                                         "Please use the dao.ColumnDefinition objects and associated"
                                         "dao.TableDefinition methods to define columns. e.g."
                                         "dao.TableDefinition.add_columns()")
-    def add_column_data_types(self, column_types: Dict[str, Union[SupportedDataTypes, str]]):
+    def add_column_data_types(self, column_types: dict[str, SupportedDataTypes | str]):
         """
         Add column types metadata. Note that only supported datatypes
         (<keboola.component.dao.ColumnDataTypes>) may be provided. The value accepts either instance of ColumnDataTypes
@@ -347,10 +348,15 @@ class TableMetadata:
                                         "Please use the dao.ColumnDefinition objects and associated"
                                         "dao.TableDefinition methods to define columns. e.g."
                                         "dao.TableDefinition.add_column()")
-    def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str],
-                             source_data_type: str = None,
-                             nullable: bool = False,
-                             length: str = None, default=None):
+    def add_column_data_type(
+        self,
+        column: str,
+        data_type: SupportedDataTypes | str,
+        source_data_type: str | None = None,
+        nullable: bool = False,
+        length: str | None = None,
+        default=None,
+    ):
         """
         Add single column data type
         Args:
@@ -407,9 +413,18 @@ class TableMetadata:
             return
         self.table_metadata = {**self.table_metadata, **{key: value}}
 
-    @deprecated(version='1.5.1', reason="Column metadata ere moved to dao.TableDefinition.schema property."
-                                        "Please use the dao.ColumnDefinition.metadata")
-    def add_column_metadata(self, column: str, key: str, value: Union[str, bool, int], backend="base"):
+    @deprecated(
+        version="1.5.1",
+        reason="Column metadata were moved to dao.TableDefinition.schema property."
+        "Please use the dao.ColumnDefinition.metadata",
+    )
+    def add_column_metadata(
+        self,
+        column: str,
+        key: str,
+        value: str | bool | int,
+        backend="base",
+    ):
         """
         Add/Updates column metadata and ensures the Key is unique.
         Args:
@@ -424,9 +439,12 @@ class TableMetadata:
 
         # self.schema = [ColumnDefinition(name=column, data_type={backend: DataType(type=value)})]
 
-    @deprecated(version='1.5.1', reason="Column metadata ere moved to dao.TableDefinition.schema property."
-                                        "Please use the dao.ColumnDefinition.metadata")
-    def add_multiple_column_metadata(self, column_metadata: Dict[str, List[dict]]):
+    @deprecated(
+        version="1.5.1",
+        reason="Column metadata were moved to dao.TableDefinition.schema property."
+        "Please use the dao.ColumnDefinition.metadata",
+    )
+    def add_multiple_column_metadata(self, column_metadata: dict[str, list[dict[str, Any]]]):
         """
         Add key-value pairs to column metadata.
 
@@ -434,10 +452,9 @@ class TableMetadata:
         Args:
             column_metadata: dict {"column_name":[{"some_key":"some_value"}]}
         """
-        for column, metadata_list in column_metadata:
+        for column, metadata_list in column_metadata.items():
             for metadata in metadata_list:
-                key = metadata.items()[0]
-                value = metadata[key]
+                key, value = metadata.popitem()
                 self.add_column_metadata(column, key, value)
 
     @staticmethod
@@ -454,8 +471,8 @@ class TableMetadata:
 @dataclass
 class DataType:
     dtype: str
-    length: Optional[str] = None
-    default: Optional[str] = None
+    length: str | None = None
+    default: str | None = None
 
     def __post_init__(self):
         if isinstance(self.dtype, SupportedDataTypes):
@@ -463,39 +480,39 @@ class DataType:
 
 
 class BaseType(dict):
-    def __init__(self, dtype: SupportedDataTypes = SupportedDataTypes.STRING, length: Optional[str] = None,
-                 default: Optional[str] = None):
+    def __init__(self, dtype: SupportedDataTypes = SupportedDataTypes.STRING, length: str | None = None,
+                 default: str | None = None):
         super().__init__(base=DataType(dtype=dtype, length=length, default=default))
 
     @classmethod
-    def string(cls, length: Optional[str] = None, default: Optional[str] = None) -> 'BaseType':
+    def string(cls, length: str | None = None, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.STRING, length=length, default=default)
 
     @classmethod
-    def integer(cls, length: Optional[str] = None,
-                default: Optional[str] = None) -> 'BaseType':
+    def integer(cls, length: str | None = None,
+                default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.INTEGER, length=length, default=default)
 
     @classmethod
-    def numeric(cls, length: Optional[str] = None,
-                default: Optional[str] = None) -> 'BaseType':
+    def numeric(cls, length: str | None = None,
+                default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.NUMERIC, length=length, default=default)
 
     @classmethod
-    def float(cls, length: Optional[str] = None,
-              default: Optional[str] = None) -> 'BaseType':
+    def float(cls, length: str | None = None,
+              default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.FLOAT, length=length, default=default)
 
     @classmethod
-    def boolean(cls, default: Optional[str] = None) -> 'BaseType':
+    def boolean(cls, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.BOOLEAN, default=default)
 
     @classmethod
-    def date(cls, default: Optional[str] = None) -> 'BaseType':
+    def date(cls, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.DATE, default=default)
 
     @classmethod
-    def timestamp(cls, default: Optional[str] = None) -> 'BaseType':
+    def timestamp(cls, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.TIMESTAMP, default=default)
 
 
@@ -510,14 +527,14 @@ class ColumnDefinition:
         Defaults to BaseType.String.
         nullable (Optional[bool]): A flag indicating if the column can contain NULL values. Defaults to True.
         primary_key (Optional[bool]): Indicating if the column is part of the table's primary key. Defaults to False.
-        description (Optional[str]): A description of the column's purpose or contents. Defaults to None.
+        description (str | None): A description of the column's purpose or contents. Defaults to None.
         metadata (Optional[Dict[str, str]]): Additional metadata associated with the column. Defaults to None.
     """
-    data_types: Optional[Union[Dict[str, DataType], BaseType]] = field(default_factory=lambda: BaseType())
-    nullable: Optional[bool] = True
-    primary_key: Optional[bool] = False
-    description: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None
+    data_types: dict[str, DataType] | BaseType = field(default_factory=lambda: BaseType())
+    nullable: bool | None = True
+    primary_key: bool | None = False
+    description: str | None = None
+    metadata: dict[str, str] | None = None
 
     def update_properties(self, **kwargs):
         for key, value in kwargs.items():
@@ -528,12 +545,15 @@ class ColumnDefinition:
 
     def from_dict(self, col: dict):
         return ColumnDefinition(
-            data_types={key: DataType(dtype=v.get('type'), default=v.get('default'), length=v.get('length'))
-                        for key, v in col.get('data_type', {}).items()},
-            nullable=col.get('nullable'),
-            primary_key=col.get('primary_key'),
-            description=col.get('description'),
-            metadata=col.get('metadata'))
+            data_types={
+                key: DataType(dtype=v.get("type"), default=v.get("default"), length=v.get("length"))
+                for key, v in col.get("data_type", {}).items()
+            },
+            nullable=col.get("nullable"),
+            primary_key=col.get("primary_key"),
+            description=col.get("description"),
+            metadata=col.get("metadata"),
+        )
 
     def add_datatype(self, backend: str, data_type: DataType):
         if backend in self.data_types:
@@ -570,13 +590,13 @@ class ColumnDefinition:
 
 @dataclass
 class SupportedManifestAttributes(SubscriptableDataclass):
-    out_attributes: List[str]
-    in_attributes: List[str]
-    out_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
-    in_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
+    out_attributes: list[str]
+    in_attributes: list[str]
+    out_legacy_exclude: list[str] = dataclasses.field(default_factory=lambda: [])
+    in_legacy_exclude: list[str] = dataclasses.field(default_factory=lambda: [])
 
     def get_attributes_by_stage(self, stage: Literal['in', 'out'], legacy_queue: bool = False,
-                                legacy_manifest: bool = False) -> List[str]:
+                                legacy_manifest: bool = False) -> list[str]:
         if stage == 'out':
             attributes = self.out_attributes
             exclude = self.out_legacy_exclude
@@ -617,8 +637,8 @@ class IODefinition(ABC):
                                             native_types: bool = False):
         raise NotImplementedError
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
-                                legacy_manifest: Optional[bool] = None) -> dict:
+    def get_manifest_dictionary(self, manifest_type: str | None = None, legacy_queue: bool = False,
+                                legacy_manifest: bool | None = None) -> dict:
         raise NotImplementedError
 
     @property
@@ -672,7 +692,7 @@ class IODefinition(ABC):
         credentials_expiration: str
 
     @property
-    def s3_staging(self) -> Union[S3Staging, None]:
+    def s3_staging(self) -> S3Staging | None:
         s3 = self._s3
         if s3:
             return IODefinition.S3Staging(is_sliced=s3['isSliced'],
@@ -687,7 +707,7 @@ class IODefinition(ABC):
             return None
 
     @property
-    def abs_staging(self) -> Union[ABSStaging, None]:
+    def abs_staging(self) -> ABSStaging | None:
         _abs = self._abs
         if _abs:
             return IODefinition.ABSStaging(is_sliced=_abs['is_sliced'],
@@ -781,23 +801,23 @@ class TableDefinition(IODefinition):
 
     MANIFEST_ATTRIBUTES = {'in': INPUT_MANIFEST_ATTRIBUTES,
                            'out': OUTPUT_MANIFEST_ATTRIBUTES}
-    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], TypeOrderedDict[str, ColumnDefinition], List[str]]
+    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], TypeOrderedDict[str, ColumnDefinition], List[str], None]
 
     def __init__(self, name: str,
-                 full_path: Optional[Union[str, None]] = None,
-                 is_sliced: Optional[bool] = False,
-                 destination: Optional[str] = '',
-                 primary_key: Optional[List[str]] = None,
+                 full_path: str | None = None,
+                 is_sliced: bool | None = False,
+                 destination: str = '',
+                 primary_key: list[str] | None = None,
                  schema: SCHEMA_TYPE = None,
-                 incremental: Optional[bool] = None,
-                 table_metadata: Optional[TableMetadata] = None,
-                 enclosure: Optional[str] = '"',
-                 delimiter: Optional[str] = ',',
-                 delete_where: Optional[dict] = None,
-                 stage: Optional[str] = 'out',
-                 write_always: Optional[bool] = False,
-                 has_header: Optional[bool] = None,
-                 description: Optional[str] = None,
+                 incremental: bool | None = None,
+                 table_metadata: TableMetadata | None = None,
+                 enclosure: str = '"',
+                 delimiter: str = ',',
+                 delete_where: dict | None = None,
+                 stage: str = 'out',
+                 write_always: bool = False,
+                 has_header: bool | None = None,
+                 description: str | None = None,
                  # input
                  **kwargs
                  ):
@@ -824,7 +844,7 @@ class TableDefinition(IODefinition):
             stage: str: Storage Stage 'in' or 'out'
             write_always: Bool: If true, the table will be saved to Storage even when the job execution
                            fails.
-            schema: (dict|lis[str]) Mapping of column names andColumnDefinition objects, or a list of names
+            schema: (dict|list[str]) Mapping of column names and ColumnDefinition objects, or a list of names
             description: str: Table description
 
         """
@@ -835,7 +855,7 @@ class TableDefinition(IODefinition):
         # initialize manifest properties
         self._destination = None
         self.destination = destination
-        self._schema: Dict[str, ColumnDefinition] = dict()
+        self._schema: dict[str, ColumnDefinition] = {}
 
         if schema:
             self.schema = schema
@@ -847,7 +867,7 @@ class TableDefinition(IODefinition):
             self.columns = kwargs['columns']
 
         self._legacy_primary_key = list()
-        self.primary_key = primary_key
+        self.primary_key: list[str] | None = primary_key
         self._incremental = incremental
 
         self.enclosure = enclosure
@@ -897,17 +917,17 @@ class TableDefinition(IODefinition):
 
     @classmethod
     def build_output_definition(cls, name: str,
-                                destination: Optional[str] = '',
-                                columns: Optional[List[str]] = None,
-                                primary_key: Optional[List[str]] = None,
-                                incremental: Optional[bool] = False,
-                                table_metadata: Optional[TableMetadata] = None,
-                                enclosure: Optional[str] = '"',
-                                delimiter: Optional[str] = ',',
-                                delete_where: Optional[dict] = None,
-                                write_always: Optional[bool] = False,
+                                destination: str = '',
+                                columns: list[str] | None = None,
+                                primary_key: list[str] | None = None,
+                                incremental: bool | None = False,
+                                table_metadata: TableMetadata | None = None,
+                                enclosure: str = '"',
+                                delimiter: str = ',',
+                                delete_where: dict | None = None,
+                                write_always: bool = False,
                                 schema: SCHEMA_TYPE = None,
-                                description: Optional[str] = None,
+                                description: str | None = None,
                                 **kwargs
                                 ):
         """
@@ -918,64 +938,65 @@ class TableDefinition(IODefinition):
 
         Args:
             name (str): The name of the table.
-            destination (Optional[str]): The destination table name in the storage. Defaults to an empty string.
-            columns (Optional[List[str]]): A list of column names for the table. Defaults to None.
-            primary_key (Optional[List[str]]): A list of column names that form the primary key. Defaults to None.
+            destination (str | None): The destination table name in the storage. Defaults to an empty string.
+            columns (list[str] | None): A list of column names for the table. Defaults to None.
+            primary_key (list[str] | None): A list of column names that form the primary key. Defaults to None.
             incremental (Optional[bool]): Indicates if the loading should be incremental. Defaults to False.
-            table_metadata (Optional[TableMetadata]): An object containing table and column metadata. Defaults to None.
-            enclosure (Optional[str]): The character used as a text qualifier in the CSV file. Defaults to '"'.
-            delimiter (Optional[str]): The character used to separate columns in the CSV file. Defaults to ','.
-            delete_where (Optional[dict]): Criteria for row deletion in incremental loads. Defaults to None.
+            table_metadata (TableMetadata | None): An object containing table and column metadata. Defaults to None.
+            enclosure (str | None): The character used as a text qualifier in the CSV file. Defaults to '"'.
+            delimiter (str | None): The character used to separate columns in the CSV file. Defaults to ','.
+            delete_where (dict | None): Criteria for row deletion in incremental loads. Defaults to None.
             write_always (Optional[bool]): If True, the table will be saved to storage even if the job fails.
             schema (Optional[List[ColumnDefinition]]): Dictionary of ColumnDefinition objects.
-            description (Optional[str]): The description of the table. Defaults to None.
+            description (str | None): The description of the table. Defaults to None.
 
         Returns:
             TableDefinition: An instance of TableDefinition configured for output tables.
         """
-        return cls(name=name,
-                   destination=destination,
-                   columns=columns,
-                   primary_key=primary_key,
-                   incremental=incremental,
-                   table_metadata=table_metadata,
-                   enclosure=enclosure,
-                   delimiter=delimiter,
-                   delete_where=delete_where,
-                   write_always=write_always,
-                   schema=schema,
-                   description=description,
-                   **kwargs
-                   )
+        return cls(
+            name=name,
+            destination=destination,
+            columns=columns,
+            primary_key=primary_key,
+            incremental=incremental,
+            table_metadata=table_metadata,
+            enclosure=enclosure,
+            delimiter=delimiter,
+            delete_where=delete_where,
+            write_always=write_always,
+            schema=schema,
+            description=description,
+            **kwargs,
+        )
 
     @classmethod
-    def build_input_definition(cls, name: str,
-                               full_path: Optional[Union[str, None]] = None,
-                               is_sliced: Optional[bool] = False,
-
-                               destination: Optional[str] = '',
-                               primary_key: Optional[List[str]] = None,
-                               columns: Optional[List[str]] = None,
-                               incremental: Optional[bool] = None,
-                               table_metadata: Optional[TableMetadata] = None,
-                               enclosure: Optional[str] = '"',
-                               delimiter: Optional[str] = ',',
-                               delete_where: Optional[dict] = None,
-                               stage: Optional[str] = 'in',
-                               write_always: Optional[bool] = False,
-                               schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
-                               rows_count: Optional[int] = None,
-                               data_size_bytes: Optional[int] = None,
-                               is_alias: Optional[bool] = False,
-
-                               # input
-                               uri: Optional[str] = None,
-                               id: Optional[str] = '',
-                               created: Optional[str] = None,
-                               last_change_date: Optional[str] = None,
-                               last_import_date: Optional[str] = None,
-                               **kwargs
-                               ):
+    def build_input_definition(
+        cls,
+        name: str,
+        full_path: str | None = None,
+        is_sliced: bool | None = False,
+        destination: str = "",
+        primary_key: list[str] | None = None,
+        columns: list[str] | None = None,
+        incremental: bool | None = None,
+        table_metadata: TableMetadata | None = None,
+        enclosure: str = '"',
+        delimiter: str = ",",
+        delete_where: dict | None = None,
+        stage: str = "in",
+        write_always: bool = False,
+        schema: dict[str, ColumnDefinition] | OrderedDict[str, ColumnDefinition] | list[str] | None = None,
+        rows_count: int | None = None,
+        data_size_bytes: int | None = None,
+        is_alias: bool | None = False,
+        # input
+        uri: str | None = None,
+        id: str | None = "",
+        created: str | None = None,
+        last_change_date: str | None = None,
+        last_import_date: str | None = None,
+        **kwargs,
+    ):
         """
         Factory method for creating a TableDefinition instance for input tables.
 
@@ -986,25 +1007,25 @@ class TableDefinition(IODefinition):
             name (str): The name of the table.
             full_path (Optional[Union[str, None]]): The full path to the table file or folder (for sliced tables).
             is_sliced (Optional[bool]): Indicates if the table is sliced (stored in multiple files).
-            destination (Optional[str]): The destination table name in the storage. Defaults to an empty string.
-            primary_key (Optional[List[str]]): A list of column names that form the primary key. Defaults to None.
-            columns (Optional[List[str]]): A list of column names for the table. Defaults to None.
+            destination (str | None): The destination table name in the storage. Defaults to an empty string.
+            primary_key (list[str] | None): A list of column names that form the primary key. Defaults to None.
+            columns (list[str] | None): A list of column names for the table. Defaults to None.
             incremental (Optional[bool]): Indicates if the loading should be incremental. Defaults to None.
-            table_metadata (Optional[TableMetadata]): An object containing table and column metadata. Defaults to None.
-            enclosure (Optional[str]): The character used as a text qualifier in the CSV file. Defaults to '"'.
-            delimiter (Optional[str]): The character used to separate columns in the CSV file. Defaults to ','.
-            delete_where (Optional[dict]): Criteria for row deletion in incremental loads. Defaults to None.
-            stage (Optional[str]): Indicates the stage ('in' for input tables). Defaults to 'in'.
+            table_metadata (TableMetadata | None): An object containing table and column metadata. Defaults to None.
+            enclosure (str | None): The character used as a text qualifier in the CSV file. Defaults to '"'.
+            delimiter (str | None): The character used to separate columns in the CSV file. Defaults to ','.
+            delete_where (dict | None): Criteria for row deletion in incremental loads. Defaults to None.
+            stage (str | None): Indicates the stage ('in' for input tables). Defaults to 'in'.
             write_always (Optional[bool]): If True, the table will be saved to storage even if the job fails. Defaults to False.  # noqa
             schema (Optional[List[ColumnDefinition]]): A list of ColumnDefinition objects defining the table schema. Defaults to None.  # noqa
-            rows_count (Optional[int]): The number of rows in the table. Defaults to None.
-            data_size_bytes (Optional[int]): The size of the table data in bytes. Defaults to None.
+            rows_count (int | None): The number of rows in the table. Defaults to None.
+            data_size_bytes (int | None): The size of the table data in bytes. Defaults to None.
             is_alias (Optional[bool]): Indicates if the table is an alias. Defaults to False.
-            uri (Optional[str]): The URI of the table. Defaults to None.
-            id (Optional[str]): The ID of the table. Defaults to an empty string.
-            created (Optional[str]): The creation timestamp of the table. Defaults to None.
-            last_change_date (Optional[str]): The last modification timestamp of the table. Defaults to None.
-            last_import_date (Optional[str]): The last import timestamp of the table. Defaults to None.
+            uri (str | None): The URI of the table. Defaults to None.
+            id (str | None): The ID of the table. Defaults to an empty string.
+            created (str | None): The creation timestamp of the table. Defaults to None.
+            last_change_date (str | None): The last modification timestamp of the table. Defaults to None.
+            last_import_date (str | None): The last import timestamp of the table. Defaults to None.
 
         Returns:
             TableDefinition: An instance of TableDefinition configured for input tables.
@@ -1120,8 +1141,8 @@ class TableDefinition(IODefinition):
         else:
             name = Path(manifest_file_path).stem
 
-        if manifest.get('name'):
-            name = manifest.get('name')
+        if manifest.get("name"):
+            name = manifest.get("name") or ""
 
         # test if the manifest is output and incompatible
         force_legacy_mode = False
@@ -1166,28 +1187,30 @@ class TableDefinition(IODefinition):
                 force_legacy_mode=force_legacy_mode,
                 is_sliced=is_sliced,
                 full_path=full_path,
-
                 # basic out manifest parameters
                 name=name,
-                destination=manifest.get('destination'),
+                destination=manifest.get("destination") or "",
                 schema=cls.return_schema_from_manifest(manifest),
-                incremental=manifest.get('incremental', False),
-                primary_key=manifest.get('primary_key'),
-                write_always=manifest.get('write_always', False),
-                delimiter=manifest.get('delimiter', ','),
-                enclosure=manifest.get('enclosure', '"'),
+                incremental=manifest.get("incremental", False),
+                primary_key=manifest.get("primary_key"),
+                write_always=manifest.get("write_always", False),
+                delimiter=manifest.get("delimiter", ","),
+                enclosure=manifest.get("enclosure", '"'),
                 table_metadata=TableMetadata(manifest),
-
                 # additional in manifest parameters
-                delete_where_values=manifest.get('delete_where_values'),
-                delete_where_column=manifest.get('delete_where_column'),
-                delete_where_operator=manifest.get('delete_where_operator')
+                delete_where_values=manifest.get("delete_where_values"),
+                delete_where_column=manifest.get("delete_where_column"),
+                delete_where_operator=manifest.get("delete_where_operator"),
             )
 
         return table_def
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
-                                legacy_manifest: Optional[bool] = None) -> dict:
+    def get_manifest_dictionary(
+        self,
+        manifest_type: str | None = None,
+        legacy_queue: bool = False,
+        legacy_manifest: bool = False,
+    ) -> dict:
         """
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
         By default, returns output manifest.
@@ -1300,7 +1323,7 @@ class TableDefinition(IODefinition):
         return has_header
 
     @property
-    def schema(self) -> TypeOrderedDict[str, ColumnDefinition]:
+    def schema(self) -> OrderedDict[str, ColumnDefinition]:
         return self._schema
 
     @schema.setter
@@ -1323,7 +1346,7 @@ class TableDefinition(IODefinition):
 
     # #### Manifest properties
     @property
-    def destination(self) -> str:
+    def destination(self) -> str | None:
         return self._destination
 
     @destination.setter
@@ -1335,7 +1358,7 @@ class TableDefinition(IODefinition):
                 raise TypeError("Destination must be a string")
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """
         str: id property used in input manifest. Contains Keboola Storage ID, e.g. in.c-bucket.table
 
@@ -1350,7 +1373,7 @@ class TableDefinition(IODefinition):
         return self._name
 
     @property
-    def rows_count(self) -> int:
+    def rows_count(self) -> int | None:
         """
                 int: rows_count property used in input manifest.
 
@@ -1358,7 +1381,7 @@ class TableDefinition(IODefinition):
         return self._rows_count
 
     @property
-    def data_size_bytes(self) -> int:
+    def data_size_bytes(self) -> int | None:
         """
                 int: data_size_bytes property used in input manifest.
 
@@ -1367,7 +1390,7 @@ class TableDefinition(IODefinition):
 
     @property
     @deprecated(version='1.5.1', reason="Please use new column_names method instead of columns property")
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         if isinstance(self.schema, (OrderedDict, dict)):
             return list(self.schema.keys())
         else:
@@ -1375,7 +1398,7 @@ class TableDefinition(IODefinition):
 
     @columns.setter
     @deprecated(version='1.5.1', reason="Please use new column_names method instead of schema property")
-    def columns(self, val: List[str]):
+    def columns(self, val: list[str]):
         """
         Set columns for the table.
         If list of names provided, the columns will be created with default settings Basetype.String.
@@ -1391,14 +1414,14 @@ class TableDefinition(IODefinition):
         self.schema = val
 
     @property
-    def column_names(self) -> List[str]:
+    def column_names(self) -> list[str]:
         if self.schema:
             return list(self.schema.keys())
         else:
             return []
 
     @property
-    def incremental(self) -> bool:
+    def incremental(self) -> bool | None:
         return self._incremental
 
     @incremental.setter
@@ -1415,14 +1438,14 @@ class TableDefinition(IODefinition):
         self._write_always = write_always
 
     @property
-    def primary_key(self) -> List[str]:
+    def primary_key(self) -> list[str]:
         if not self._legacy_mode:
             return [column_name for column_name, column_def in self.schema.items() if column_def.primary_key]
         else:
             return self._legacy_primary_key
 
     @primary_key.setter
-    def primary_key(self, primary_key: List[str]):
+    def primary_key(self, primary_key: list[str]):
         if not primary_key:
             return
 
@@ -1475,19 +1498,19 @@ class TableDefinition(IODefinition):
             return None
 
     @property
-    def uri(self) -> str:
+    def uri(self) -> str | None:
         return self._uri
 
     @property
-    def last_change_date(self) -> str:
+    def last_change_date(self) -> str | None:
         return self._last_change_date
 
     @property
-    def last_import_date(self) -> str:
+    def last_import_date(self) -> str | None:
         return self._last_import_date
 
     @property
-    def is_alias(self) -> bool:
+    def is_alias(self) -> bool | None:
         return self._is_alias
 
     def add_column(self, name: str, definition: ColumnDefinition = ColumnDefinition()):
@@ -1516,7 +1539,7 @@ class TableDefinition(IODefinition):
             raise ValueError(f"Column with name {column_name} not found")
         del self.schema[column_name]
 
-    def add_columns(self, columns: Union[List[str], Dict[str, ColumnDefinition]]):
+    def add_columns(self, columns: list[str] | dict[str, ColumnDefinition]):
         if isinstance(columns, list):
             for name in columns:
                 self.add_column(name)
@@ -1524,11 +1547,11 @@ class TableDefinition(IODefinition):
             for name, column in columns.items():
                 self.add_column(name, column)
 
-    def update_columns(self, columns: Dict[str, ColumnDefinition]):
-        for name, column in columns:
+    def update_columns(self, columns: dict[str, ColumnDefinition]):
+        for name, column in columns.items():
             self.update_column(name, column)
 
-    def delete_columns(self, column_names: List[str]):
+    def delete_columns(self, column_names: list[str]):
         for name in column_names:
             self.delete_column(name)
 
@@ -1606,18 +1629,18 @@ class FileDefinition(IODefinition):
                             "notify"]
 
     def __init__(self, full_path: str,
-                 stage: Optional[str] = 'out',
-                 tags: Optional[List[str]] = None,
-                 is_public: Optional[bool] = False,
-                 is_permanent: Optional[bool] = False,
-                 is_encrypted: Optional[bool] = False,
-                 notify: Optional[bool] = False,
-                 id: Optional[str] = None,
-                 s3: Optional[dict] = None,
-                 abs: Optional[dict] = None,
-                 created: Optional[str] = None,
-                 size_bytes: Optional[int] = None,
-                 max_age_days: Optional[int] = None
+                 stage: str = 'out',
+                 tags: list[str] | None = None,
+                 is_public: bool = False,
+                 is_permanent: bool = False,
+                 is_encrypted: bool = False,
+                 notify: bool = False,
+                 id: str | None = None,
+                 s3: dict | None = None,
+                 abs: dict | None = None,
+                 created: str | None = None,
+                 size_bytes: int | None = None,
+                 max_age_days: int | None = None
                  ):
         """
 
@@ -1636,7 +1659,10 @@ class FileDefinition(IODefinition):
 
         self.stage = stage
 
+        if tags is None:
+            tags = []
         self.tags = tags
+
         self.is_public = is_public
         self.is_permanent = is_permanent
         self.is_encrypted = is_encrypted
@@ -1653,11 +1679,11 @@ class FileDefinition(IODefinition):
     @classmethod
     def build_output_definition(cls,
                                 full_path: str,
-                                tags: Optional[List[str]] = None,
-                                is_public: Optional[bool] = False,
-                                is_permanent: Optional[bool] = False,
-                                is_encrypted: Optional[bool] = False,
-                                notify: Optional[bool] = False):
+                                tags: list[str] | None = None,
+                                is_public: bool = False,
+                                is_permanent: bool = False,
+                                is_encrypted: bool = False,
+                                notify: bool = False):
         """
         Factory method to create an instance of FileDefinition for output files.
 
@@ -1667,7 +1693,7 @@ class FileDefinition(IODefinition):
 
         Args:
             full_path (str): The full path where the file is or will be stored.
-            tags (Optional[List[str]]): A list of tags associated with the file. Defaults to None.
+            tags (list[str] | None): A list of tags associated with the file. Defaults to None.
             is_public (Optional[bool]): Flag indicating if the file URL will be permanent and publicly accessible. Defaults to False.  # noqa
             is_permanent (Optional[bool]): Flag indicating if the file should be kept forever. Defaults to False.
             is_encrypted (Optional[bool]): Flag indicating if the file content will be encrypted in storage. Defaults to False.  # noqa
@@ -1681,12 +1707,12 @@ class FileDefinition(IODefinition):
 
     @classmethod
     def build_input_definition(cls, full_path: str,
-                               id: Optional[str] = None,
-                               s3: Optional[dict] = None,
-                               abs: Optional[dict] = None,
-                               created: Optional[str] = None,
-                               size_bytes: Optional[int] = None,
-                               max_age_days: Optional[int] = None):
+                               id: str | None = None,
+                               s3: dict | None = None,
+                               abs: dict | None = None,
+                               created: str | None = None,
+                               size_bytes: int | None = None,
+                               max_age_days: int | None = None):
         """
         Factory method to create an instance of FileDefinition for input files.
 
@@ -1696,12 +1722,12 @@ class FileDefinition(IODefinition):
 
         Args:
             full_path (str): The full path where the file is or will be stored.
-            id (Optional[str]): The unique identifier of the file. Defaults to None.
-            s3 (Optional[dict]): A dictionary containing Amazon S3 storage details. Defaults to None.
-            abs (Optional[dict]): A dictionary containing Azure Blob Storage details. Defaults to None.
-            created (Optional[str]): The creation date of the file. Defaults to None.
-            size_bytes (Optional[int]): The size of the file in bytes. Defaults to None.
-            max_age_days (Optional[int]): The maximum age of the file in days. Defaults to None.
+            id (str | None): The unique identifier of the file. Defaults to None.
+            s3 (dict | None): A dictionary containing Amazon S3 storage details. Defaults to None.
+            abs (dict | None): A dictionary containing Azure Blob Storage details. Defaults to None.
+            created (str | None): The creation date of the file. Defaults to None.
+            size_bytes (int | None): The size of the file in bytes. Defaults to None.
+            max_age_days (int | None): The maximum age of the file in days. Defaults to None.
 
         Returns:
             An instance of FileDefinition configured for input files.
@@ -1769,8 +1795,8 @@ class FileDefinition(IODefinition):
                 return True
         return False
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
-                                legacy_manifest: Optional[bool] = None) -> dict:
+    def get_manifest_dictionary(self, manifest_type: str | None = None, legacy_queue: bool = False,
+                                legacy_manifest: bool = False) -> dict:
         """
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
         By default, returns output manifest.
@@ -1866,23 +1892,23 @@ class FileDefinition(IODefinition):
     # ########### Output manifest properties - R/W
 
     @property
-    def user_tags(self) -> List[str]:
+    def user_tags(self) -> list[str]:
         """
         User defined tags excluding the system tags
         """
         # filter system tags
-        tags: List[str] = [tag for tag in self._tags if not self.is_system_tag(tag)]
+        tags: list[str] = [tag for tag in self._tags if not self.is_system_tag(tag)]
         return tags
 
     @property
-    def tags(self) -> List[str]:
+    def tags(self) -> list[str]:
         """
         All tags specified on the file
         """
         return self._tags
 
     @tags.setter
-    def tags(self, tags: List[str]):
+    def tags(self, tags: list[str]):
         if tags is None:
             tags = list()
         self._tags = tags
@@ -1921,7 +1947,7 @@ class FileDefinition(IODefinition):
 
     # ########### Input manifest properties - Read ONLY
     @property
-    def id(self) -> str:  # File ID in the KBC Storage (read only input attribute)
+    def id(self) -> str | None:  # File ID in the KBC Storage (read only input attribute)
         return self._id
 
     @property
@@ -1932,11 +1958,11 @@ class FileDefinition(IODefinition):
             return None
 
     @property
-    def size_bytes(self) -> int:  # File size in the KBC Storage (read only input attribute)
+    def size_bytes(self) -> int | None:  # File size in the KBC Storage (read only input attribute)
         return self._size_bytes
 
     @property
-    def max_age_days(self) -> int:  # File max age (read only input attribute)
+    def max_age_days(self) -> int | None:  # File max age (read only input attribute)
         return self._max_age_days
 
 
@@ -1964,14 +1990,14 @@ class TableInputMapping(SubscriptableDataclass):
     https://developers.keboola.com/extend/common-interface/config-file/#tables) in the config file
     """
     source: str = ''
-    destination: str = None
-    limit: int = None
-    columns: List[str] = dataclasses.field(default_factory=lambda: [])
-    where_values: List[str] = None
-    full_path: str = None
+    destination: str | None = None
+    limit: int | None = None
+    columns: list[str] = dataclasses.field(default_factory=lambda: [])
+    where_values: list[str] | None = None
+    full_path: str | None = None
     where_operator: str = ''
     days: int = 0
-    column_types: List[TableColumnTypes] = None
+    column_types: list[TableColumnTypes] | None = None
 
 
 @dataclass
@@ -1998,7 +2024,7 @@ class FileInputMapping(SubscriptableDataclass):
     Abstraction of [output mapping definition](
     https://developers.keboola.com/extend/common-interface/config-file/#files) in the config file
     """
-    tags: List[str]
+    tags: list[str]
     query: str = ''
     filter_by_run_id: bool = False
 
@@ -2012,7 +2038,7 @@ class FileOutputMapping(SubscriptableDataclass):
     source: str
     is_public: bool = False
     is_permanent: bool = False
-    tags: List[str] = dataclasses.field(default_factory=lambda: [])
+    tags: list[str] = dataclasses.field(default_factory=lambda: [])
 
 
 @dataclass
