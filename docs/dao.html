@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.5">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>keboola.component.dao API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
@@ -276,7 +276,7 @@ class ColumnDefinition:
 <dt><strong><code>metadata</code></strong> :&ensp;<code>Optional[Dict[str, str]]</code></dt>
 <dd>Additional metadata associated with the column. Defaults to None.</dd>
 </dl></div>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.dao.ColumnDefinition.data_types"><code class="name">var <span class="ident">data_types</span> : Dict[str, <a title="keboola.component.dao.DataType" href="#keboola.component.dao.DataType">DataType</a>] | <a title="keboola.component.dao.BaseType" href="#keboola.component.dao.BaseType">BaseType</a> | None</code></dt>
 <dd>
@@ -421,7 +421,7 @@ class DataType:
             self.dtype = self.dtype.value</code></pre>
 </details>
 <div class="desc"><p>DataType(dtype: 'str', length: 'Optional[str]' = None, default: 'Optional[str]' = None)</p></div>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.dao.DataType.default"><code class="name">var <span class="ident">default</span> : str | None</code></dt>
 <dd>
@@ -477,7 +477,7 @@ class EnvironmentVariables:
 </details>
 <div class="desc"><p>Dataclass for variables available in the docker environment
 <a href="https://developers.keboola.com/extend/common-interface/environment/#environment-variables">https://developers.keboola.com/extend/common-interface/environment/#environment-variables</a></p></div>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.dao.EnvironmentVariables.branch_id"><code class="name">var <span class="ident">branch_id</span> : str</code></dt>
 <dd>
@@ -1337,7 +1337,7 @@ class FileInputMapping(SubscriptableDataclass):
 <ul class="hlist">
 <li><a title="keboola.component.dao.SubscriptableDataclass" href="#keboola.component.dao.SubscriptableDataclass">SubscriptableDataclass</a></li>
 </ul>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.dao.FileInputMapping.filter_by_run_id"><code class="name">var <span class="ident">filter_by_run_id</span> : bool</code></dt>
 <dd>
@@ -1378,7 +1378,7 @@ class FileOutputMapping(SubscriptableDataclass):
 <ul class="hlist">
 <li><a title="keboola.component.dao.SubscriptableDataclass" href="#keboola.component.dao.SubscriptableDataclass">SubscriptableDataclass</a></li>
 </ul>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.dao.FileOutputMapping.is_permanent"><code class="name">var <span class="ident">is_permanent</span> : bool</code></dt>
 <dd>
@@ -1778,7 +1778,7 @@ class OauthCredentials(SubscriptableDataclass):
 <ul class="hlist">
 <li><a title="keboola.component.dao.SubscriptableDataclass" href="#keboola.component.dao.SubscriptableDataclass">SubscriptableDataclass</a></li>
 </ul>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.dao.OauthCredentials.appKey"><code class="name">var <span class="ident">appKey</span> : str</code></dt>
 <dd>
@@ -1964,7 +1964,7 @@ class SupportedManifestAttributes(SubscriptableDataclass):
 <ul class="hlist">
 <li><a title="keboola.component.dao.SubscriptableDataclass" href="#keboola.component.dao.SubscriptableDataclass">SubscriptableDataclass</a></li>
 </ul>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.dao.SupportedManifestAttributes.in_attributes"><code class="name">var <span class="ident">in_attributes</span> : List[str]</code></dt>
 <dd>
@@ -2054,7 +2054,7 @@ Applicable only for workspace.</p></div>
 <ul class="hlist">
 <li><a title="keboola.component.dao.SubscriptableDataclass" href="#keboola.component.dao.SubscriptableDataclass">SubscriptableDataclass</a></li>
 </ul>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.dao.TableColumnTypes.convert_empty_values_to_null"><code class="name">var <span class="ident">convert_empty_values_to_null</span> : bool</code></dt>
 <dd>
@@ -3692,7 +3692,7 @@ class TableInputMapping(SubscriptableDataclass):
 <ul class="hlist">
 <li><a title="keboola.component.dao.SubscriptableDataclass" href="#keboola.component.dao.SubscriptableDataclass">SubscriptableDataclass</a></li>
 </ul>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.dao.TableInputMapping.column_types"><code class="name">var <span class="ident">column_types</span> : List[<a title="keboola.component.dao.TableColumnTypes" href="#keboola.component.dao.TableColumnTypes">TableColumnTypes</a>]</code></dt>
 <dd>
@@ -4617,7 +4617,7 @@ class TableOutputMapping(SubscriptableDataclass):
 <ul class="hlist">
 <li><a title="keboola.component.dao.SubscriptableDataclass" href="#keboola.component.dao.SubscriptableDataclass">SubscriptableDataclass</a></li>
 </ul>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
 <dt id="keboola.component.dao.TableOutputMapping.columns"><code class="name">var <span class="ident">columns</span> : str</code></dt>
 <dd>
@@ -4956,7 +4956,7 @@ class TableOutputMapping(SubscriptableDataclass):
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>
