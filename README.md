@@ -215,56 +215,39 @@ possible to create the container for the output table using the `CommonInterface
 
 ![TableDefinition dependencies](docs/imgs/TableDefinition_class.png)
 
-**Table schema example:**
+**Table schema examples:**
+
+**Example 1: Creating table with predefined schema**
 
 ```python
 from keboola.component import CommonInterface
+from collections import OrderedDict
 from keboola.component.dao import ColumnDefinition, DataType, SupportedDataTypes, BaseType
 
 # init the interface
 ci = CommonInterface()
 
-# Create output table definition with schema
+# Define complete schema upfront
+schema = OrderedDict({
+    "id": ColumnDefinition(
+        data_types=BaseType.integer(),
+        primary_key=True
+    ),
+    "created_at": ColumnDefinition(
+        data_types=BaseType(dtype=SupportedDataTypes.TIMESTAMP)
+    ),
+    "status": ColumnDefinition(),
+    "value": ColumnDefinition(
+        data_types=BaseType.numeric(length="38,2")
+    )
+})
+
+# Create table definition with predefined schema
 out_table = ci.create_out_table_definition(
     name="results.csv",                 # File name for the output
     destination="out.c-data.results",   # Destination table in Storage
-    primary_key=["id"],                 # Primary key column(s)
+    schema=schema,                      # Predefined schema
     incremental=True                    # Enable incremental loading
-)
-
-# Define columns with their data types
-out_table.add_columns([
-    "id",                # Default type is STRING
-    "created_at",        # Will add typed definition below
-    "status",
-    "value"
-])
-
-# Update column with specific data type - method 1 (using BaseType)
-out_table.update_column("id", 
-    ColumnDefinition(
-        primary_key=True,  
-        data_types=BaseType.integer()
-    )
-)
-
-# Update column with specific data type - method 2 (using DataType)
-out_table.update_column("created_at", 
-    ColumnDefinition(
-        data_types={"base": DataType(dtype=SupportedDataTypes.TIMESTAMP)}
-    )
-)
-
-# Update column with specific data type - method 3 (backend-specific types)
-out_table.update_column("value", 
-    ColumnDefinition(
-        data_types={
-            "snowflake": DataType(dtype="NUMBER", length="38,2"),
-            "bigquery": DataType(dtype="FLOAT64"),
-            "base": DataType(dtype=SupportedDataTypes.NUMERIC, length="38,2")
-        },
-        description="Numeric value with 2 decimal places"
-    )
 )
 
 # Write some data to the output file
@@ -277,6 +260,90 @@ with open(out_table.full_path, 'w', newline='') as f:
         "created_at": "2023-01-15T14:30:00Z",
         "status": "completed",
         "value": "123.45"
+    })
+    
+# Write manifest
+ci.write_manifest(out_table)
+```
+
+**Example 2: Creating table with empty schema and adding columns dynamically**
+
+```python
+from keboola.component import CommonInterface
+from keboola.component.dao import ColumnDefinition, DataType, SupportedDataTypes, BaseType
+import csv
+
+# init the interface
+ci = CommonInterface()
+
+# Create table definition with empty schema
+out_table = ci.create_out_table_definition(
+    name="dynamic_results.csv",
+    destination="out.c-data.dynamic_results",
+    incremental=True
+)
+
+# Add columns using different data type methods
+# Method 1: Using BaseType helper
+out_table.add_column("id", 
+    ColumnDefinition(
+        primary_key=True,
+        data_types=BaseType.integer()
+    )
+)
+
+# Method 2: Using SupportedDataTypes enum
+out_table.add_column("created_at", 
+    ColumnDefinition(
+        data_types=BaseType(dtype=SupportedDataTypes.TIMESTAMP)
+    )
+)
+
+# Method 3: Simple column without specific data type
+out_table.add_column("status", ColumnDefinition())
+
+# Method 4: Using BaseType with parameters
+out_table.add_column("price", 
+    ColumnDefinition(
+        data_types=BaseType.numeric(length="10,2"),
+        description="Product price with 2 decimal places"
+    )
+)
+
+# Method 5: Backend-specific data types
+out_table.add_column("metadata", 
+    ColumnDefinition(
+        data_types={
+            "snowflake": DataType(dtype="VARIANT"),
+            "bigquery": DataType(dtype="JSON"),
+            "base": DataType(dtype=SupportedDataTypes.STRING, length="65535")
+        },
+        description="JSON metadata column"
+    )
+)
+
+# Update existing column (example of column modification)
+out_table.update_column("price", 
+    ColumnDefinition(
+        data_types={
+            "snowflake": DataType(dtype="NUMBER", length="15,4"),
+            "bigquery": DataType(dtype="NUMERIC", length="15,4"),
+            "base": DataType(dtype=SupportedDataTypes.NUMERIC, length="15,4")
+        },
+        description="Updated price with 4 decimal places for higher precision"
+    )
+)
+
+# Write some data to the output file
+with open(out_table.full_path, 'w', newline='') as f:
+    writer = csv.DictWriter(f, fieldnames=out_table.column_names)
+    writer.writeheader()
+    writer.writerow({
+        "id": "1",
+        "created_at": "2023-01-15T14:30:00Z",
+        "status": "active",
+        "price": "99.9999",
+        "metadata": '{"category": "electronics", "brand": "TechCorp"}'
     })
     
 # Write manifest
