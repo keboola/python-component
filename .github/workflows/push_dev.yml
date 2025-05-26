@@ -3,8 +3,8 @@ name: Build & Test
 on:
   push:
     branches:
-      - '**'
-      - '!main'
+      - "**"
+      - "!main"
 
 jobs:
   build:
@@ -31,24 +31,3 @@ jobs:
       - name: Test with pytest
         run: |
           pytest tests
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
-      - name: Create html documentation
-        run: |
-          pip install --user pdoc3
-          python setup.py install
-          pdoc --html -f -o .\docs keboola.component
-          mv .docs/keboola/component/* docs
-          rm -r .docs/keboola
-      - name: Commit docs
-        run: |
-          git config --global user.name 'KCF'
-          git config --global user.email 'kcf@users.noreply.github.com'
-          git commit --allow-empty -am "Automated html docs build"
-          git push
