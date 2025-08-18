@@ -1,0 +1,40 @@
+{
+  "id": "in.c-main.test",
+  "uri": "https:\/\/connection.keboola.com\/\/v2\/storage\/tables\/in.c-main.test",
+  "name": "sample.csv",
+  "primary_key": [],
+  "indexed_columns": [],
+  "created": "2015-11-02T09:11:37+0100",
+  "last_change_date": "2015-11-02T09:11:37+0100",
+  "last_import_date": "2015-11-02T09:11:37+0100",
+  "rows_count": 400,
+  "data_size_bytes": 81920,
+  "is_alias": false,
+  "columns": [
+    "x",
+    "Sales",
+    "CompPrice",
+    "Income",
+    "Advertising",
+    "Population",
+    "Price",
+    "ShelveLoc",
+    "Age",
+    "Education",
+    "Urban",
+    "US",
+    "High"
+  ],
+  "attributes": [],
+  "s3": {
+    "isSliced": true,
+    "region": "eu-central-1",
+    "bucket": "test",
+    "key": "test\/asdf\/12345.csv.gzmanifest",
+    "credentials": {
+      "access_key_id": "ASDF",
+      "secret_access_key": "1234",
+      "session_token": "abcd1234"
+    }
+  }
+}
