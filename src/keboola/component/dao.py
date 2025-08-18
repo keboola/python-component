@@ -798,7 +798,10 @@ class TableDefinition(IODefinition):
                  write_always: Optional[bool] = False,
                  has_header: Optional[bool] = None,
                  description: Optional[str] = None,
-                 # input
+
+                 # storage staging
+                 s3: Optional[dict] = None,
+                 abs: Optional[dict] = None,
                  **kwargs
                  ):
         """
@@ -890,6 +893,10 @@ class TableDefinition(IODefinition):
         self.stage = stage
         self.has_header = has_header or self._has_header_in_file()
 
+        # storage staging
+        self._s3 = s3
+        self._abs = abs
+
     def __get_stage_inferred(self):
         if self._uri:
             return 'in'
@@ -974,6 +981,10 @@ class TableDefinition(IODefinition):
                                created: Optional[str] = None,
                                last_change_date: Optional[str] = None,
                                last_import_date: Optional[str] = None,
+
+                               # storage staging
+                               s3: Optional[dict] = None,
+                               abs: Optional[dict] = None,
                                **kwargs
                                ):
         """
@@ -1005,6 +1016,8 @@ class TableDefinition(IODefinition):
             created (Optional[str]): The creation timestamp of the table. Defaults to None.
             last_change_date (Optional[str]): The last modification timestamp of the table. Defaults to None.
             last_import_date (Optional[str]): The last import timestamp of the table. Defaults to None.
+            s3 (Optional[dict]): A dictionary containing Amazon S3 storage details. Defaults to None.
+            abs (Optional[dict]): A dictionary containing Azure Blob Storage details. Defaults to None.
 
         Returns:
             TableDefinition: An instance of TableDefinition configured for input tables.
@@ -1031,6 +1044,8 @@ class TableDefinition(IODefinition):
                    created=created,
                    last_change_date=last_change_date,
                    last_import_date=last_import_date,
+                   s3=s3,
+                   abs=abs,
                    **kwargs
                    )
 
@@ -1156,6 +1171,10 @@ class TableDefinition(IODefinition):
                 is_alias=manifest.get('is_alias'),
                 attributes=manifest.get('attributes'),
                 indexed_columns=manifest.get('indexed_columns'),
+
+                # storage staging
+                s3=manifest.get('s3'),
+                abs=manifest.get('abs'),
             )
 
         else:

@@ -1,0 +1,39 @@
+{
+  "id": "in.c-main.test",
+  "uri": "https:\/\/connection.keboola.com\/\/v2\/storage\/tables\/in.c-main.test",
+  "name": "sample.csv",
+  "primary_key": [],
+  "indexed_columns": [],
+  "created": "2015-11-02T09:11:37+0100",
+  "last_change_date": "2015-11-02T09:11:37+0100",
+  "last_import_date": "2015-11-02T09:11:37+0100",
+  "rows_count": 400,
+  "data_size_bytes": 81920,
+  "is_alias": false,
+  "columns": [
+    "x",
+    "Sales",
+    "CompPrice",
+    "Income",
+    "Advertising",
+    "Population",
+    "Price",
+    "ShelveLoc",
+    "Age",
+    "Education",
+    "Urban",
+    "US",
+    "High"
+  ],
+  "attributes": [],
+  "abs": {
+    "is_sliced": true,
+    "region": "us-east-1",
+    "container": "exp-2-export-test-test",
+    "name": "12345.csv.gzmanifest",
+    "credentials": {
+      "sas_connection_string": "BlobEndpoint=https://asdf.blob.core.windows.net;SharedAccessSignature=sv=2017-11-09&sr=c&st=2020-08-27T08:42:08Z&se=2020-08-27T20:42:08Z&sp=rl&sig=UJW4DPh%2Baaaaaaaaaa",
+      "expiration": "2020-08-27T22:42:08+0200"
+    }
+  }
+}

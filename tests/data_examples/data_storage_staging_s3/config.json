@@ -1,0 +1,49 @@
+{
+  "storage": {
+    "input": {
+      "files": [
+      ],
+      "tables": [
+        {
+          "source": "in.c-main.test",
+          "destination": "sample.csv",
+          "columns": [],
+          "where_values": [],
+          "where_operator": "eq"
+        }
+      ]
+    },
+    "output": {
+      "tables": [
+      ],
+      "files": [
+      ]
+    }
+  },
+  "parameters": {
+    "fooBar": {
+      "foo": 42,
+      "bar": 24
+    },
+    "baz": "bazBar"
+  },
+  "action": "run",
+  "authorization": {
+    "oauth_api": {
+      "id": "123456",
+      "credentials": {
+        "id": "main",
+        "authorizedFor": "Myself",
+        "creator": {
+          "id": "1234",
+          "description": "me@keboola.com"
+        },
+        "created": "2016-01-31 00:13:30",
+        "oauthVersion": "2.0",
+        "appKey": "myappkey",
+        "#data": "{\"mykey\":\"myval\"}",
+        "#appSecret": "myappsecret"
+      }
+    }
+  }
+}

@@ -808,3 +808,30 @@ class TestFileDefinition(unittest.TestCase):
                                   )
 
         self.assertEqual(all_tags, file_def.tags)
+
+    def test_build_from_manifest_s3_staging(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data_storage_staging_s3', 'in', 'tables')
+
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample.csv.manifest'))
+
+        self.assertEqual(table_def.s3_staging.bucket, "test")
+        self.assertEqual(table_def.s3_staging.credentials_access_key_id, "ASDF")
+        self.assertEqual(table_def.s3_staging.credentials_secret_access_key, "1234")
+        self.assertEqual(table_def.s3_staging.credentials_session_token ,"abcd1234")
+        self.assertEqual(table_def.s3_staging.is_sliced, True)
+        self.assertEqual(table_def.s3_staging.key, "test/asdf/12345.csv.gzmanifest")
+        self.assertEqual(table_def.s3_staging.region, "eu-central-1")
+
+    def test_build_from_manifest_abs_staging(self):
+        sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   'data_examples', 'data_storage_staging_abs', 'in', 'tables')
+
+        table_def = TableDefinition.build_from_manifest(os.path.join(sample_path, 'sample.csv.manifest'))
+
+        self.assertEqual(table_def.abs_staging.container, "exp-2-export-test-test")
+        self.assertEqual(table_def.abs_staging.credentials_expiration, "2020-08-27T22:42:08+0200")
+        self.assertEqual(table_def.abs_staging.credentials_sas_connection_string, "BlobEndpoint=https://asdf.blob.core.windows.net;SharedAccessSignature=sv=2017-11-09&sr=c&st=2020-08-27T08:42:08Z&se=2020-08-27T20:42:08Z&sp=rl&sig=UJW4DPh%2Baaaaaaaaaa")
+        self.assertEqual(table_def.abs_staging.is_sliced, True)
+        self.assertEqual(table_def.abs_staging.name, "12345.csv.gzmanifest")
+        self.assertEqual(table_def.abs_staging.region, "us-east-1")
