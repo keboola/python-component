@@ -1195,7 +1195,7 @@ class Configuration:
         Returns: List[FileInputMapping]
 
         """
-        defs = self.config_data.get('storage', {}).get('output', {}).get('files', [])
+        defs = self.config_data.get('storage', {}).get('input', {}).get('files', [])
         files = []
         for file in defs:
             om = dao.build_dataclass_from_dict(dao.FileInputMapping, file)
