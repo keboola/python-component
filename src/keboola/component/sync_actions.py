@@ -40,7 +40,9 @@ class MessageType(str, Enum):
     SUCCESS = "success"
     INFO = "info"
     WARNING = "warning"
-    DANGER = "danger"
+    ERROR = "error"
+    DANGER = "error"  # keeping for backwards compatibility
+    TABLE = "table"  # Markdown table
 
 
 @dataclass
