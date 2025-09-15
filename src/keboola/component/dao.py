@@ -1990,7 +1990,8 @@ class TableInputMapping(SubscriptableDataclass):
     full_path: str = None
     where_operator: str = ''
     days: int = 0
-    column_types: List[TableColumnTypes] = None
+    column_types: List[TableColumnTypes] = None,
+    file_type: str = "csv"
 
 
 @dataclass
