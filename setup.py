@@ -13,7 +13,7 @@ project_urls = {
 
 setuptools.setup(
     name="keboola.component",
-    version="1.6.12",
+    version="1.6.13",
     author="Keboola KDS Team",
     project_urls=project_urls,
     setup_requires=[
