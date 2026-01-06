@@ -1,9 +1,21 @@
+import json
 import os
 import tempfile
 import unittest
 
+from datetime import datetime
+
 from keboola.component import dao
-from keboola.component.dao import *
+from keboola.component.dao import (
+    BaseType,
+    ColumnDefinition,
+    DataType,
+    FileDefinition,
+    SupportedDataTypes,
+    TableDefinition,
+    TableMetadata,
+)
+from keboola.component.exceptions import UserException
 
 
 class TestTableMetadata(unittest.TestCase):
@@ -49,7 +61,7 @@ class TestTableMetadata(unittest.TestCase):
             {
                 "key": "KBC.datatype.nullable",
                 "value": False
-            }
+        }
         ], "col_2": [{
             "key": "KBC.datatype.basetype",
             "value": "STRING"
@@ -57,7 +69,7 @@ class TestTableMetadata(unittest.TestCase):
             {
                 "key": "KBC.datatype.nullable",
                 "value": False
-            }
+        }
         ]}
 
         tmetadata = TableMetadata()
@@ -73,7 +85,7 @@ class TestTableMetadata(unittest.TestCase):
             {
                 "key": "KBC.datatype.nullable",
                 "value": False
-            }
+        }
         ], "col_2": [{
             "key": "KBC.datatype.basetype",
             "value": "STRING"
@@ -81,7 +93,7 @@ class TestTableMetadata(unittest.TestCase):
             {
                 "key": "KBC.datatype.nullable",
                 "value": False
-            }
+        }
         ]}
 
         tmetadata = TableMetadata()
@@ -91,7 +103,7 @@ class TestTableMetadata(unittest.TestCase):
 
     def test_invalid_datatype_fails(self):
         tmetadata = TableMetadata()
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ValueError):
             tmetadata.add_column_data_type('col', 'invalid type')
 
     def test_table_description_metadata_for_legacy_manifest_is_valid(self):
@@ -104,7 +116,7 @@ class TestTableMetadata(unittest.TestCase):
             {
                 "key": "custom_key",
                 "value": "custom_value"
-            }
+        }
         ]
         tmetadata.add_table_description("Description of table")
         tmetadata.add_table_metadata("custom_key", "custom_value")
@@ -211,7 +223,7 @@ class TestTableDefinition(unittest.TestCase):
         self.assertEqual(manifest['has_header'], False)
 
     def test_out_pkey_and_no_columns_incompatible(self):
-        with self.assertRaises(UserException) as e:
+        with self.assertRaises(UserException):
             TableDefinition("testDef", "somepath", primary_key=['foo'])
 
     def test_out_legacy_to_new_compatible(self):
@@ -237,8 +249,8 @@ class TestTableDefinition(unittest.TestCase):
 
     def test_table_manifest_missing_key(self):
         with self.assertRaises(UserException) as e:
-            table_def = TableDefinition("testDef", "somepath", is_sliced=False,
-                                        primary_key=['foo', 'bar'])
+            TableDefinition("testDef", "somepath", is_sliced=False,
+                            primary_key=['foo', 'bar'])
 
         self.assertEqual(str(e.exception),
                          "Primary key column foo not found in schema. Please specify all columns / schema")
@@ -441,7 +453,7 @@ class TestTableDefinition(unittest.TestCase):
         with self.assertLogs(level='WARNING') as log:
             td = TableDefinition("testDef", "somepath",
                                  write_always=True, stage='out')
-            manifest = td.get_manifest_dictionary(legacy_queue=True)
+            td.get_manifest_dictionary(legacy_queue=True)
             self.assertEqual(len(log.output), 1)
             self.assertEqual(len(log.records), 1)
             self.assertIn("WARNING:root:Running on legacy queue "
@@ -818,7 +830,7 @@ class TestFileDefinition(unittest.TestCase):
         self.assertEqual(table_def.s3_staging.bucket, "test")
         self.assertEqual(table_def.s3_staging.credentials_access_key_id, "ASDF")
         self.assertEqual(table_def.s3_staging.credentials_secret_access_key, "1234")
-        self.assertEqual(table_def.s3_staging.credentials_session_token ,"abcd1234")
+        self.assertEqual(table_def.s3_staging.credentials_session_token, "abcd1234")
         self.assertEqual(table_def.s3_staging.is_sliced, True)
         self.assertEqual(table_def.s3_staging.key, "test/asdf/12345.csv.gzmanifest")
         self.assertEqual(table_def.s3_staging.region, "eu-central-1")
@@ -831,7 +843,11 @@ class TestFileDefinition(unittest.TestCase):
 
         self.assertEqual(table_def.abs_staging.container, "exp-2-export-test-test")
         self.assertEqual(table_def.abs_staging.credentials_expiration, "2020-08-27T22:42:08+0200")
-        self.assertEqual(table_def.abs_staging.credentials_sas_connection_string, "BlobEndpoint=https://asdf.blob.core.windows.net;SharedAccessSignature=sv=2017-11-09&sr=c&st=2020-08-27T08:42:08Z&se=2020-08-27T20:42:08Z&sp=rl&sig=UJW4DPh%2Baaaaaaaaaa")
+        self.assertEqual(
+            table_def.abs_staging.credentials_sas_connection_string,
+            ("BlobEndpoint=https://asdf.blob.core.windows.net;SharedAccessSignature="
+             "sv=2017-11-09&sr=c&st=2020-08-27T08:42:08Z&se=2020-08-27T20:42:08Z&sp=rl&sig=UJW4DPh%2Baaaaaaaaaa")
+        )
         self.assertEqual(table_def.abs_staging.is_sliced, True)
         self.assertEqual(table_def.abs_staging.name, "12345.csv.gzmanifest")
         self.assertEqual(table_def.abs_staging.region, "us-east-1")

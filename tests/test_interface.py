@@ -45,7 +45,6 @@ class TestCommonInterface(unittest.TestCase):
         self.assertEqual(ci.environment_variables.logger_port, 'KBC_LOGGER_PORT')
 
     def test_empty_required_params_pass(self):
-        c = CommonInterface
         return True
         # # set env
         # interface = CommonInterface(mandatory_params=[])
@@ -85,7 +84,7 @@ class TestCommonInterface(unittest.TestCase):
                 ValueError,
                 "Configuration file config.json not found"):
             ci = CommonInterface()
-            c = ci.configuration
+            ci.configuration
 
     def test_get_data_dir(self):
         ci = CommonInterface()
@@ -225,7 +224,8 @@ class TestCommonInterface(unittest.TestCase):
                                                    destination='some-destination',
                                                    primary_key=['foo'],
                                                    incremental=True,
-                                                   # the write_always will then not be present in the manifest even if set
+                                                   # the write_always will then not be present
+                                                   # in the manifest even if set
                                                    write_always=True,
                                                    delete_where={'column': 'lilly',
                                                                  'values': ['a', 'b'],
@@ -268,7 +268,8 @@ class TestCommonInterface(unittest.TestCase):
                                                    destination='some-destination',
                                                    primary_key=['foo'],
                                                    incremental=True,
-                                                   # the write_always will then not be present in the manifest even if set
+                                                   # the write_always will then not be present
+                                                   # in the manifest even if set
                                                    write_always=True,
                                                    has_header=True,
                                                    delete_where={'column': 'lilly',
