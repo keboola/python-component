@@ -1,0 +1,54 @@
+[project]
+name = "keboola.component"
+version = "0.0.0"  # replaced by the actual version based on the release tag in github actions
+dependencies = [
+    "pygelf",
+    "pytz<2021.0",
+    "deprecated",
+]
+requires-python = ">=3.8"
+
+authors = [
+    { name = "Keboola KDS Team", email = "support@keboola.com" }
+]
+description = "General library for Python applications running in Keboola Connection environment"
+readme = "README.md"
+license = "MIT"
+license-files = [ "LICENSE" ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Education",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Development Status :: 5 - Production/Stable",
+]
+
+[project.urls]
+Documentation = "https://keboola.github.io/python-component/interface.html"
+Repository = "https://github.com/keboola/python-component"
+"Component Template project" = "https://github.com/keboola/cookiecutter-python-component"
+
+[dependency-groups]
+dev = [
+    "flake8>=5.0.4",
+    "pytest>=8.3.5",
+    "ruff>=0.13.2",
+    "pdoc3",
+]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true

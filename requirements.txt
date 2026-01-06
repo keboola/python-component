@@ -1,3 +1,0 @@
-pygelf
-pytz<2021.0
-deprecated
