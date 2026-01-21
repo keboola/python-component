@@ -1,4 +1,4 @@
-name: Build & Test
+name: Build, Test & Generate Docs (main branch)
 
 on:
   push:
@@ -9,19 +9,25 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
+      - name: Checkout 🛒
+        uses: actions/checkout@v4
+
+      - name: Install uv 💜
+        uses: astral-sh/setup-uv@v6
+
+      - name: Set up Python 🐍
         uses: actions/setup-python@v4
         with:
           python-version: "3.13"
-      - name: Create html documentation
+
+      - name: Create html documentation 📚
         run: |
-          pip install --user pdoc3
-          python setup.py install
-          pdoc --html -f -o .\docs keboola.component
-          mv .docs/keboola/component/* docs
-          rm -r .docs/keboola
-      - name: Commit docs
+          uv sync --all-groups --frozen
+          uv run pdoc --html -f -o ./docs keboola.component
+          mv ./docs/keboola/component/* docs
+          rm -r ./docs/keboola
+
+      - name: Commit docs 📝
         run: |
           git config --global user.name 'KCF'
           git config --global user.email 'kcf@users.noreply.github.com'

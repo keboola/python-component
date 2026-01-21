@@ -1,8 +1,8 @@
-name: Build & Upload Python Package to PYPI production
+name: Build & Upload Python Package to PyPI
 
 on:
   release:
-    types: [ created ]
+    types: [ published ]
     branches:
       - main
 
@@ -10,28 +10,42 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - name: Checkout 🛒
+        uses: actions/checkout@v4
+
+      - name: Install uv 💜
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install and run ruff 🐶
+        uses: astral-sh/ruff-action@v3
+
+      - name: Set up Python 🐍
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-      - name: Install dependencies
+          python-version: "3.13"
+
+      - name: Install dependencies 📦
         run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel twine
-          pip install flake8 pytest
-          pip install -r requirements.txt
-      - name: Lint with flake8
+          uv sync --all-groups --frozen
+
+      - name: Lint with flake8 ❄️
         run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 src/ --config=flake8.cfg
-      - name: Test with pytest
+          uv run flake8
+
+      - name: Test with pytest ✅
         run: |
-          pytest tests
-      - name: Build and publish
+          uv run pytest tests
+
+      - name: Version replacement based on tag ↔️
+        if: github.ref_type == 'tag'
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          echo "Tag version: $TAG_VERSION"
+          uv version $TAG_VERSION
+
+      - name: Build and publish 🚀
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
         run: |
-          python setup.py sdist bdist_wheel
-          twine upload dist/*
+          uv build
+          uv publish
