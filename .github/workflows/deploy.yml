@@ -74,8 +74,13 @@ jobs:
         if: github.event_name == 'release' || inputs.environment == 'production'
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/}
+          
+          # Checkout main before docs commit to avoid detached HEAD push failure
+          git fetch origin main
+          git checkout main
+          
           git config --global user.name 'KCF'
           git config --global user.email 'kcf@users.noreply.github.com'
           git add docs
           git commit -m "docs: update for release $TAG_VERSION 📚" || echo "No changes to commit"
-          git push
+          git push origin main
