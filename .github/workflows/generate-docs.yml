@@ -1,0 +1,38 @@
+name: Generate Documentation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛒
+        uses: actions/checkout@v4
+
+      - name: Install uv 💜
+        uses: astral-sh/setup-uv@v6
+
+      - name: Set up Python 🐍
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies 📦
+        run: |
+          uv sync --all-groups --frozen
+
+      - name: Generate HTML documentation 📚
+        run: |
+          uv pip install -e .
+          uv run pdoc --html -f -o ./docs keboola.component
+          mv ./docs/keboola/component/* docs
+          rm -r ./docs/keboola
+
+      - name: Commit documentation 📝
+        run: |
+          git config --global user.name 'KCF'
+          git config --global user.email 'kcf@users.noreply.github.com'
+          git add docs
+          git commit -m "docs: update documentation 📚" || echo "No changes to commit"
+          git push
