@@ -3,13 +3,10 @@ name: Build & Deploy to PyPI
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: Deployment environment
-        required: true
-        type: choice
-        options:
-          - test
-          - production
+      note:
+        description: 'This workflow publishes to TestPyPI only. For production, create a GitHub Release.'
+        required: false
+        default: ""
 
   release:
     types: [published]
@@ -51,31 +48,19 @@ jobs:
           echo "Tag version: $TAG_VERSION"
           uv version $TAG_VERSION
 
-      - name: Generate HTML documentation 📚
-        if: github.event_name == 'release' || inputs.environment == 'production'
-        run: |
-          uv sync --all-groups --frozen
-          uv pip install -e .
-          uv run pdoc --html -f -o ./docs keboola.component
-          mv ./docs/keboola/component/* docs
-          rm -r ./docs/keboola
-
       - name: Build package 📦
         run: |
           uv build
 
-      - name: Publish to PyPI 🚀
+      - name: Publish to TestPyPI 🧪
         env:
-          UV_PUBLISH_TOKEN: ${{ inputs.environment == 'test' && secrets.UV_PUBLISH_TOKEN_TEST_PYPI || secrets.UV_PUBLISH_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN_TEST_PYPI }}
         run: |
-          uv publish ${{ inputs.environment == 'test' && '--index testpypi' || '' }}
+          uv publish --index testpypi
 
-      - name: Commit documentation 📝
-        if: github.event_name == 'release' || inputs.environment == 'production'
+      - name: Publish to PyPI 🚀
+        if: github.event_name == 'release'
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/}
-          git config --global user.name 'KCF'
-          git config --global user.email 'kcf@users.noreply.github.com'
-          git add docs
-          git commit -m "docs: update for release $TAG_VERSION 📚" || echo "No changes to commit"
-          git push
+          uv publish
