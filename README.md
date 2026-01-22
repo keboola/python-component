@@ -1,8 +1,47 @@
 # Keboola Python Component library
 
+## Table of Contents
+
+- [Keboola Python Component library](#keboola-python-component-library)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+    - [Links](#links)
+- [Quick start](#quick-start)
+  - [Installation](#installation)
+  - [For Developers](#for-developers)
+  - [Core structure \& functionality](#core-structure--functionality)
+  - [CommonInterface](#commoninterface)
+  - [Initialization](#initialization)
+  - [Loading configuration parameters:](#loading-configuration-parameters)
+  - [Processing input tables - Manifest vs I/O mapping](#processing-input-tables---manifest-vs-io-mapping)
+    - [Manifest \& input folder content](#manifest--input-folder-content)
+    - [Using I/O mapping](#using-io-mapping)
+  - [I/O table manifests and processing results](#io-table-manifests-and-processing-results)
+    - [Get input table by name](#get-input-table-by-name)
+  - [Working with Input/Output Mapping](#working-with-inputoutput-mapping)
+    - [Accessing Input Tables from Mapping](#accessing-input-tables-from-mapping)
+    - [Creating Output Tables based on Output Mapping](#creating-output-tables-based-on-output-mapping)
+    - [Combining Input and Output Mapping](#combining-input-and-output-mapping)
+  - [Processing input files](#processing-input-files)
+    - [Grouping Files by Tags](#grouping-files-by-tags)
+    - [Creating Output Files](#creating-output-files)
+  - [Processing state files](#processing-state-files)
+  - [Logging](#logging)
+- [ComponentBase](#componentbase)
+  - [Table Schemas in ComponentBase](#table-schemas-in-componentbase)
+    - [JSON Table Schema example file](#json-table-schema-example-file)
+    - [Out table definition from schema example](#out-table-definition-from-schema-example)
+- [Sync Actions](#sync-actions)
+  - [Creating Sync Actions](#creating-sync-actions)
+  - [Returning Data from Sync Actions](#returning-data-from-sync-actions)
+  - [Validation Message Action](#validation-message-action)
+      - [No output](#no-output)
+  - [License](#license)
+
+
 ## Introduction
 
-![Build & Test](https://github.com/keboola/python-component/workflows/Build%20&%20Test/badge.svg?branch=main)
+![Build & Test](https://github.com/keboola/python-component/workflows/Build%20&%20Test/badge.svg)
 [![Code Climate](https://codeclimate.com/github/keboola/python-component/badges/gpa.svg)](https://codeclimate.com/github/keboola/python-component)
 [![PyPI version](https://badge.fury.io/py/keboola.component.svg)](https://badge.fury.io/py/keboola.component)
 
@@ -21,26 +60,27 @@ to simplify the I/O handling.
 
 ### Links
 
-- API Documentation: [API docs](https://keboola.github.io/python-component/interface.html)
-- Source code: [https://github.com/keboola/python-component](https://github.com/keboola/python-component)
-- PYPI project
-  code: [https://test.pypi.org/project/keboola.component-kds/](https://test.pypi.org/project/keboola.component-kds/)
--
-
-Documentation: [https://developers.keboola.com/extend/component/python-component-library](https://developers.keboola.com/extend/component/)
-
-- Python Component Cookiecutter template
-  project: [https://bitbucket.org/kds_consulting_team/cookiecutter-python-component](https://bitbucket.org/kds_consulting_team/cookiecutter-python-component)
+- [PyPI](https://pypi.org/project/keboola.component/) & [TestPyPI](https://test.pypi.org/project/keboola.component/)
+- [API Documentation](https://keboola.github.io/python-component/interface.html)
+- [Keboola Components for developers](https://developers.keboola.com/extend/component/)
+- [Python Component Cookiecutter template project](https://github.com/keboola/cookiecutter-python-component)
 
 # Quick start
 
 ## Installation
 
-The package may be installed via PIP:
+The package may be installed via uv 💜:
 
  ```
-pip install keboola.component
+uv add keboola.component
 ```
+
+## For Developers
+
+> **Note for contributors:** Before creating a pull request, make sure to manually run the
+> [Generate Documentation](https://github.com/keboola/python-component/actions/workflows/generate-docs.yml)
+> workflow on your branch. This ensures the API documentation in the `docs/` folder is up-to-date
+> with your code changes. The workflow can be triggered from the Actions tab on GitHub.
 
 ## Core structure & functionality
 
@@ -261,7 +301,7 @@ with open(out_table.full_path, 'w', newline='') as f:
         "status": "completed",
         "value": "123.45"
     })
-    
+
 # Write manifest
 ci.write_manifest(out_table)
 ```
@@ -285,7 +325,7 @@ out_table = ci.create_out_table_definition(
 
 # Add columns using different data type methods
 # Method 1: Using BaseType helper
-out_table.add_column("id", 
+out_table.add_column("id",
     ColumnDefinition(
         primary_key=True,
         data_types=BaseType.integer()
@@ -293,7 +333,7 @@ out_table.add_column("id",
 )
 
 # Method 2: Using SupportedDataTypes enum
-out_table.add_column("created_at", 
+out_table.add_column("created_at",
     ColumnDefinition(
         data_types=BaseType(dtype=SupportedDataTypes.TIMESTAMP)
     )
@@ -303,7 +343,7 @@ out_table.add_column("created_at",
 out_table.add_column("status", ColumnDefinition())
 
 # Method 4: Using BaseType with parameters
-out_table.add_column("price", 
+out_table.add_column("price",
     ColumnDefinition(
         data_types=BaseType.numeric(length="10,2"),
         description="Product price with 2 decimal places"
@@ -311,7 +351,7 @@ out_table.add_column("price",
 )
 
 # Method 5: Backend-specific data types
-out_table.add_column("metadata", 
+out_table.add_column("metadata",
     ColumnDefinition(
         data_types={
             "snowflake": DataType(dtype="VARIANT"),
@@ -323,7 +363,7 @@ out_table.add_column("metadata",
 )
 
 # Update existing column (example of column modification)
-out_table.update_column("price", 
+out_table.update_column("price",
     ColumnDefinition(
         data_types={
             "snowflake": DataType(dtype="NUMBER", length="15,4"),
@@ -345,7 +385,7 @@ with open(out_table.full_path, 'w', newline='') as f:
         "price": "99.9999",
         "metadata": '{"category": "electronics", "brand": "TechCorp"}'
     })
-    
+
 # Write manifest
 ci.write_manifest(out_table)
 ```
@@ -409,16 +449,16 @@ input_tables = ci.configuration.tables_input_mapping
 for table in input_tables:
     # Get the destination (filename in the /data/in/tables directory)
     table_name = table.destination
-    
+
     # Load table definition from manifest
     table_def = ci.get_input_table_definition_by_name(table_name)
-    
+
     # Print information about the table
     print(f"Processing table: {table_name}")
     print(f"  - Source: {table.source}")
     print(f"  - Full path: {table_def.full_path}")
     print(f"  - Columns: {table_def.column_names}")
-    
+
     # Read data from the CSV file
     with open(table_def.full_path, 'r') as input_file:
         csv_reader = csv.DictReader(input_file)
@@ -444,20 +484,20 @@ for i, table_mapping in enumerate(output_tables):
     # Get source (filename that should be created) and destination (where it will be stored in KBC)
     source = table_mapping.source
     destination = table_mapping.destination
-    
+
     # Create output table definition
     out_table = ci.create_out_table_definition(
         name=source,
         destination=destination,
         incremental=table_mapping.incremental
     )
-    
+
     # Add some sample data (in a real component, this would be your processed data)
     with open(out_table.full_path, 'w', newline='') as out_file:
         writer = csv.DictWriter(out_file, fieldnames=['id', 'data'])
         writer.writeheader()
         writer.writerow({'id': f'{i+1}', 'data': f'Data for {destination}'})
-    
+
     # Write manifest file
     ci.write_manifest(out_table)
 ```
@@ -481,27 +521,27 @@ output_tables = ci.configuration.tables_output_mapping
 for i, out_mapping in enumerate(output_tables):
     # Find corresponding input table if possible (matching by index for simplicity)
     in_mapping = input_tables[i] if i < len(input_tables) else None
-    
+
     # Create output table
     out_table = ci.create_out_table_definition(
         name=out_mapping.source,
         destination=out_mapping.destination,
         incremental=out_mapping.incremental
     )
-    
+
     # If we have an input table, transform its data
     if in_mapping:
         in_table = ci.get_input_table_definition_by_name(in_mapping.destination)
-        
+
         # Read input and write to output with transformation
         with open(in_table.full_path, 'r') as in_file, open(out_table.full_path, 'w', newline='') as out_file:
             reader = csv.DictReader(in_file)
-            
+
             # Create writer with same field names
             fieldnames = reader.fieldnames
             writer = csv.DictWriter(out_file, fieldnames=fieldnames)
             writer.writeheader()
-            
+
             # Transform each row and write to output
             for row in reader:
                 # Simple transformation example - uppercase all values
@@ -513,7 +553,7 @@ for i, out_mapping in enumerate(output_tables):
             writer = csv.DictWriter(out_file, fieldnames=['id', 'data'])
             writer.writeheader()
             writer.writerow({'id': f'{i+1}', 'data': f'Sample data for {out_mapping.destination}'})
-    
+
     # Write manifest
     ci.write_manifest(out_table)
 ```
@@ -543,14 +583,14 @@ for file in input_files:
     print(f"Processing file: {file.name}")
     print(f"  - Full path: {file.full_path}")
     print(f"  - Tags: {file.tags}")
-    
+
     # Example: Process image files
     if 'images' in file.tags:
         # Process image using appropriate library
         print(f"  - Processing image: {file.name}")
         # image = Image.open(file.full_path)
         # ... process image ...
-    
+
     # Example: Process document files
     if 'documents' in file.tags:
         print(f"  - Processing document: {file.name}")
@@ -912,7 +952,7 @@ class Component(ComponentBase):
     def run(self):
         # Main component logic
         pass
-        
+
     @sync_action('testConnection')
     def test_connection(self):
         """
@@ -920,11 +960,11 @@ class Component(ComponentBase):
         """
         params = self.configuration.parameters
         connection = params.get('connection', {})
-        
+
         # Validate connection parameters
         if not connection.get('host') or not connection.get('username'):
             raise UserException("Connection failed: Missing host or username")
-            
+
         # If no exception is raised, the connection test is considered successful
         # The framework automatically returns {"status": "success"}
 ```
@@ -949,7 +989,7 @@ class Component(ComponentBase):
             {"id": "orders", "name": "Order History"},
             {"id": "products", "name": "Product Catalog"}
         ]
-        
+
         # Return as list of SelectElement objects for UI dropdown
         return [
             SelectElement(value=table["id"], label=table["name"])
@@ -972,7 +1012,7 @@ class Component(ComponentBase):
         Validates the component configuration
         """
         params = self.configuration.parameters
-        
+
         # Check configuration parameters
         if params.get('extraction_type') == 'incremental' and not params.get('incremental_key'):
             # Return warning message that will be displayed in UI
@@ -980,7 +1020,7 @@ class Component(ComponentBase):
                 "Incremental extraction requires specifying an incremental key column.",
                 MessageType.WARNING
             )
-            
+
         # Check for potential issues
         if params.get('row_limit') and int(params.get('row_limit')) > 1000000:
             # Return info message
@@ -988,7 +1028,7 @@ class Component(ComponentBase):
                 "Large row limit may cause performance issues.",
                 MessageType.INFO
             )
-            
+
         # Success with no message
         return None
 ```
