@@ -172,7 +172,7 @@ ci = CommonInterface()
 
 # A ValueError error is raised if the config.json file does not exists in the data dir.
 # Checks for required parameters and throws ValueError if any is missing.
-ci.validate_configuration(REQUIRED_PARAMETERS)
+ci.validate_configuration_parameters(REQUIRED_PARAMETERS)
 
 # print KBC Project ID from the environment variable if present:
 logging.info(ci.environment_variables.project_id)
