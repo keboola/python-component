@@ -1,0 +1,12 @@
+{
+    "storage": {
+        "input": {
+            "tables": []
+        },
+        "output": {
+            "tables": []
+        }
+    },
+    "parameters": {},
+    "action": "agentSchema"
+}

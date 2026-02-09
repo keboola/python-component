@@ -1,4 +1,5 @@
 import contextlib
+import inspect
 import json
 import logging
 import os
@@ -12,6 +13,7 @@ from typing import Union, List, Optional
 
 from . import dao
 from . import table_schema as ts
+from .exceptions import UserException
 from .interface import CommonInterface
 from .sync_actions import SyncActionResult, process_sync_action_result
 
@@ -248,6 +250,103 @@ class ComponentBase(ABC, CommonInterface):
         except (AttributeError, KeyError) as e:
             raise AttributeError(f"The defined action {action} is not implemented!") from e
         return action_method()
+
+    def get_agent_schema(self) -> Optional[dict]:
+        """Override in component to provide a custom agent schema.
+
+        If not overridden, the schema is auto-generated via introspection.
+        Return ``None`` to explicitly disable agent mode for this component.
+        """
+        return self._generate_agent_schema()
+
+    def get_agent_context(self) -> Optional[dict]:
+        """Override in component to provide execution context for agentCode.
+
+        Should return a dict of variable names to initialized objects that
+        will be available in the agent code namespace.
+        For example: ``{"sf": authenticated_salesforce_client}``
+
+        Returns ``None`` by default (agent code runs with ``comp`` only).
+        """
+        return None
+
+    @sync_action('agentSchema')
+    def agent_schema(self):
+        schema = self.get_agent_schema()
+        if schema is None:
+            raise UserException("This component does not support agent mode.")
+        return schema
+
+    @sync_action('agentCode')
+    def agent_code(self):
+        code = self.configuration.parameters.get('agent_code')
+        if not code:
+            raise UserException("Parameter 'agent_code' is required.")
+        context = self.get_agent_context()
+        local_ns = {'comp': self}
+        if context:
+            local_ns.update(context)
+        exec(code, {'__builtins__': __builtins__}, local_ns)  # noqa: S102
+        raw_result = local_ns.get('result')
+        if raw_result is None:
+            return None
+        return {'result': raw_result}
+
+    def _generate_agent_schema(self) -> dict:
+        comp_class = type(self)
+        comp_module = inspect.getmodule(comp_class)
+        schema = {
+            'component_id': self.environment_variables.component_id,
+            'modules': {},
+            'sync_actions': [],
+            'context_variables': {},
+            'installed_packages': self._get_installed_packages(),
+        }
+        try:
+            schema['modules']['component'] = inspect.getsource(comp_class)
+        except (TypeError, OSError):
+            pass
+        if comp_module:
+            for name, obj in vars(comp_module).items():
+                if name.startswith('_'):
+                    continue
+                if inspect.isclass(obj) and obj is not comp_class:
+                    try:
+                        schema['modules'][name] = inspect.getsource(obj)
+                    except (TypeError, OSError):
+                        pass
+                elif inspect.ismodule(obj):
+                    try:
+                        schema['modules'][name] = inspect.getsource(obj)
+                    except (TypeError, OSError):
+                        pass
+        for action_name, method_name in _SYNC_ACTION_MAPPING.items():
+            if action_name in ('run', 'agentSchema', 'agentCode'):
+                continue
+            method = getattr(self, method_name, None)
+            if method:
+                schema['sync_actions'].append({
+                    'action': action_name,
+                    'method': method_name,
+                    'doc': inspect.getdoc(method) or '',
+                })
+        context = self.get_agent_context()
+        if context:
+            for var_name, obj in context.items():
+                schema['context_variables'][var_name] = {
+                    'type': type(obj).__qualname__,
+                    'module': type(obj).__module__,
+                    'methods': [m for m in dir(obj) if not m.startswith('_')],
+                }
+        return schema
+
+    @staticmethod
+    def _get_installed_packages() -> List[str]:
+        try:
+            from importlib.metadata import distributions
+            return sorted([f"{d.metadata['Name']}=={d.metadata['Version']}" for d in distributions()])
+        except Exception:
+            return []
 
     def _generate_table_metadata_legacy(self, table_schema: ts.TableSchema) -> dao.TableMetadata:
         """
