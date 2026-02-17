@@ -236,7 +236,17 @@ class ComponentBase(ABC, CommonInterface):
         """
         Executes action defined in the configuration.
         The default action is 'run'. See base._SYNC_ACTION_MAPPING
+
+        When ``KBC_COMPONENT_RUN_MODE=debug`` is set (platform debug mode),
+        the action execution is automatically wrapped with VCR recording
+        so that HTTP interactions are captured for later replay in tests.
         """
+        if self._should_vcr_record():
+            return self._execute_with_vcr_recording()
+        return self._do_execute_action()
+
+    def _do_execute_action(self):
+        """Internal: runs the actual action dispatch."""
         action = self.configuration.action
         if not action:
             logging.warning("No action defined in the configuration, using the default run action.")
@@ -248,6 +258,22 @@ class ComponentBase(ABC, CommonInterface):
         except (AttributeError, KeyError) as e:
             raise AttributeError(f"The defined action {action} is not implemented!") from e
         return action_method()
+
+    @staticmethod
+    def _should_vcr_record():
+        """Check if running in platform debug mode."""
+        return os.environ.get("KBC_COMPONENT_RUN_MODE", "").lower() == "debug"
+
+    def _execute_with_vcr_recording(self):
+        """Wrap action execution with VCR recording for debug runs."""
+        import inspect
+        from keboola.vcr import VCRRecorder
+
+        module = inspect.getmodule(type(self))
+        VCRRecorder.record_debug_run(
+            self._do_execute_action,
+            sanitizers=getattr(module, 'VCR_SANITIZERS', None),
+        )
 
     def _generate_table_metadata_legacy(self, table_schema: ts.TableSchema) -> dao.TableMetadata:
         """

@@ -5,6 +5,7 @@ dependencies = [
     "pygelf",
     "pytz<2021.0",
     "deprecated",
+    "keboola.vcr",
 ]
 requires-python = ">=3.8"
 
