@@ -8,7 +8,7 @@ import json
 from abc import ABC
 from dataclasses import dataclass
 from enum import Enum
-from typing import Union, List, Optional
+from typing import List, Optional, Union
 
 
 @dataclass
@@ -23,15 +23,14 @@ class SyncActionResult(ABC):
         In other cases exception is thrown and printed via stderr.
 
         """
-        self.status = 'success'
+        self.status = "success"
 
     def __str__(self):
         # the None values / attributes will be ignored.
-        dict_obj = dataclasses.asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if
-                                                                    v is not None})
+        dict_obj = dataclasses.asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v is not None})
         # hack to add default status
         if self.status:
-            dict_obj['status'] = self.status
+            dict_obj["status"] = self.status
         return json.dumps(dict_obj)
 
 
@@ -56,6 +55,7 @@ class SelectElement(SyncActionResult):
     """
     For select elements. Label is optional and value will be used
     """
+
     value: str
     label: Optional[str] = None
 
@@ -77,13 +77,14 @@ def process_sync_action_result(result: Union[None, List[dict], dict, SyncActionR
     if isinstance(result, SyncActionResult):
         result_str = str(result)
     elif isinstance(result, list):
-        result_str = f'[{", ".join([json.dumps(r) if isinstance(r, dict) else str(r) for r in result])}]'
+        result_str = f"[{', '.join([json.dumps(r) if isinstance(r, dict) else str(r) for r in result])}]"
     elif result is None:
-        result_str = json.dumps({'status': 'success'})
+        result_str = json.dumps({"status": "success"})
     elif isinstance(result, dict):
         # for backward compatibility
         result_str = json.dumps(result)
     else:
-        raise ValueError("Result of sync action must be either None or an instance of SyncActionResult "
-                         "or a List[SyncActionResult]")
+        raise ValueError(
+            "Result of sync action must be either None or an instance of SyncActionResult or a List[SyncActionResult]"
+        )
     return result_str

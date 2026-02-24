@@ -1,7 +1,7 @@
-from typing import List, Dict
-from typing import Optional, Union
-from keboola.component.dao import SupportedDataTypes
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Union
+
+from keboola.component.dao import SupportedDataTypes
 
 
 @dataclass
@@ -9,6 +9,7 @@ class FieldSchema:
     """
     Defines the name and type specifications of a single field in a table
     """
+
     name: str
     base_type: Optional[Union[SupportedDataTypes, str]] = None
     description: Optional[str] = None
@@ -22,6 +23,7 @@ class TableSchema:
     """
     TableSchema class is used to define the schema and metadata of a table.
     """
+
     name: str
     fields: List[FieldSchema]
     primary_keys: Optional[List[str]] = None
@@ -79,10 +81,12 @@ def init_table_schema_from_dict(json_table_schema: Dict) -> TableSchema:
         json_table_schema["fields"] = [FieldSchema(**field) for field in json_table_schema["fields"]]
     except TypeError as type_error:
         raise KeyError(
-            f"When creating the table schema the definition of columns failed : {type_error}") from type_error
+            f"When creating the table schema the definition of columns failed : {type_error}"
+        ) from type_error
     try:
         ts = TableSchema(**json_table_schema)
     except TypeError as type_error:
         raise KeyError(
-            f"When creating the table schema the definition of the table failed : {type_error}") from type_error
+            f"When creating the table schema the definition of the table failed : {type_error}"
+        ) from type_error
     return ts

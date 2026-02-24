@@ -3,19 +3,17 @@ import json
 import logging
 import os
 import sys
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from functools import wraps
 from pathlib import Path
-from typing import Dict
-from typing import Union, List, Optional
+from typing import Dict, List, Optional, Union
 
 from . import dao
 from . import table_schema as ts
 from .interface import CommonInterface
 from .sync_actions import SyncActionResult, process_sync_action_result
 
-KEY_DEBUG = 'debug'
+KEY_DEBUG = "debug"
 
 # Mapping of sync actions "action name":"method_name"
 _SYNC_ACTION_MAPPING = {"run": "run"}
@@ -76,14 +74,14 @@ def sync_action(action_name: str):
 
     def decorate(func):
         # to allow pythonic names / action name mapping
-        if action_name == 'run':
+        if action_name == "run":
             raise ValueError('Sync action name "run" is reserved base action! Use different name.')
         _SYNC_ACTION_MAPPING[action_name] = func.__name__
 
         @wraps(func)
         def action_wrapper(self, *args, **kwargs):
             # override when run as sync action, because it could be also called normally within run
-            is_sync_action = self.configuration.action != 'run'
+            is_sync_action = self.configuration.action != "run"
 
             # do operations with func
             if is_sync_action:
@@ -119,10 +117,13 @@ def sync_action(action_name: str):
 
 
 class ComponentBase(ABC, CommonInterface):
-    def __init__(self, data_path_override: Optional[str] = None,
-                 schema_path_override: Optional[str] = None,
-                 required_parameters: Optional[list] = None,
-                 required_image_parameters: Optional[list] = None):
+    def __init__(
+        self,
+        data_path_override: Optional[str] = None,
+        schema_path_override: Optional[str] = None,
+        required_parameters: Optional[list] = None,
+        required_image_parameters: Optional[list] = None,
+    ):
         """
         Base class for general Python components. Initializes the CommonInterface
         and performs configuration validation.
@@ -171,7 +172,7 @@ class ComponentBase(ABC, CommonInterface):
         Returns:
 
         """
-        return Path(os.getcwd()).resolve().parent.joinpath('data').as_posix()
+        return Path(os.getcwd()).resolve().parent.joinpath("data").as_posix()
 
     def _get_data_folder_override_path(self, data_path_override: str = None) -> str:
         """
@@ -189,14 +190,14 @@ class ComponentBase(ABC, CommonInterface):
         data_folder_path = None
         if data_path_override:
             data_folder_path = data_path_override
-        elif not os.environ.get('KBC_DATADIR'):
+        elif not os.environ.get("KBC_DATADIR"):
             data_folder_path = self._get_default_data_path()
         return data_folder_path
 
     def _get_schema_folder_path(self, schema_path_override: str = None) -> str:
         """
-            Returns value of the schema_folder_path in case the schema_path_override variable is provided or
-            the default schema_folder_path is found.
+        Returns value of the schema_folder_path in case the schema_path_override variable is provided or
+        the default schema_folder_path is found.
 
         """
         return schema_path_override or self._get_default_schema_folder_path()
@@ -204,7 +205,7 @@ class ComponentBase(ABC, CommonInterface):
     @staticmethod
     def _get_default_schema_folder_path() -> Optional[str]:
         """
-             Finds the default schema_folder_path if it exists.
+        Finds the default schema_folder_path if it exists.
 
         """
         container_schema_dir = Path("./src/schemas/").absolute().as_posix()
@@ -255,7 +256,7 @@ class ComponentBase(ABC, CommonInterface):
         action = self.configuration.action
         if not action:
             logging.warning("No action defined in the configuration, using the default run action.")
-            action = 'run'
+            action = "run"
 
         try:
             action = _SYNC_ACTION_MAPPING[action]
@@ -286,17 +287,18 @@ class ComponentBase(ABC, CommonInterface):
     def _execute_with_vcr_recording(self):
         """Wrap action execution with VCR recording for debug runs."""
         import inspect
+
         from keboola.vcr import VCRRecorder
 
         module = inspect.getmodule(type(self))
         VCRRecorder.record_debug_run(
             self._do_execute_action,
-            sanitizers=getattr(module, 'VCR_SANITIZERS', None),
+            sanitizers=getattr(module, "VCR_SANITIZERS", None),
         )
 
     def _generate_table_metadata_legacy(self, table_schema: ts.TableSchema) -> dao.TableMetadata:
         """
-            Generates a TableMetadata object for the table definition using a TableSchema object.
+        Generates a TableMetadata object for the table definition using a TableSchema object.
 
         """
         table_metadata = dao.TableMetadata()
@@ -306,69 +308,78 @@ class ComponentBase(ABC, CommonInterface):
         table_metadata = self._add_field_data_types_to_table_metadata(table_schema, table_metadata)
         return table_metadata
 
-    def create_out_table_definition_from_schema(self, table_schema: ts.TableSchema, is_sliced: bool = False,
-                                                destination: str = '', incremental: bool = None,
-                                                enclosure: str = '"', delimiter: str = ',',
-                                                delete_where: dict = None) -> dao.TableDefinition:
+    def create_out_table_definition_from_schema(
+        self,
+        table_schema: ts.TableSchema,
+        is_sliced: bool = False,
+        destination: str = "",
+        incremental: bool = None,
+        enclosure: str = '"',
+        delimiter: str = ",",
+        delete_where: dict = None,
+    ) -> dao.TableDefinition:
         """
-            Creates an out table definition using a defined table schema.
-            This method uses the given table schema and generates metadata of the table. Along with the additional
-            key word arguments it creates an out table definition.
+        Creates an out table definition using a defined table schema.
+        This method uses the given table schema and generates metadata of the table. Along with the additional
+        key word arguments it creates an out table definition.
 
-            Args:
-                table_schema : table of the schema for which a table definition will be created
-                is_sliced: True if the full_path points to a folder with sliced tables
-                destination: String name of the table in Storage.
-                incremental: Set to true to enable incremental loading
-                enclosure: str: CSV enclosure, by default "
-                delimiter: str: CSV delimiter, by default ,
-                delete_where: Dict with settings for deleting rows
+        Args:
+            table_schema : table of the schema for which a table definition will be created
+            is_sliced: True if the full_path points to a folder with sliced tables
+            destination: String name of the table in Storage.
+            incremental: Set to true to enable incremental loading
+            enclosure: str: CSV enclosure, by default "
+            delimiter: str: CSV delimiter, by default ,
+            delete_where: Dict with settings for deleting rows
 
-            Returns:
-                TableDefinition object initialized with all table metadata defined in a schema
+        Returns:
+            TableDefinition object initialized with all table metadata defined in a schema
 
         """
         if self._expects_legacy_manifest():
             table_metadata = self._generate_table_metadata_legacy(table_schema)
-            table_def = self.create_out_table_definition(name=table_schema.csv_name,
-                                                         columns=table_schema.field_names,
-                                                         primary_key=table_schema.primary_keys,
-                                                         table_metadata=table_metadata,
-                                                         is_sliced=is_sliced,
-                                                         destination=destination,
-                                                         incremental=incremental,
-                                                         enclosure=enclosure,
-                                                         delimiter=delimiter,
-                                                         delete_where=delete_where)
+            table_def = self.create_out_table_definition(
+                name=table_schema.csv_name,
+                columns=table_schema.field_names,
+                primary_key=table_schema.primary_keys,
+                table_metadata=table_metadata,
+                is_sliced=is_sliced,
+                destination=destination,
+                incremental=incremental,
+                enclosure=enclosure,
+                delimiter=delimiter,
+                delete_where=delete_where,
+            )
         else:
             schema = self._generate_schema_definition(table_schema)
 
-            table_def = self.create_out_table_definition(name=table_schema.csv_name,
-                                                         primary_key=table_schema.primary_keys,
-                                                         schema=schema,
-                                                         is_sliced=is_sliced,
-                                                         destination=destination,
-                                                         incremental=incremental,
-                                                         enclosure=enclosure,
-                                                         delimiter=delimiter,
-                                                         delete_where=delete_where,
-                                                         description=table_schema.description)
+            table_def = self.create_out_table_definition(
+                name=table_schema.csv_name,
+                primary_key=table_schema.primary_keys,
+                schema=schema,
+                is_sliced=is_sliced,
+                destination=destination,
+                incremental=incremental,
+                enclosure=enclosure,
+                delimiter=delimiter,
+                delete_where=delete_where,
+                description=table_schema.description,
+            )
 
         return table_def
 
-    def get_table_schema_by_name(self, schema_name: str,
-                                 schema_folder_path: Optional[str] = None) -> ts.TableSchema:
+    def get_table_schema_by_name(self, schema_name: str, schema_folder_path: Optional[str] = None) -> ts.TableSchema:
         """
-            The method finds a table schema JSON based on it's name in a defined schema_folder_path and generates
-            a TableSchema object.
+        The method finds a table schema JSON based on it's name in a defined schema_folder_path and generates
+        a TableSchema object.
 
-            Args:
-                schema_name : name of the schema in the schema_folder_path. e.g. for schema in 'src/schemas/order.json'
-                              schema_name is 'order'
-                schema_folder_path : directory path to the schema folder, by default the schema folder is set at
-                                     'src/schemas'
-            Returns:
-                TableSchema object initialized with all available table metadata
+        Args:
+            schema_name : name of the schema in the schema_folder_path. e.g. for schema in 'src/schemas/order.json'
+                          schema_name is 'order'
+            schema_folder_path : directory path to the schema folder, by default the schema folder is set at
+                                 'src/schemas'
+        Returns:
+            TableSchema object initialized with all available table metadata
 
 
         """
@@ -381,53 +392,57 @@ class ComponentBase(ABC, CommonInterface):
     @staticmethod
     def _load_table_schema_dict(schema_name: str, schema_folder_path: str) -> Dict:
         try:
-            with open(os.path.join(schema_folder_path, f"{schema_name}.json"), 'r') as schema_file:
+            with open(os.path.join(schema_folder_path, f"{schema_name}.json"), "r") as schema_file:
                 json_schema = json.loads(schema_file.read())
         except FileNotFoundError as file_err:
             raise FileNotFoundError(
                 f"Schema for corresponding schema name : {schema_name} is not found in the schema directory. "
                 f"Make sure that '{schema_name}'.json "
-                f"exists in the directory '{schema_folder_path}'") from file_err
+                f"exists in the directory '{schema_folder_path}'"
+            ) from file_err
         return json_schema
 
     @staticmethod
     def _validate_schema_folder_path(schema_folder_path: str):
         if not schema_folder_path or not os.path.isdir(schema_folder_path):
-            raise FileNotFoundError("A schema folder path must be defined in order to create a out table definition "
-                                    "from a schema. If a schema folder path is not defined, the schemas folder must be"
-                                    " located in the 'src' directory of a component : src/schemas")
+            raise FileNotFoundError(
+                "A schema folder path must be defined in order to create a out table definition "
+                "from a schema. If a schema folder path is not defined, the schemas folder must be"
+                " located in the 'src' directory of a component : src/schemas"
+            )
 
     def _generate_schema_definition(self, table_schema: ts.TableSchema) -> Dict[str, dao.ColumnDefinition]:
         """
-            Generates a TableMetadata object for the table definition using a TableSchema object.
+        Generates a TableMetadata object for the table definition using a TableSchema object.
 
         """
         column_definitions = {}
         for field in table_schema.fields:
             if field.base_type:
-                data_types = dao.BaseType(field.base_type,
-                                          length=field.length,
-                                          default=field.default)
+                data_types = dao.BaseType(field.base_type, length=field.length, default=field.default)
             else:
                 data_types = dao.BaseType()
-            column_definitions[field.name] = dao.ColumnDefinition(data_types=data_types,
-                                                                  nullable=field.nullable,
-                                                                  description=field.description)
+            column_definitions[field.name] = dao.ColumnDefinition(
+                data_types=data_types, nullable=field.nullable, description=field.description
+            )
 
         return column_definitions
 
     @staticmethod
-    def _add_field_data_types_to_table_metadata(table_schema: ts.TableSchema,
-                                                table_metadata: dao.TableMetadata) -> dao.TableMetadata:
+    def _add_field_data_types_to_table_metadata(
+        table_schema: ts.TableSchema, table_metadata: dao.TableMetadata
+    ) -> dao.TableMetadata:
         """
-            Adds data types of all fields specified in a TableSchema object to a given TableMetadata object
+        Adds data types of all fields specified in a TableSchema object to a given TableMetadata object
 
         """
         for field in table_schema.fields:
             if field.base_type:
-                table_metadata.add_column_data_type(field.name,
-                                                    data_type=field.base_type,
-                                                    nullable=field.nullable,
-                                                    length=field.length,
-                                                    default=field.default)
+                table_metadata.add_column_data_type(
+                    field.name,
+                    data_type=field.base_type,
+                    nullable=field.nullable,
+                    length=field.length,
+                    default=field.default,
+                )
         return table_metadata
