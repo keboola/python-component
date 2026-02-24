@@ -237,10 +237,15 @@ class ComponentBase(ABC, CommonInterface):
         Executes action defined in the configuration.
         The default action is 'run'. See base._SYNC_ACTION_MAPPING
 
-        When ``KBC_COMPONENT_RUN_MODE=debug`` is set (platform debug mode),
-        the action execution is automatically wrapped with VCR recording
-        so that HTTP interactions are captured for later replay in tests.
+        Auto-detects two special modes (transparent to the caller):
+
+        - If ``{KBC_DATADIR}/cassettes/requests.json`` exists, replays HTTP
+          interactions from the cassette instead of hitting the real API.
+        - If ``KBC_COMPONENT_RUN_MODE=debug`` is set (platform debug mode),
+          records HTTP interactions via keboola.vcr for later use as a cassette.
         """
+        if self._should_vcr_replay():
+            return self._execute_with_vcr_replay()
         if self._should_vcr_record():
             return self._execute_with_vcr_recording()
         return self._do_execute_action()
@@ -258,6 +263,20 @@ class ComponentBase(ABC, CommonInterface):
         except (AttributeError, KeyError) as e:
             raise AttributeError(f"The defined action {action} is not implemented!") from e
         return action_method()
+
+    @staticmethod
+    def _should_vcr_replay() -> bool:
+        """Check if a VCR cassette exists at the default location in data/cassettes/."""
+        data_dir = os.environ.get("KBC_DATADIR", "/data")
+        return (Path(data_dir) / "cassettes" / "requests.json").exists()
+
+    def _execute_with_vcr_replay(self) -> None:
+        """Replay HTTP interactions from data/cassettes/requests.json."""
+        from keboola.vcr import VCRRecorder
+
+        data_dir = os.environ.get("KBC_DATADIR", "/data")
+        recorder = VCRRecorder(cassette_dir=Path(data_dir) / "cassettes")
+        recorder.replay(self._do_execute_action)
 
     @staticmethod
     def _should_vcr_record():
