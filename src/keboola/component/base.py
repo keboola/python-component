@@ -6,7 +6,6 @@ import sys
 from abc import ABC, abstractmethod
 from functools import wraps
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 from . import dao
 from . import table_schema as ts
@@ -94,7 +93,7 @@ def sync_action(action_name: str):
             try:
                 # when success, only supported syntax can be in output / log, so redirect stdout before.
                 with contextlib.redirect_stdout(stdout_redirect):
-                    result: Union[None, SyncActionResult, List[SyncActionResult]] = func(self, *args, **kwargs)
+                    result: None | SyncActionResult | list[SyncActionResult] = func(self, *args, **kwargs)
 
                 if is_sync_action:
                     # sync action expects valid JSON in stdout on success.
@@ -119,10 +118,10 @@ def sync_action(action_name: str):
 class ComponentBase(ABC, CommonInterface):
     def __init__(
         self,
-        data_path_override: Optional[str] = None,
-        schema_path_override: Optional[str] = None,
-        required_parameters: Optional[list] = None,
-        required_image_parameters: Optional[list] = None,
+        data_path_override: str | None = None,
+        schema_path_override: str | None = None,
+        required_parameters: list | None = None,
+        required_image_parameters: list | None = None,
     ):
         """
         Base class for general Python components. Initializes the CommonInterface
@@ -203,7 +202,7 @@ class ComponentBase(ABC, CommonInterface):
         return schema_path_override or self._get_default_schema_folder_path()
 
     @staticmethod
-    def _get_default_schema_folder_path() -> Optional[str]:
+    def _get_default_schema_folder_path() -> str | None:
         """
         Finds the default schema_folder_path if it exists.
 
@@ -368,7 +367,7 @@ class ComponentBase(ABC, CommonInterface):
 
         return table_def
 
-    def get_table_schema_by_name(self, schema_name: str, schema_folder_path: Optional[str] = None) -> ts.TableSchema:
+    def get_table_schema_by_name(self, schema_name: str, schema_folder_path: str | None = None) -> ts.TableSchema:
         """
         The method finds a table schema JSON based on it's name in a defined schema_folder_path and generates
         a TableSchema object.
@@ -390,9 +389,9 @@ class ComponentBase(ABC, CommonInterface):
         return ts.init_table_schema_from_dict(schema_dict)
 
     @staticmethod
-    def _load_table_schema_dict(schema_name: str, schema_folder_path: str) -> Dict:
+    def _load_table_schema_dict(schema_name: str, schema_folder_path: str) -> dict:
         try:
-            with open(os.path.join(schema_folder_path, f"{schema_name}.json"), "r") as schema_file:
+            with open(os.path.join(schema_folder_path, f"{schema_name}.json")) as schema_file:
                 json_schema = json.loads(schema_file.read())
         except FileNotFoundError as file_err:
             raise FileNotFoundError(
@@ -411,7 +410,7 @@ class ComponentBase(ABC, CommonInterface):
                 " located in the 'src' directory of a component : src/schemas"
             )
 
-    def _generate_schema_definition(self, table_schema: ts.TableSchema) -> Dict[str, dao.ColumnDefinition]:
+    def _generate_schema_definition(self, table_schema: ts.TableSchema) -> dict[str, dao.ColumnDefinition]:
         """
         Generates a TableMetadata object for the table definition using a TableSchema object.
 

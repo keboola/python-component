@@ -1,4 +1,3 @@
-# Python 3.7 support
 from __future__ import annotations
 
 import argparse
@@ -9,9 +8,9 @@ import logging
 import os
 import sys
 import warnings
+from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, OrderedDict, Union
 
 from deprecated import deprecated
 from pygelf import GelfTcpHandler, GelfUdpHandler
@@ -233,9 +232,9 @@ class CommonInterface:
             logging.info("State file not found. First run?")
             return {}
         try:
-            with open(state_file_path, "r") as state_file:
+            with open(state_file_path) as state_file:
                 return json.load(state_file)
-        except (OSError, IOError):
+        except OSError:
             raise ValueError("State file state.json unable to read ")
 
     def write_state_file(self, state_dict: dict):
@@ -269,7 +268,7 @@ class CommonInterface:
 
         return dao.TableDefinition.build_from_manifest(manifest_path)
 
-    def get_input_tables_definitions(self, orphaned_manifests=False) -> List[dao.TableDefinition]:
+    def get_input_tables_definitions(self, orphaned_manifests=False) -> list[dao.TableDefinition]:
         """
         Return dao.TableDefinition objects by scanning the `data/in/tables` folder.
 
@@ -330,17 +329,17 @@ class CommonInterface:
         storage_stage: str = "out",
         is_sliced: bool = False,
         destination: str = "",
-        primary_key: List[str] = None,
-        columns: List[str] = None,
+        primary_key: list[str] = None,
+        columns: list[str] = None,
         incremental: bool = None,
         table_metadata: dao.TableMetadata = None,
         enclosure: str = '"',
         delimiter: str = ",",
         delete_where: dict = None,
         write_always: bool = False,
-        schema: Union[OrderedDict[str, ColumnDefinition], list[str]] = None,
-        has_header: Optional[bool] = None,
-        description: Optional[str] = None,
+        schema: OrderedDict[str, ColumnDefinition] | list[str] = None,
+        has_header: bool | None = None,
+        description: str | None = None,
     ) -> dao.TableDefinition:
         """
         Helper method for dao.TableDefinition creation along with the "manifest".
@@ -403,12 +402,12 @@ class CommonInterface:
         name: str,
         is_sliced: bool = False,
         destination: str = "",
-        primary_key: List[str] = None,
-        columns: List[str] = None,
+        primary_key: list[str] = None,
+        columns: list[str] = None,
         incremental: bool = None,
         table_metadata: dao.TableMetadata = None,
         delete_where: str = None,
-        schema: List[ColumnDefinition] = None,
+        schema: list[ColumnDefinition] = None,
     ) -> dao.TableDefinition:
         """
         Helper method for input dao.TableDefinition creation along with the "manifest".
@@ -444,7 +443,7 @@ class CommonInterface:
         name: str,
         is_sliced: bool = False,
         destination: str = "",
-        primary_key: List[str] = None,
+        primary_key: list[str] = None,
         schema: TableDefinition.SCHEMA_TYPE = None,
         incremental: bool = None,
         table_metadata: dao.TableMetadata = None,
@@ -452,8 +451,8 @@ class CommonInterface:
         delimiter: str = ",",
         delete_where: dict = None,
         write_always: bool = False,
-        has_header: Optional[bool] = None,
-        description: Optional[str] = None,
+        has_header: bool | None = None,
+        description: str | None = None,
         **kwargs,
     ) -> dao.TableDefinition:
         """
@@ -501,8 +500,8 @@ class CommonInterface:
     # # File processing
 
     def get_input_file_definitions_grouped_by_tag_group(
-        self, orphaned_manifests=False, only_latest_files=True, tags: List[str] = None, include_system_tags=False
-    ) -> Dict[str, List[dao.FileDefinition]]:
+        self, orphaned_manifests=False, only_latest_files=True, tags: list[str] = None, include_system_tags=False
+    ) -> dict[str, list[dao.FileDefinition]]:
         """
         Convenience method returning lists of files in dictionary grouped by tag group.
 
@@ -525,8 +524,8 @@ class CommonInterface:
         return self.__group_file_defs_by_tag_group(file_definitions, include_system_tags=include_system_tags)
 
     def get_input_file_definitions_grouped_by_name(
-        self, orphaned_manifests=False, only_latest_files=True, tags: List[str] = None
-    ) -> Dict[str, List[dao.FileDefinition]]:
+        self, orphaned_manifests=False, only_latest_files=True, tags: list[str] = None
+    ) -> dict[str, list[dao.FileDefinition]]:
         """
         Convenience method returning lists of files in dictionary grouped by file name.
 
@@ -543,8 +542,8 @@ class CommonInterface:
         return self.__group_files_by_name(file_definitions)
 
     def __group_file_defs_by_tag_group(
-        self, file_definitions: List[dao.FileDefinition], include_system_tags=False
-    ) -> Dict[str, List[dao.FileDefinition]]:
+        self, file_definitions: list[dao.FileDefinition], include_system_tags=False
+    ) -> dict[str, list[dao.FileDefinition]]:
         files_per_tag: dict = {}
         for f in file_definitions:
             tag_group_v1 = f.tags if include_system_tags else f.user_tags
@@ -556,8 +555,8 @@ class CommonInterface:
         return files_per_tag
 
     def _filter_files(
-        self, file_definitions: List[dao.FileDefinition], tags: List[str] = None, only_latest: bool = True
-    ) -> List[dao.FileDefinition]:
+        self, file_definitions: list[dao.FileDefinition], tags: list[str] = None, only_latest: bool = True
+    ) -> list[dao.FileDefinition]:
         filtered_files = file_definitions
 
         if only_latest:
@@ -575,7 +574,7 @@ class CommonInterface:
 
         return filtered_files
 
-    def __group_files_by_name(self, file_definitions: List[dao.FileDefinition]) -> Dict[str, List[dao.FileDefinition]]:
+    def __group_files_by_name(self, file_definitions: list[dao.FileDefinition]) -> dict[str, list[dao.FileDefinition]]:
         files_per_name: dict = {}
         for f in file_definitions:
             if not files_per_name.get(f.name):
@@ -583,7 +582,7 @@ class CommonInterface:
             files_per_name[f.name].append(f)
         return files_per_name
 
-    def __filter_filedefs_by_latest(self, file_definitions: List[dao.FileDefinition]) -> List[dao.FileDefinition]:
+    def __filter_filedefs_by_latest(self, file_definitions: list[dao.FileDefinition]) -> list[dao.FileDefinition]:
         """
         Get latest file (according to the timestamp) by each filename
         Args:
@@ -607,8 +606,8 @@ class CommonInterface:
         return filtered_files
 
     def get_input_files_definitions(
-        self, orphaned_manifests=False, only_latest_files=True, tags: Optional[List[str]] = None
-    ) -> List[dao.FileDefinition]:
+        self, orphaned_manifests=False, only_latest_files=True, tags: list[str] | None = None
+    ) -> list[dao.FileDefinition]:
         """
         Return dao.FileDefinition objects by scanning the `data/in/files` folder.
 
@@ -663,7 +662,7 @@ class CommonInterface:
         self,
         name: str,
         storage_stage: str = "out",
-        tags: List[str] = None,
+        tags: list[str] = None,
         is_public: bool = False,
         is_permanent: bool = False,
         is_encrypted: bool = False,
@@ -703,7 +702,7 @@ class CommonInterface:
     def create_out_file_definition(
         self,
         name: str,
-        tags: List[str] = None,
+        tags: list[str] = None,
         is_public: bool = False,
         is_permanent: bool = False,
         is_encrypted: bool = False,
@@ -947,7 +946,7 @@ class CommonInterface:
         return is_legacy_queue
 
     def write_manifest(
-        self, io_definition: Union[dao.FileDefinition, dao.TableDefinition], legacy_manifest: Optional[bool] = None
+        self, io_definition: dao.FileDefinition | dao.TableDefinition, legacy_manifest: bool | None = None
     ):
         """
         Write a table manifest from dao.IODefinition. Creates the appropriate manifest file in the proper location.
@@ -1005,8 +1004,8 @@ class CommonInterface:
 
     def write_manifests(
         self,
-        io_definitions: List[Union[dao.FileDefinition, dao.TableDefinition]],
-        legacy_manifest: Optional[bool] = None,
+        io_definitions: list[dao.FileDefinition | dao.TableDefinition],
+        legacy_manifest: bool | None = None,
     ):
         """
         Process all table definition objects and create appropriate manifest files.
@@ -1050,7 +1049,7 @@ class CommonInterface:
         self.write_manifest(file_definition)
 
     @deprecated(version="1.3.0", reason="You should use write_manifests function")
-    def write_filedef_manifests(self, file_definitions: List[dao.FileDefinition]):
+    def write_filedef_manifests(self, file_definitions: list[dao.FileDefinition]):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -1094,7 +1093,7 @@ class CommonInterface:
         self.write_manifest(table_definition, legacy_manifest=True)
 
     @deprecated(version="1.3.0", reason="You should use write_manifests function")
-    def write_tabledef_manifests(self, table_definitions: List[dao.TableDefinition]):
+    def write_tabledef_manifests(self, table_definitions: list[dao.TableDefinition]):
         """
         Process all table definition objects and create appropriate manifest files.
         Args:
@@ -1127,9 +1126,9 @@ class Configuration:
         self.data_dir = data_folder_path
 
         try:
-            with open(os.path.join(data_folder_path, "config.json"), "r") as config_file:
+            with open(os.path.join(data_folder_path, "config.json")) as config_file:
                 self.config_data = json.load(config_file)
-        except (OSError, IOError):
+        except OSError:
             raise ValueError(
                 f"Configuration file config.json not found, verify that the data directory is correct and that the "
                 f"config file is present. Dir: "
@@ -1164,7 +1163,7 @@ class Configuration:
         return credentials
 
     @property
-    def tables_input_mapping(self) -> List[dao.TableInputMapping]:
+    def tables_input_mapping(self) -> list[dao.TableInputMapping]:
         """
         List of table [input mappings](https://developers.keboola.com/extend/common-interface/config-file/#tables)
 
@@ -1189,7 +1188,7 @@ class Configuration:
         return tables
 
     @property
-    def tables_output_mapping(self) -> List[dao.TableOutputMapping]:
+    def tables_output_mapping(self) -> list[dao.TableOutputMapping]:
         """
         List of table [output mappings](https://developers.keboola.com/extend/common-interface/config-file/#tables)
 
@@ -1206,7 +1205,7 @@ class Configuration:
         return tables
 
     @property
-    def files_input_mapping(self) -> List[dao.FileInputMapping]:
+    def files_input_mapping(self) -> list[dao.FileInputMapping]:
         """
         List of file [input mappings](https://developers.keboola.com/extend/common-interface/config-file/#files)
 
@@ -1223,7 +1222,7 @@ class Configuration:
         return files
 
     @property
-    def files_output_mapping(self) -> List[dao.FileOutputMapping]:
+    def files_output_mapping(self) -> list[dao.FileOutputMapping]:
         """
         List of file [output mappings](https://developers.keboola.com/extend/common-interface/config-file/#files)
 

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union
 
 from keboola.component.dao import SupportedDataTypes
 
@@ -11,11 +10,11 @@ class FieldSchema:
     """
 
     name: str
-    base_type: Optional[Union[SupportedDataTypes, str]] = None
-    description: Optional[str] = None
+    base_type: SupportedDataTypes | str | None = None
+    description: str | None = None
     nullable: bool = False
-    length: Optional[str] = None
-    default: Optional[str] = None
+    length: str | None = None
+    default: str | None = None
 
 
 @dataclass
@@ -25,13 +24,13 @@ class TableSchema:
     """
 
     name: str
-    fields: List[FieldSchema]
-    primary_keys: Optional[List[str]] = None
-    parent_tables: Optional[List[str]] = None
-    description: Optional[str] = None
+    fields: list[FieldSchema]
+    primary_keys: list[str] | None = None
+    parent_tables: list[str] | None = None
+    description: str | None = None
 
     @property
-    def field_names(self) -> List[str]:
+    def field_names(self) -> list[str]:
         return [column.name for column in self.fields]
 
     @property
@@ -48,7 +47,7 @@ class TableSchema:
         self.fields.append(new_field)
 
 
-def init_table_schema_from_dict(json_table_schema: Dict) -> TableSchema:
+def init_table_schema_from_dict(json_table_schema: dict) -> TableSchema:
     """
     Function to initialize a Table Schema from a dictionary.
     Example of the json_table_schema structure:

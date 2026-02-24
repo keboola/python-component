@@ -8,7 +8,6 @@ import json
 from abc import ABC
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Union
 
 
 @dataclass
@@ -57,7 +56,7 @@ class SelectElement(SyncActionResult):
     """
 
     value: str
-    label: Optional[str] = None
+    label: str | None = None
 
     def __post_init__(self):
         self.label = self.label or self.value
@@ -65,7 +64,7 @@ class SelectElement(SyncActionResult):
         self.status = None
 
 
-def process_sync_action_result(result: Union[None, List[dict], dict, SyncActionResult, List[SyncActionResult]]) -> str:
+def process_sync_action_result(result: None | list[dict] | dict | SyncActionResult | list[SyncActionResult]) -> str:
     """
     Converts Sync Action result into valid string (expected by Sync Action).
     Args:
