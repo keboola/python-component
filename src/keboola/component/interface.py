@@ -9,12 +9,11 @@ import os
 import sys
 import warnings
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from deprecated import deprecated
 from pygelf import GelfTcpHandler, GelfUdpHandler
-from pytz import utc
 
 from . import dao
 from .dao import ColumnDefinition, TableDefinition
@@ -595,7 +594,7 @@ class CommonInterface:
         files_per_name = self.__group_files_by_name(file_definitions)
         for group in files_per_name:
             max_file = None
-            max_timestamp = utc.localize(datetime(1900, 5, 17))
+            max_timestamp = datetime(1900, 5, 17, tzinfo=timezone.utc)
             for f in files_per_name[group]:
                 creation_date = f.created
                 # if date not present ignore and add anyway
