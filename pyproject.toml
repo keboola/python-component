@@ -1,12 +1,12 @@
 [project]
 name = "keboola.component"
-version = "0.0.0"  # replaced by the actual version based on the release tag in github actions
+version = "1.9.0"  # replaced by the actual version based on the release tag in github actions
 dependencies = [
     "pygelf",
-    "pytz<2021.0",
     "deprecated",
+    "keboola.vcr>=0.1.1",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 
 authors = [
     { name = "Keboola KDS Team", email = "support@keboola.com" }
@@ -17,8 +17,6 @@ license = "MIT"
 license-files = [ "LICENSE" ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -40,9 +38,8 @@ Repository = "https://github.com/keboola/python-component"
 
 [dependency-groups]
 dev = [
-    "flake8>=5.0.4",
     "pytest>=8.3.5",
-    "ruff>=0.13.2",
+    "ruff>=0.15.2",
     "pdoc3",
 ]
 
@@ -51,3 +48,10 @@ name = "testpypi"
 url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+extend-select = ["I", "UP"]

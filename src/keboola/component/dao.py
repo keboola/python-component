@@ -1,4 +1,3 @@
-# Python 3.7 support
 from __future__ import annotations
 
 import dataclasses
@@ -11,18 +10,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import List, Union, Dict, Optional, OrderedDict as TypeOrderedDict
+from typing import Literal
 
 from deprecated import deprecated
 
 from .exceptions import UserException
 
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
-KBC_DEFAULT_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
+KBC_DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 
 
 @dataclass
@@ -45,6 +39,7 @@ class EnvironmentVariables:
     Dataclass for variables available in the docker environment
     https://developers.keboola.com/extend/common-interface/environment/#environment-variables
     """
+
     data_dir: str
     run_id: str
     project_id: str
@@ -73,13 +68,14 @@ class SupportedDataTypes(str, Enum):
     """
     Enum of [supported datatypes](https://help.keboola.com/storage/tables/data-types/)
     """
-    STRING = 'STRING'
-    INTEGER = 'INTEGER'
-    NUMERIC = 'NUMERIC'
-    FLOAT = 'FLOAT'
-    BOOLEAN = 'BOOLEAN'
-    DATE = 'DATE'
-    TIMESTAMP = 'TIMESTAMP'
+
+    STRING = "STRING"
+    INTEGER = "INTEGER"
+    NUMERIC = "NUMERIC"
+    FLOAT = "FLOAT"
+    BOOLEAN = "BOOLEAN"
+    DATE = "DATE"
+    TIMESTAMP = "TIMESTAMP"
 
     @classmethod
     def list(cls):
@@ -91,19 +87,19 @@ class SupportedDataTypes(str, Enum):
 
 
 class KBCMetadataKeys(Enum):
-    base_data_type = 'KBC.datatype.basetype'  # base type of a column as defined in php-datatypes
-    source_data_type = 'KBC.datatype.type'  # data type of a column - extracted value from the source
-    data_type_nullable = 'KBC.datatype.nullable'
-    data_type_length = 'KBC.datatype.length'  # data type length (e.g., VARCHAR(255) - this is the 255
-    data_type_default = 'KBC.datatype.default'
-    description = 'KBC.description'
-    created_by_component = 'KBC.createdBy.component.id'
-    last_updated_by_component = 'KBC.lastUpdatedBy.component.id'
-    createdBy_configuration_id = 'KBC.createdBy.configuration.id'
-    createdBy_branch_id = 'KBC.createdBy.branch.id'  # ID of the branch whose job created the table/bucket
-    lastUpdatedBy_configuration_id = 'KBC.lastUpdatedBy.configuration.id'
-    lastUpdatedBy_branch_id = 'KBC.lastUpdatedBy.branch.id'  # ID of the branch whose job last touched the bucket/table
-    shared_description = 'KBC.sharedDescription'  # description of the bucket;
+    base_data_type = "KBC.datatype.basetype"  # base type of a column as defined in php-datatypes
+    source_data_type = "KBC.datatype.type"  # data type of a column - extracted value from the source
+    data_type_nullable = "KBC.datatype.nullable"
+    data_type_length = "KBC.datatype.length"  # data type length (e.g., VARCHAR(255) - this is the 255
+    data_type_default = "KBC.datatype.default"
+    description = "KBC.description"
+    created_by_component = "KBC.createdBy.component.id"
+    last_updated_by_component = "KBC.lastUpdatedBy.component.id"
+    createdBy_configuration_id = "KBC.createdBy.configuration.id"
+    createdBy_branch_id = "KBC.createdBy.branch.id"  # ID of the branch whose job created the table/bucket
+    lastUpdatedBy_configuration_id = "KBC.lastUpdatedBy.configuration.id"
+    lastUpdatedBy_branch_id = "KBC.lastUpdatedBy.branch.id"  # ID of the branch whose job last touched the bucket/table
+    shared_description = "KBC.sharedDescription"  # description of the bucket;
     # it will be used when the bucket is shared
 
 
@@ -166,30 +162,30 @@ class TableMetadata:
 
         """
 
-        if manifest.get('schema') and (
-                manifest.get('metadata') or manifest.get('column_metadata') or manifest.get('columns')):  # noqa
+        if manifest.get("schema") and (
+            manifest.get("metadata") or manifest.get("column_metadata") or manifest.get("columns")
+        ):  # noqa
             raise UserException("Manifest can't contain new 'schema' and old 'metadata'/'column_metadata'/'columns'")
 
-        if not manifest.get('schema'):
-
+        if not manifest.get("schema"):
             # column metadata
-            for column, metadata_list in manifest.get('column_metadata', {}).items():
+            for column, metadata_list in manifest.get("column_metadata", {}).items():
                 for metadata in metadata_list:
-                    if not metadata.get('key') and metadata.get('value'):
+                    if not metadata.get("key") and metadata.get("value"):
                         continue
-                    key = metadata['key']
-                    value = metadata['value']
+                    key = metadata["key"]
+                    value = metadata["value"]
                     self.add_column_metadata(column, key, value)
 
         # table metadata
-        for metadata in manifest.get('metadata', []):
-            if not metadata.get('key') and metadata.get('value'):
+        for metadata in manifest.get("metadata", []):
+            if not metadata.get("key") and metadata.get("value"):
                 continue
-            key = metadata['key']
-            value = metadata['value']
+            key = metadata["key"]
+            value = metadata["value"]
             self.add_table_metadata(key, value)
 
-    def get_table_metadata_for_manifest(self, legacy_manifest: bool = False) -> List[dict]:
+    def get_table_metadata_for_manifest(self, legacy_manifest: bool = False) -> list[dict]:
         """
         Returns table metadata list as required by the
         [manifest format]
@@ -203,27 +199,26 @@ class TableMetadata:
 
         """
         if legacy_manifest:
-            final_metadata_list = [{'key': key,
-                                    'value': value}
-                                   for key, value in self.table_metadata.items() if value not in [None, '']]
+            final_metadata_list = [
+                {"key": key, "value": value} for key, value in self.table_metadata.items() if value not in [None, ""]
+            ]
         else:
-            final_metadata_list = {key: value
-                                   for key, value in self.table_metadata.items() if value not in [None, '']}
+            final_metadata_list = {key: value for key, value in self.table_metadata.items() if value not in [None, ""]}
 
         return final_metadata_list
 
-    @deprecated(version='1.5.1', reason="Please use schema instead of Column Metadata")
+    @deprecated(version="1.5.1", reason="Please use schema instead of Column Metadata")
     def get_column_metadata_for_manifest(self) -> dict:
         """
-                Returns column metadata dict as required by the
-                [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables
-                -manifests)
+        Returns column metadata dict as required by the
+        [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables
+        -manifests)
 
-                e.g.
-                tm = TableMetadata()
-                manifest['column_metadata'] = tm.column_metadata
+        e.g.
+        tm = TableMetadata()
+        manifest['column_metadata'] = tm.column_metadata
 
-                Returns: dict
+        Returns: dict
 
         """
 
@@ -231,15 +226,15 @@ class TableMetadata:
 
     def _get_legacy_column_metadata_for_manifest(self) -> dict:
         """
-                Returns column metadata dict as required by the
-                [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables
-                -manifests)
+        Returns column metadata dict as required by the
+        [manifest format](https://developers.keboola.com/extend/common-interface/manifest-files/#dataintables
+        -manifests)
 
-                e.g.
-                tm = TableMetadata()
-                manifest['column_metadata'] = tm.column_metadata
+        e.g.
+        tm = TableMetadata()
+        manifest['column_metadata'] = tm.column_metadata
 
-                Returns: dict
+        Returns: dict
 
         """
         final_column_metadata = dict()
@@ -250,15 +245,15 @@ class TableMetadata:
             if not final_column_metadata.get(column):
                 final_column_metadata[column] = list()
 
-            column_metadata = [{'key': key,
-                                'value': value} for key, value in
-                               column_metadata_dicts.items() if value not in [None, '']]
+            column_metadata = [
+                {"key": key, "value": value} for key, value in column_metadata_dicts.items() if value not in [None, ""]
+            ]
             final_column_metadata[column].extend(column_metadata)
 
         return final_column_metadata
 
     @property
-    @deprecated(version='1.5.1', reason="Please use TableDefinition.description instead of TableMetadata")
+    @deprecated(version="1.5.1", reason="Please use TableDefinition.description instead of TableMetadata")
     def table_description(self) -> str:
         """
         Returns table description (KBC.description)
@@ -269,8 +264,11 @@ class TableMetadata:
         return self.table_metadata.get(KBCMetadataKeys.description.value)
 
     @property
-    @deprecated(version='1.5.1', reason="Column datatypes were moved to dao.TableDefinition.schema property."
-                                        "Please use the dao.ColumnDefinition objects")
+    @deprecated(
+        version="1.5.1",
+        reason="Column datatypes were moved to dao.TableDefinition.schema property."
+        "Please use the dao.ColumnDefinition objects",
+    )
     def column_datatypes(self) -> dict:
         """
         Return dictionary of column base datatypes
@@ -283,8 +281,11 @@ class TableMetadata:
         return self.get_columns_metadata_by_key(KBCMetadataKeys.base_data_type.value)
 
     @property
-    @deprecated(version='1.5.1', reason="Column datatypes were moved to dao.TableDefinition.schema property."
-                                        " Please use the dao.ColumnDefinition objects")
+    @deprecated(
+        version="1.5.1",
+        reason="Column datatypes were moved to dao.TableDefinition.schema property."
+        " Please use the dao.ColumnDefinition objects",
+    )
     def column_descriptions(self) -> dict:
         """
         Return dictionary of column descriptions
@@ -296,7 +297,7 @@ class TableMetadata:
 
         return self.get_columns_metadata_by_key(KBCMetadataKeys.description.value)
 
-    @deprecated(version='1.5.1', reason="Please use schema instead of Table Metadata")
+    @deprecated(version="1.5.1", reason="Please use schema instead of Table Metadata")
     def get_columns_metadata_by_key(self, metadata_key) -> dict:
         """
         Returns all columns with specified metadata_key as dictionary of column:metadata_key pairs
@@ -314,20 +315,23 @@ class TableMetadata:
 
     def add_column_descriptions(self, column_descriptions: dict):
         """
-                Add column description metadata. It will be shown in the KBC Storage UI.
+        Add column description metadata. It will be shown in the KBC Storage UI.
 
-                Args:
-                    column_descriptions: dict -> {"colname":"description"}
+        Args:
+            column_descriptions: dict -> {"colname":"description"}
 
-                """
+        """
         for col in column_descriptions:
             self.add_column_metadata(col, KBCMetadataKeys.description.value, column_descriptions[col])
 
-    @deprecated(version='1.5.1', reason="Column datatypes were moved to dao.TableDefinition.schema property."
-                                        "Please use the dao.ColumnDefinition objects and associated"
-                                        "dao.TableDefinition methods to define columns. e.g."
-                                        "dao.TableDefinition.add_columns()")
-    def add_column_data_types(self, column_types: Dict[str, Union[SupportedDataTypes, str]]):
+    @deprecated(
+        version="1.5.1",
+        reason="Column datatypes were moved to dao.TableDefinition.schema property."
+        "Please use the dao.ColumnDefinition objects and associated"
+        "dao.TableDefinition methods to define columns. e.g."
+        "dao.TableDefinition.add_columns()",
+    )
+    def add_column_data_types(self, column_types: dict[str, SupportedDataTypes | str]):
         """
         Add column types metadata. Note that only supported datatypes
         (<keboola.component.dao.ColumnDataTypes>) may be provided. The value accepts either instance of ColumnDataTypes
@@ -343,14 +347,22 @@ class TableMetadata:
         for col in column_types:
             self.add_column_data_type(col, column_types[col])
 
-    @deprecated(version='1.5.1', reason="Column datatypes were moved to dao.TableDefinition.schema property."
-                                        "Please use the dao.ColumnDefinition objects and associated"
-                                        "dao.TableDefinition methods to define columns. e.g."
-                                        "dao.TableDefinition.add_column()")
-    def add_column_data_type(self, column: str, data_type: Union[SupportedDataTypes, str],
-                             source_data_type: str = None,
-                             nullable: bool = False,
-                             length: str = None, default=None):
+    @deprecated(
+        version="1.5.1",
+        reason="Column datatypes were moved to dao.TableDefinition.schema property."
+        "Please use the dao.ColumnDefinition objects and associated"
+        "dao.TableDefinition methods to define columns. e.g."
+        "dao.TableDefinition.add_column()",
+    )
+    def add_column_data_type(
+        self,
+        column: str,
+        data_type: SupportedDataTypes | str,
+        source_data_type: str = None,
+        nullable: bool = False,
+        length: str = None,
+        default=None,
+    ):
         """
         Add single column data type
         Args:
@@ -399,17 +411,20 @@ class TableMetadata:
 
     def add_table_metadata(self, key: str, value: str):
         """
-                Add/Updates table metadata and ensures the Key is unique.
-                Args:
+        Add/Updates table metadata and ensures the Key is unique.
+        Args:
 
         """
         if value is None:
             return
         self.table_metadata = {**self.table_metadata, **{key: value}}
 
-    @deprecated(version='1.5.1', reason="Column metadata ere moved to dao.TableDefinition.schema property."
-                                        "Please use the dao.ColumnDefinition.metadata")
-    def add_column_metadata(self, column: str, key: str, value: Union[str, bool, int], backend="base"):
+    @deprecated(
+        version="1.5.1",
+        reason="Column metadata ere moved to dao.TableDefinition.schema property."
+        "Please use the dao.ColumnDefinition.metadata",
+    )
+    def add_column_metadata(self, column: str, key: str, value: str | bool | int, backend="base"):
         """
         Add/Updates column metadata and ensures the Key is unique.
         Args:
@@ -424,9 +439,12 @@ class TableMetadata:
 
         # self.schema = [ColumnDefinition(name=column, data_type={backend: DataType(type=value)})]
 
-    @deprecated(version='1.5.1', reason="Column metadata ere moved to dao.TableDefinition.schema property."
-                                        "Please use the dao.ColumnDefinition.metadata")
-    def add_multiple_column_metadata(self, column_metadata: Dict[str, List[dict]]):
+    @deprecated(
+        version="1.5.1",
+        reason="Column metadata ere moved to dao.TableDefinition.schema property."
+        "Please use the dao.ColumnDefinition.metadata",
+    )
+    def add_multiple_column_metadata(self, column_metadata: dict[str, list[dict]]):
         """
         Add key-value pairs to column metadata.
 
@@ -448,14 +466,14 @@ class TableMetadata:
             if not SupportedDataTypes.is_valid_type(dtype):
                 errors.append(f'Datatype "{dtype}" is not valid KBC Basetype!')
         if errors:
-            raise ValueError(', '.join(errors) + f'\n Supported base types are: [{SupportedDataTypes.list()}]')
+            raise ValueError(", ".join(errors) + f"\n Supported base types are: [{SupportedDataTypes.list()}]")
 
 
 @dataclass
 class DataType:
     dtype: str
-    length: Optional[str] = None
-    default: Optional[str] = None
+    length: str | None = None
+    default: str | None = None
 
     def __post_init__(self):
         if isinstance(self.dtype, SupportedDataTypes):
@@ -463,39 +481,40 @@ class DataType:
 
 
 class BaseType(dict):
-    def __init__(self, dtype: SupportedDataTypes = SupportedDataTypes.STRING, length: Optional[str] = None,
-                 default: Optional[str] = None):
+    def __init__(
+        self,
+        dtype: SupportedDataTypes = SupportedDataTypes.STRING,
+        length: str | None = None,
+        default: str | None = None,
+    ):
         super().__init__(base=DataType(dtype=dtype, length=length, default=default))
 
     @classmethod
-    def string(cls, length: Optional[str] = None, default: Optional[str] = None) -> 'BaseType':
+    def string(cls, length: str | None = None, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.STRING, length=length, default=default)
 
     @classmethod
-    def integer(cls, length: Optional[str] = None,
-                default: Optional[str] = None) -> 'BaseType':
+    def integer(cls, length: str | None = None, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.INTEGER, length=length, default=default)
 
     @classmethod
-    def numeric(cls, length: Optional[str] = None,
-                default: Optional[str] = None) -> 'BaseType':
+    def numeric(cls, length: str | None = None, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.NUMERIC, length=length, default=default)
 
     @classmethod
-    def float(cls, length: Optional[str] = None,
-              default: Optional[str] = None) -> 'BaseType':
+    def float(cls, length: str | None = None, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.FLOAT, length=length, default=default)
 
     @classmethod
-    def boolean(cls, default: Optional[str] = None) -> 'BaseType':
+    def boolean(cls, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.BOOLEAN, default=default)
 
     @classmethod
-    def date(cls, default: Optional[str] = None) -> 'BaseType':
+    def date(cls, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.DATE, default=default)
 
     @classmethod
-    def timestamp(cls, default: Optional[str] = None) -> 'BaseType':
+    def timestamp(cls, default: str | None = None) -> BaseType:
         return BaseType(dtype=SupportedDataTypes.TIMESTAMP, default=default)
 
 
@@ -513,11 +532,12 @@ class ColumnDefinition:
         description (Optional[str]): A description of the column's purpose or contents. Defaults to None.
         metadata (Optional[Dict[str, str]]): Additional metadata associated with the column. Defaults to None.
     """
-    data_types: Optional[Union[Dict[str, DataType], BaseType]] = field(default_factory=lambda: BaseType())
-    nullable: Optional[bool] = True
-    primary_key: Optional[bool] = False
-    description: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None
+
+    data_types: dict[str, DataType] | BaseType | None = field(default_factory=lambda: BaseType())
+    nullable: bool | None = True
+    primary_key: bool | None = False
+    description: str | None = None
+    metadata: dict[str, str] | None = None
 
     def update_properties(self, **kwargs):
         for key, value in kwargs.items():
@@ -528,12 +548,15 @@ class ColumnDefinition:
 
     def from_dict(self, col: dict):
         return ColumnDefinition(
-            data_types={key: DataType(dtype=v.get('type'), default=v.get('default'), length=v.get('length'))
-                        for key, v in col.get('data_type', {}).items()},
-            nullable=col.get('nullable'),
-            primary_key=col.get('primary_key'),
-            description=col.get('description'),
-            metadata=col.get('metadata'))
+            data_types={
+                key: DataType(dtype=v.get("type"), default=v.get("default"), length=v.get("length"))
+                for key, v in col.get("data_type", {}).items()
+            },
+            nullable=col.get("nullable"),
+            primary_key=col.get("primary_key"),
+            description=col.get("description"),
+            metadata=col.get("metadata"),
+        )
 
     def add_datatype(self, backend: str, data_type: DataType):
         if backend in self.data_types:
@@ -551,16 +574,17 @@ class ColumnDefinition:
         for key, value in self.data_types.items():
             datatypes_dict[key] = dataclasses.asdict(value)
 
-        datatypes_dict = {key: {k.replace('dtype', 'type'): v for k, v in value.items()}
-                          for key, value in datatypes_dict.items()}
+        datatypes_dict = {
+            key: {k.replace("dtype", "type"): v for k, v in value.items()} for key, value in datatypes_dict.items()
+        }
 
         result = {
-            'name': name,
-            'data_type': datatypes_dict,
-            'nullable': self.nullable,
-            'primary_key': self.primary_key,
-            'description': self.description,
-            'metadata': self.metadata
+            "name": name,
+            "data_type": datatypes_dict,
+            "nullable": self.nullable,
+            "primary_key": self.primary_key,
+            "description": self.description,
+            "metadata": self.metadata,
         }
         # TODO: tohle bych delal az pri zapisu manifestu celkove, chceme vyhodit None values, false nechat
         filtered = {k: v for k, v in result.items() if v not in [False]}
@@ -570,55 +594,55 @@ class ColumnDefinition:
 
 @dataclass
 class SupportedManifestAttributes(SubscriptableDataclass):
-    out_attributes: List[str]
-    in_attributes: List[str]
-    out_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
-    in_legacy_exclude: List[str] = dataclasses.field(default_factory=lambda: [])
+    out_attributes: list[str]
+    in_attributes: list[str]
+    out_legacy_exclude: list[str] = dataclasses.field(default_factory=lambda: [])
+    in_legacy_exclude: list[str] = dataclasses.field(default_factory=lambda: [])
 
-    def get_attributes_by_stage(self, stage: Literal['in', 'out'], legacy_queue: bool = False,
-                                legacy_manifest: bool = False) -> List[str]:
-        if stage == 'out':
+    def get_attributes_by_stage(
+        self, stage: Literal["in", "out"], legacy_queue: bool = False, legacy_manifest: bool = False
+    ) -> list[str]:
+        if stage == "out":
             attributes = self.out_attributes
             exclude = self.out_legacy_exclude
 
             if not legacy_manifest:
-                to_remove = ['primary_key', 'columns', 'distribution_key', 'column_metadata', 'metadata']
+                to_remove = ["primary_key", "columns", "distribution_key", "column_metadata", "metadata"]
                 attributes = list(set(attributes).difference(to_remove))
 
-                to_add = ['manifest_type', 'has_header', 'table_metadata', 'schema']
+                to_add = ["manifest_type", "has_header", "table_metadata", "schema"]
                 attributes.extend(to_add)
 
-        elif stage == 'in':
+        elif stage == "in":
             attributes = self.in_attributes
             exclude = self.in_legacy_exclude
 
         else:
-            raise ValueError(f'Unsupported stage {stage}')
+            raise ValueError(f"Unsupported stage {stage}")
 
         if legacy_queue:
-            logging.warning(f'Running on legacy queue some manifest properties will be ignored: {exclude}')
+            logging.warning(f"Running on legacy queue some manifest properties will be ignored: {exclude}")
             attributes = list(set(attributes).difference(exclude))
 
         return attributes
 
 
 class IODefinition(ABC):
-
     def __init__(self, full_path):
         self.full_path = full_path
 
     @classmethod
-    def build_from_manifest(cls,
-                            manifest_file_path: str
-                            ):
+    def build_from_manifest(cls, manifest_file_path: str):
         raise NotImplementedError
 
-    def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
-                                            native_types: bool = False):
+    def _filter_attributes_by_manifest_type(
+        self, manifest_type: Literal["in", "out"], legacy_queue: bool = False, native_types: bool = False
+    ):
         raise NotImplementedError
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
-                                legacy_manifest: Optional[bool] = None) -> dict:
+    def get_manifest_dictionary(
+        self, manifest_type: str | None = None, legacy_queue: bool = False, legacy_manifest: bool | None = None
+    ) -> dict:
         raise NotImplementedError
 
     @property
@@ -630,7 +654,7 @@ class IODefinition(ABC):
 
     @stage.setter
     def stage(self, stage: str):
-        if stage not in ['in', 'out']:
+        if stage not in ["in", "out"]:
             raise ValueError(f'Invalid stage "{stage}", supported values are: "in", "out"')
         self._stage = stage
 
@@ -672,32 +696,33 @@ class IODefinition(ABC):
         credentials_expiration: str
 
     @property
-    def s3_staging(self) -> Union[S3Staging, None]:
+    def s3_staging(self) -> S3Staging | None:
         s3 = self._s3
         if s3:
-            return IODefinition.S3Staging(is_sliced=s3['isSliced'],
-                                          region=s3['region'],
-                                          bucket=s3['bucket'],
-                                          key=s3['key'],
-                                          credentials_access_key_id=s3['credentials']['access_key_id'],
-                                          credentials_secret_access_key=s3['credentials']['secret_access_key'],
-                                          credentials_session_token=s3['credentials']['session_token']
-                                          )
+            return IODefinition.S3Staging(
+                is_sliced=s3["isSliced"],
+                region=s3["region"],
+                bucket=s3["bucket"],
+                key=s3["key"],
+                credentials_access_key_id=s3["credentials"]["access_key_id"],
+                credentials_secret_access_key=s3["credentials"]["secret_access_key"],
+                credentials_session_token=s3["credentials"]["session_token"],
+            )
         else:
             return None
 
     @property
-    def abs_staging(self) -> Union[ABSStaging, None]:
+    def abs_staging(self) -> ABSStaging | None:
         _abs = self._abs
         if _abs:
-            return IODefinition.ABSStaging(is_sliced=_abs['is_sliced'],
-                                           region=_abs['region'],
-                                           container=_abs['container'],
-                                           name=_abs['name'],
-                                           credentials_sas_connection_string=_abs['credentials'][
-                                               'sas_connection_string'],
-                                           credentials_expiration=_abs['credentials']['expiration']
-                                           )
+            return IODefinition.ABSStaging(
+                is_sliced=_abs["is_sliced"],
+                region=_abs["region"],
+                container=_abs["container"],
+                name=_abs["name"],
+                credentials_sas_connection_string=_abs["credentials"]["sas_connection_string"],
+                credentials_expiration=_abs["credentials"]["expiration"],
+            )
         else:
             return None
 
@@ -757,7 +782,7 @@ class TableDefinition(IODefinition):
         "data_size_bytes",
         "is_alias",
         "attributes",
-        "indexed_columns"
+        "indexed_columns",
     ]
 
     OUTPUT_MANIFEST_ATTRIBUTES = [
@@ -775,35 +800,33 @@ class TableDefinition(IODefinition):
         "delete_where_operator",
     ]
 
-    OUTPUT_MANIFEST_LEGACY_EXCLUDES = [
-        "write_always"
-    ]
+    OUTPUT_MANIFEST_LEGACY_EXCLUDES = ["write_always"]
 
-    MANIFEST_ATTRIBUTES = {'in': INPUT_MANIFEST_ATTRIBUTES,
-                           'out': OUTPUT_MANIFEST_ATTRIBUTES}
-    SCHEMA_TYPE = Union[Dict[str, ColumnDefinition], TypeOrderedDict[str, ColumnDefinition], List[str]]
+    MANIFEST_ATTRIBUTES = {"in": INPUT_MANIFEST_ATTRIBUTES, "out": OUTPUT_MANIFEST_ATTRIBUTES}
+    SCHEMA_TYPE = dict[str, ColumnDefinition] | OrderedDict[str, ColumnDefinition] | list[str]
 
-    def __init__(self, name: str,
-                 full_path: Optional[Union[str, None]] = None,
-                 is_sliced: Optional[bool] = False,
-                 destination: Optional[str] = '',
-                 primary_key: Optional[List[str]] = None,
-                 schema: SCHEMA_TYPE = None,
-                 incremental: Optional[bool] = None,
-                 table_metadata: Optional[TableMetadata] = None,
-                 enclosure: Optional[str] = '"',
-                 delimiter: Optional[str] = ',',
-                 delete_where: Optional[dict] = None,
-                 stage: Optional[str] = 'out',
-                 write_always: Optional[bool] = False,
-                 has_header: Optional[bool] = None,
-                 description: Optional[str] = None,
-
-                 # storage staging
-                 s3: Optional[dict] = None,
-                 abs: Optional[dict] = None,
-                 **kwargs
-                 ):
+    def __init__(
+        self,
+        name: str,
+        full_path: str | None | None = None,
+        is_sliced: bool | None = False,
+        destination: str | None = "",
+        primary_key: list[str] | None = None,
+        schema: SCHEMA_TYPE = None,
+        incremental: bool | None = None,
+        table_metadata: TableMetadata | None = None,
+        enclosure: str | None = '"',
+        delimiter: str | None = ",",
+        delete_where: dict | None = None,
+        stage: str | None = "out",
+        write_always: bool | None = False,
+        has_header: bool | None = None,
+        description: str | None = None,
+        # storage staging
+        s3: dict | None = None,
+        abs: dict | None = None,
+        **kwargs,
+    ):
         """
 
         Args:
@@ -838,16 +861,16 @@ class TableDefinition(IODefinition):
         # initialize manifest properties
         self._destination = None
         self.destination = destination
-        self._schema: Dict[str, ColumnDefinition] = dict()
+        self._schema: dict[str, ColumnDefinition] = dict()
 
         if schema:
             self.schema = schema
         # deprecated argument for backward compatibility
         self._legacy_mode = False
-        if kwargs.get('force_legacy_mode'):
+        if kwargs.get("force_legacy_mode"):
             self._legacy_mode = True
-        if kwargs.get('columns'):
-            self.columns = kwargs['columns']
+        if kwargs.get("columns"):
+            self.columns = kwargs["columns"]
 
         self._legacy_primary_key = list()
         self.primary_key = primary_key
@@ -866,29 +889,29 @@ class TableDefinition(IODefinition):
         self.delete_where_column = None
         self.delete_where_operator = None
 
-        if kwargs.get('delete_where_values'):
-            self.delete_where_values = kwargs['delete_where_values']
+        if kwargs.get("delete_where_values"):
+            self.delete_where_values = kwargs["delete_where_values"]
 
-        if kwargs.get('delete_where_column'):
-            self.delete_where_column = kwargs['delete_where_column']
+        if kwargs.get("delete_where_column"):
+            self.delete_where_column = kwargs["delete_where_column"]
 
-        if kwargs.get('delete_where_operator'):
-            self.delete_where_operator = kwargs['delete_where_operator']
+        if kwargs.get("delete_where_operator"):
+            self.delete_where_operator = kwargs["delete_where_operator"]
 
         self.set_delete_where_from_dict(delete_where)
         self.write_always = write_always
 
         # input manifest properties
-        self._id = kwargs.get('id')
-        self._uri = kwargs.get('uri')
-        self._created = kwargs.get('created')
-        self._last_change_date = kwargs.get('last_change_date')
-        self._last_import_date = kwargs.get('last_import_date')
-        self._rows_count = kwargs.get('rows_count')
-        self._data_size_bytes = kwargs.get('data_size_bytes')
-        self._is_alias = kwargs.get('is_alias')
-        self._indexed_columns = kwargs.get('indexed_columns')
-        self._attributes = kwargs.get('attributes')
+        self._id = kwargs.get("id")
+        self._uri = kwargs.get("uri")
+        self._created = kwargs.get("created")
+        self._last_change_date = kwargs.get("last_change_date")
+        self._last_import_date = kwargs.get("last_import_date")
+        self._rows_count = kwargs.get("rows_count")
+        self._data_size_bytes = kwargs.get("data_size_bytes")
+        self._is_alias = kwargs.get("is_alias")
+        self._indexed_columns = kwargs.get("indexed_columns")
+        self._attributes = kwargs.get("attributes")
 
         self.stage = stage
         self.has_header = has_header or self._has_header_in_file()
@@ -899,24 +922,26 @@ class TableDefinition(IODefinition):
 
     def __get_stage_inferred(self):
         if self._uri:
-            return 'in'
-        return 'out'
+            return "in"
+        return "out"
 
     @classmethod
-    def build_output_definition(cls, name: str,
-                                destination: Optional[str] = '',
-                                columns: Optional[List[str]] = None,
-                                primary_key: Optional[List[str]] = None,
-                                incremental: Optional[bool] = False,
-                                table_metadata: Optional[TableMetadata] = None,
-                                enclosure: Optional[str] = '"',
-                                delimiter: Optional[str] = ',',
-                                delete_where: Optional[dict] = None,
-                                write_always: Optional[bool] = False,
-                                schema: SCHEMA_TYPE = None,
-                                description: Optional[str] = None,
-                                **kwargs
-                                ):
+    def build_output_definition(
+        cls,
+        name: str,
+        destination: str | None = "",
+        columns: list[str] | None = None,
+        primary_key: list[str] | None = None,
+        incremental: bool | None = False,
+        table_metadata: TableMetadata | None = None,
+        enclosure: str | None = '"',
+        delimiter: str | None = ",",
+        delete_where: dict | None = None,
+        write_always: bool | None = False,
+        schema: SCHEMA_TYPE = None,
+        description: str | None = None,
+        **kwargs,
+    ):
         """
         Factory method for creating a TableDefinition instance for output tables.
 
@@ -940,53 +965,53 @@ class TableDefinition(IODefinition):
         Returns:
             TableDefinition: An instance of TableDefinition configured for output tables.
         """
-        return cls(name=name,
-                   destination=destination,
-                   columns=columns,
-                   primary_key=primary_key,
-                   incremental=incremental,
-                   table_metadata=table_metadata,
-                   enclosure=enclosure,
-                   delimiter=delimiter,
-                   delete_where=delete_where,
-                   write_always=write_always,
-                   schema=schema,
-                   description=description,
-                   **kwargs
-                   )
+        return cls(
+            name=name,
+            destination=destination,
+            columns=columns,
+            primary_key=primary_key,
+            incremental=incremental,
+            table_metadata=table_metadata,
+            enclosure=enclosure,
+            delimiter=delimiter,
+            delete_where=delete_where,
+            write_always=write_always,
+            schema=schema,
+            description=description,
+            **kwargs,
+        )
 
     @classmethod
-    def build_input_definition(cls, name: str,
-                               full_path: Optional[Union[str, None]] = None,
-                               is_sliced: Optional[bool] = False,
-
-                               destination: Optional[str] = '',
-                               primary_key: Optional[List[str]] = None,
-                               columns: Optional[List[str]] = None,
-                               incremental: Optional[bool] = None,
-                               table_metadata: Optional[TableMetadata] = None,
-                               enclosure: Optional[str] = '"',
-                               delimiter: Optional[str] = ',',
-                               delete_where: Optional[dict] = None,
-                               stage: Optional[str] = 'in',
-                               write_always: Optional[bool] = False,
-                               schema: Optional[Union[TypeOrderedDict[str, ColumnDefinition], list[str]]] = None,
-                               rows_count: Optional[int] = None,
-                               data_size_bytes: Optional[int] = None,
-                               is_alias: Optional[bool] = False,
-
-                               # input
-                               uri: Optional[str] = None,
-                               id: Optional[str] = '',
-                               created: Optional[str] = None,
-                               last_change_date: Optional[str] = None,
-                               last_import_date: Optional[str] = None,
-
-                               # storage staging
-                               s3: Optional[dict] = None,
-                               abs: Optional[dict] = None,
-                               **kwargs
-                               ):
+    def build_input_definition(
+        cls,
+        name: str,
+        full_path: str | None | None = None,
+        is_sliced: bool | None = False,
+        destination: str | None = "",
+        primary_key: list[str] | None = None,
+        columns: list[str] | None = None,
+        incremental: bool | None = None,
+        table_metadata: TableMetadata | None = None,
+        enclosure: str | None = '"',
+        delimiter: str | None = ",",
+        delete_where: dict | None = None,
+        stage: str | None = "in",
+        write_always: bool | None = False,
+        schema: OrderedDict[str, ColumnDefinition] | list[str] | None = None,
+        rows_count: int | None = None,
+        data_size_bytes: int | None = None,
+        is_alias: bool | None = False,
+        # input
+        uri: str | None = None,
+        id: str | None = "",
+        created: str | None = None,
+        last_change_date: str | None = None,
+        last_import_date: str | None = None,
+        # storage staging
+        s3: dict | None = None,
+        abs: dict | None = None,
+        **kwargs,
+    ):
         """
         Factory method for creating a TableDefinition instance for input tables.
 
@@ -1022,56 +1047,57 @@ class TableDefinition(IODefinition):
         Returns:
             TableDefinition: An instance of TableDefinition configured for input tables.
         """
-        return cls(name=name,
-                   full_path=full_path,
-                   is_sliced=is_sliced,
-                   destination=destination,
-                   primary_key=primary_key,
-                   columns=columns,
-                   incremental=incremental,
-                   table_metadata=table_metadata,
-                   enclosure=enclosure,
-                   delimiter=delimiter,
-                   delete_where=delete_where,
-                   stage=stage,
-                   write_always=write_always,
-                   schema=schema,
-                   rows_count=rows_count,
-                   data_size_bytes=data_size_bytes,
-                   is_alias=is_alias,
-                   uri=uri,
-                   id=id,
-                   created=created,
-                   last_change_date=last_change_date,
-                   last_import_date=last_import_date,
-                   s3=s3,
-                   abs=abs,
-                   **kwargs
-                   )
+        return cls(
+            name=name,
+            full_path=full_path,
+            is_sliced=is_sliced,
+            destination=destination,
+            primary_key=primary_key,
+            columns=columns,
+            incremental=incremental,
+            table_metadata=table_metadata,
+            enclosure=enclosure,
+            delimiter=delimiter,
+            delete_where=delete_where,
+            stage=stage,
+            write_always=write_always,
+            schema=schema,
+            rows_count=rows_count,
+            data_size_bytes=data_size_bytes,
+            is_alias=is_alias,
+            uri=uri,
+            id=id,
+            created=created,
+            last_change_date=last_change_date,
+            last_import_date=last_import_date,
+            s3=s3,
+            abs=abs,
+            **kwargs,
+        )
 
     @classmethod
     def convert_to_column_definition(cls, column_name, column_metadata, primary_key=False):
-        data_type = {'base': DataType(dtype='STRING')}
+        data_type = {"base": DataType(dtype="STRING")}
         nullable = True
         for item in column_metadata:
-            if item['key'] == 'KBC.datatype.basetype':
-                data_type = {'base': DataType(dtype=item['value'])}
-            elif item['key'] == 'KBC.datatype.nullable':
-                nullable = item['value']
+            if item["key"] == "KBC.datatype.basetype":
+                data_type = {"base": DataType(dtype=item["value"])}
+            elif item["key"] == "KBC.datatype.nullable":
+                nullable = item["value"]
         return ColumnDefinition(data_types=data_type, nullable=nullable, primary_key=primary_key)
 
     @classmethod
     def return_schema_from_manifest(cls, json_data):
         if TableDefinition.is_new_manifest(json_data):
             schema = OrderedDict()
-            for col in json_data.get('schema'):
+            for col in json_data.get("schema"):
                 schema[col.get("name")] = ColumnDefinition().from_dict(col)
 
         else:
             # legacy support
-            columns_metadata = json_data.get('column_metadata', {})
-            primary_key = json_data.get('primary_key', [])
-            columns = json_data.get('columns', [])
+            columns_metadata = json_data.get("column_metadata", {})
+            primary_key = json_data.get("primary_key", [])
+            columns = json_data.get("columns", [])
 
             all_columns = columns
             schema = OrderedDict()
@@ -1087,12 +1113,10 @@ class TableDefinition(IODefinition):
 
     @classmethod
     def is_new_manifest(cls, json_data):
-        return json_data.get('schema')
+        return json_data.get("schema")
 
     @classmethod
-    def build_from_manifest(cls,
-                            manifest_file_path: str
-                            ):
+    def build_from_manifest(cls, manifest_file_path: str):
         """
         Factory method for TableDefinition from the raw "manifest" path.
 
@@ -1118,16 +1142,17 @@ class TableDefinition(IODefinition):
             with open(manifest_file_path) as in_file:
                 manifest = json.load(in_file)
 
-        file_path = Path(manifest_file_path.replace('.manifest', ''))
+        file_path = Path(manifest_file_path.replace(".manifest", ""))
 
         if file_path.is_dir() and manifest:
             is_sliced = True
         elif file_path.is_dir() and not manifest:
             # skip folders that do not have matching manifest
-            raise ValueError(f'The manifest {manifest_file_path} does not exist '
-                             f'and it'f's matching file {file_path} is folder!')
+            raise ValueError(
+                f"The manifest {manifest_file_path} does not exist and its matching file {file_path} is folder!"
+            )
         elif not file_path.exists() and not manifest:
-            raise ValueError(f'Nor the manifest file or the corresponding file {file_path} exist!')
+            raise ValueError(f"Nor the manifest file or the corresponding file {file_path} exist!")
 
         if file_path.exists():
             full_path = str(file_path)
@@ -1135,78 +1160,75 @@ class TableDefinition(IODefinition):
         else:
             name = Path(manifest_file_path).stem
 
-        if manifest.get('name'):
-            name = manifest.get('name')
+        if manifest.get("name"):
+            name = manifest.get("name")
 
         # test if the manifest is output and incompatible
         force_legacy_mode = False
-        if not manifest.get('columns') and manifest.get('primary_key'):
-            warnings.warn('Primary key is set but columns are not. Forcing legacy mode for CSV file.',
-                          DeprecationWarning)
+        if not manifest.get("columns") and manifest.get("primary_key"):
+            warnings.warn(
+                "Primary key is set but columns are not. Forcing legacy mode for CSV file.", DeprecationWarning
+            )
             force_legacy_mode = True
 
-        if manifest.get('id'):
-            stage = 'in'
+        if manifest.get("id"):
+            stage = "in"
             table_def = cls.build_input_definition(
                 # helper parameters
                 stage=stage,
                 force_legacy_mode=force_legacy_mode,
                 is_sliced=is_sliced,
                 full_path=full_path,
-
                 # basic in manifest parameters
-                id=manifest.get('id'),
-                uri=manifest.get('uri'),
+                id=manifest.get("id"),
+                uri=manifest.get("uri"),
                 name=name,
-                primary_key=manifest.get('primary_key'),
-                created=manifest.get('created'),
-                last_change_date=manifest.get('last_change_date'),
-                last_import_date=manifest.get('last_import_date'),
+                primary_key=manifest.get("primary_key"),
+                created=manifest.get("created"),
+                last_change_date=manifest.get("last_change_date"),
+                last_import_date=manifest.get("last_import_date"),
                 schema=cls.return_schema_from_manifest(manifest),
                 table_metadata=TableMetadata(manifest),
-
                 # additional in manifest parameters
-                rows_count=manifest.get('rows_count'),
-                data_size_bytes=manifest.get('data_size_bytes'),
-                is_alias=manifest.get('is_alias'),
-                attributes=manifest.get('attributes'),
-                indexed_columns=manifest.get('indexed_columns'),
-
+                rows_count=manifest.get("rows_count"),
+                data_size_bytes=manifest.get("data_size_bytes"),
+                is_alias=manifest.get("is_alias"),
+                attributes=manifest.get("attributes"),
+                indexed_columns=manifest.get("indexed_columns"),
                 # storage staging
-                s3=manifest.get('s3'),
-                abs=manifest.get('abs'),
+                s3=manifest.get("s3"),
+                abs=manifest.get("abs"),
             )
 
         else:
-            stage = 'out'
+            stage = "out"
             table_def = cls.build_output_definition(
                 # helper parameters
                 stage=stage,
                 force_legacy_mode=force_legacy_mode,
                 is_sliced=is_sliced,
                 full_path=full_path,
-
                 # basic out manifest parameters
                 name=name,
-                destination=manifest.get('destination'),
+                destination=manifest.get("destination"),
                 schema=cls.return_schema_from_manifest(manifest),
-                incremental=manifest.get('incremental', False),
-                primary_key=manifest.get('primary_key'),
-                write_always=manifest.get('write_always', False),
-                delimiter=manifest.get('delimiter', ','),
-                enclosure=manifest.get('enclosure', '"'),
+                incremental=manifest.get("incremental", False),
+                primary_key=manifest.get("primary_key"),
+                write_always=manifest.get("write_always", False),
+                delimiter=manifest.get("delimiter", ","),
+                enclosure=manifest.get("enclosure", '"'),
                 table_metadata=TableMetadata(manifest),
-
                 # additional in manifest parameters
-                delete_where_values=manifest.get('delete_where_values'),
-                delete_where_column=manifest.get('delete_where_column'),
-                delete_where_operator=manifest.get('delete_where_operator')
+                delete_where_values=manifest.get("delete_where_values"),
+                delete_where_column=manifest.get("delete_where_column"),
+                delete_where_operator=manifest.get("delete_where_operator"),
             )
 
         return table_def
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
-                                legacy_manifest: Optional[bool] = None) -> dict:
+    def get_manifest_dictionary(
+        self, manifest_type: str | None = None, legacy_queue: bool = False, legacy_manifest: bool | None = None
+    ) -> dict:
         """
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
         By default, returns output manifest.
@@ -1242,11 +1264,7 @@ class TableDefinition(IODefinition):
 
     def _filter_dictionary(self, data):
         if isinstance(data, dict):
-            return {
-                k: self._filter_dictionary(v)
-                for k, v in data.items()
-                if v not in (None, [], {}, "")
-            }
+            return {k: self._filter_dictionary(v) for k, v in data.items() if v not in (None, [], {}, "")}
         elif isinstance(data, list):
             return [self._filter_dictionary(item) for item in data if item not in (None, [], {}, "")]
         else:
@@ -1254,8 +1272,9 @@ class TableDefinition(IODefinition):
 
     # Usage
 
-    def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
-                                            legacy_manifest: bool = False):
+    def _filter_attributes_by_manifest_type(
+        self, manifest_type: Literal["in", "out"], legacy_queue: bool = False, legacy_manifest: bool = False
+    ):
         """
         Filter manifest to contain only supported fields
         Args:
@@ -1265,41 +1284,42 @@ class TableDefinition(IODefinition):
 
         """
 
-        supported_fields = self._manifest_attributes.get_attributes_by_stage(manifest_type, legacy_queue,
-                                                                             legacy_manifest)
+        supported_fields = self._manifest_attributes.get_attributes_by_stage(
+            manifest_type, legacy_queue, legacy_manifest
+        )
         fields = {
-            'id': self.id,
-            'uri': self._uri,
-            'name': self.name,
-            'created': self._created,
-            'last_change_date': self._last_change_date,
-            'last_import_date': self._last_import_date,
-            'rows_count': self._rows_count,
-            'data_size_bytes': self._data_size_bytes,
-            'is_alias': self._is_alias,
-            'indexed_columns': self._indexed_columns,
-            'attributes': self._attributes,
-
-            'destination': self.destination,
-            'incremental': self.incremental,
-            'primary_key': self.primary_key,
-            'write_always': self.write_always,
-            'delimiter': self.delimiter,
-            'enclosure': self.enclosure,
-            'metadata': self.table_metadata.get_table_metadata_for_manifest(legacy_manifest=True),
-            'column_metadata': self.table_metadata._get_legacy_column_metadata_for_manifest(),
-            'manifest_type': manifest_type,
-            'has_header': self.has_header,
-            'table_metadata': self.table_metadata.get_table_metadata_for_manifest(),
-            'delete_where_column': self.delete_where_column,
-            'delete_where_values': self.delete_where_values,
-            'delete_where_operator': self.delete_where_operator,
-            'schema': [col.to_dict(name)
-                       for name, col in self.schema.items()] if isinstance(self.schema, (OrderedDict, dict)) else []
+            "id": self.id,
+            "uri": self._uri,
+            "name": self.name,
+            "created": self._created,
+            "last_change_date": self._last_change_date,
+            "last_import_date": self._last_import_date,
+            "rows_count": self._rows_count,
+            "data_size_bytes": self._data_size_bytes,
+            "is_alias": self._is_alias,
+            "indexed_columns": self._indexed_columns,
+            "attributes": self._attributes,
+            "destination": self.destination,
+            "incremental": self.incremental,
+            "primary_key": self.primary_key,
+            "write_always": self.write_always,
+            "delimiter": self.delimiter,
+            "enclosure": self.enclosure,
+            "metadata": self.table_metadata.get_table_metadata_for_manifest(legacy_manifest=True),
+            "column_metadata": self.table_metadata._get_legacy_column_metadata_for_manifest(),
+            "manifest_type": manifest_type,
+            "has_header": self.has_header,
+            "table_metadata": self.table_metadata.get_table_metadata_for_manifest(),
+            "delete_where_column": self.delete_where_column,
+            "delete_where_values": self.delete_where_values,
+            "delete_where_operator": self.delete_where_operator,
+            "schema": [col.to_dict(name) for name, col in self.schema.items()]
+            if isinstance(self.schema, (OrderedDict, dict))
+            else [],
         }
 
-        if (legacy_manifest and not self.has_header) or self.stage == 'in':
-            fields['columns'] = self.column_names
+        if (legacy_manifest and not self.has_header) or self.stage == "in":
+            fields["columns"] = self.column_names
 
         new_dict = fields.copy()
 
@@ -1312,18 +1332,18 @@ class TableDefinition(IODefinition):
     def _has_header_in_file(self):
         if self.is_sliced:
             has_header = False
-        elif self.column_names and not self.stage == 'in':
+        elif self.column_names and not self.stage == "in":
             has_header = False
         else:
             has_header = True
         return has_header
 
     @property
-    def schema(self) -> TypeOrderedDict[str, ColumnDefinition]:
+    def schema(self) -> OrderedDict[str, ColumnDefinition]:
         return self._schema
 
     @schema.setter
-    def schema(self, value: Union[TypeOrderedDict[str, ColumnDefinition], list[str]]):
+    def schema(self, value: OrderedDict[str, ColumnDefinition] | list[str]):
         if value:
             if not isinstance(value, (list, dict, OrderedDict)):
                 raise TypeError("Columns must be a list or a mapping of column names and ColumnDefinition objects")
@@ -1337,8 +1357,9 @@ class TableDefinition(IODefinition):
 
     @property
     def _manifest_attributes(self) -> SupportedManifestAttributes:
-        return SupportedManifestAttributes(self.MANIFEST_ATTRIBUTES['out'], self.MANIFEST_ATTRIBUTES['in'],
-                                           self.OUTPUT_MANIFEST_LEGACY_EXCLUDES)
+        return SupportedManifestAttributes(
+            self.MANIFEST_ATTRIBUTES["out"], self.MANIFEST_ATTRIBUTES["in"], self.OUTPUT_MANIFEST_LEGACY_EXCLUDES
+        )
 
     # #### Manifest properties
     @property
@@ -1371,7 +1392,7 @@ class TableDefinition(IODefinition):
     @property
     def rows_count(self) -> int:
         """
-                int: rows_count property used in input manifest.
+        int: rows_count property used in input manifest.
 
         """
         return self._rows_count
@@ -1379,22 +1400,22 @@ class TableDefinition(IODefinition):
     @property
     def data_size_bytes(self) -> int:
         """
-                int: data_size_bytes property used in input manifest.
+        int: data_size_bytes property used in input manifest.
 
         """
         return self._data_size_bytes
 
     @property
-    @deprecated(version='1.5.1', reason="Please use new column_names method instead of columns property")
-    def columns(self) -> List[str]:
+    @deprecated(version="1.5.1", reason="Please use new column_names method instead of columns property")
+    def columns(self) -> list[str]:
         if isinstance(self.schema, (OrderedDict, dict)):
             return list(self.schema.keys())
         else:
             return []
 
     @columns.setter
-    @deprecated(version='1.5.1', reason="Please use new column_names method instead of schema property")
-    def columns(self, val: List[str]):
+    @deprecated(version="1.5.1", reason="Please use new column_names method instead of schema property")
+    def columns(self, val: list[str]):
         """
         Set columns for the table.
         If list of names provided, the columns will be created with default settings Basetype.String.
@@ -1410,7 +1431,7 @@ class TableDefinition(IODefinition):
         self.schema = val
 
     @property
-    def column_names(self) -> List[str]:
+    def column_names(self) -> list[str]:
         if self.schema:
             return list(self.schema.keys())
         else:
@@ -1434,14 +1455,14 @@ class TableDefinition(IODefinition):
         self._write_always = write_always
 
     @property
-    def primary_key(self) -> List[str]:
+    def primary_key(self) -> list[str]:
         if not self._legacy_mode:
             return [column_name for column_name, column_def in self.schema.items() if column_def.primary_key]
         else:
             return self._legacy_primary_key
 
     @primary_key.setter
-    def primary_key(self, primary_key: List[str]):
+    def primary_key(self, primary_key: list[str]):
         if not primary_key:
             return
 
@@ -1452,8 +1473,9 @@ class TableDefinition(IODefinition):
                 if col in self.schema:
                     self.schema[col].primary_key = True
                 else:
-                    raise UserException(f"Primary key column {col} not found in schema. "
-                                        f"Please specify all columns / schema")
+                    raise UserException(
+                        f"Primary key column {col} not found in schema. Please specify all columns / schema"
+                    )
         else:
             self._legacy_primary_key = primary_key
 
@@ -1484,10 +1506,10 @@ class TableDefinition(IODefinition):
         for col, val in table_metadata._get_legacy_column_metadata_for_manifest().items():
             if not self.schema.get(col):
                 self.schema[col] = ColumnDefinition()
-            self.schema[col].metadata = {item['key']: item['value'] for item in val}
+            self.schema[col].metadata = {item["key"]: item["value"] for item in val}
 
     @property
-    def created(self) -> Union[datetime, None]:  # Created timestamp  in the KBC Storage (read only input attribute)
+    def created(self) -> datetime | None:  # Created timestamp  in the KBC Storage (read only input attribute)
         if self._created:
             return datetime.strptime(self._created, KBC_DEFAULT_TIME_FORMAT)
         else:
@@ -1530,12 +1552,11 @@ class TableDefinition(IODefinition):
             raise ValueError(f'Column with name: "{name}" not found')
 
     def delete_column(self, column_name: str):
-
         if column_name not in self.schema:
             raise ValueError(f"Column with name {column_name} not found")
         del self.schema[column_name]
 
-    def add_columns(self, columns: Union[List[str], Dict[str, ColumnDefinition]]):
+    def add_columns(self, columns: list[str] | dict[str, ColumnDefinition]):
         if isinstance(columns, list):
             for name in columns:
                 self.add_column(name)
@@ -1543,11 +1564,11 @@ class TableDefinition(IODefinition):
             for name, column in columns.items():
                 self.add_column(name, column)
 
-    def update_columns(self, columns: Dict[str, ColumnDefinition]):
+    def update_columns(self, columns: dict[str, ColumnDefinition]):
         for name, column in columns:
             self.update_column(name, column)
 
-    def delete_columns(self, column_names: List[str]):
+    def delete_columns(self, column_names: list[str]):
         for name in column_names:
             self.delete_column(name)
 
@@ -1562,20 +1583,19 @@ class TableDefinition(IODefinition):
             Manifest dict
         """
         if delete_where:
-            if 'column' in delete_where and 'values' in delete_where:
-                if not isinstance(delete_where['column'], str):
+            if "column" in delete_where and "values" in delete_where:
+                if not isinstance(delete_where["column"], str):
                     raise TypeError("Delete column must be a string")
-                if not isinstance(delete_where['values'], list):
+                if not isinstance(delete_where["values"], list):
                     raise TypeError("Delete values must be a list")
-                op = delete_where['operator'] or 'eq'
-                if (not op == 'eq') and (not op == 'ne'):
+                op = delete_where["operator"] or "eq"
+                if (not op == "eq") and (not op == "ne"):
                     raise ValueError("Delete operator must be 'eq' or 'ne'")
-                self.delete_where_values = delete_where['values']
-                self.delete_where_column = delete_where['column']
+                self.delete_where_values = delete_where["values"]
+                self.delete_where_column = delete_where["column"]
                 self.delete_where_operator = op
             else:
-                raise ValueError("Delete where specification must contain "
-                                 "keys 'column' and 'values'")
+                raise ValueError("Delete where specification must contain keys 'column' and 'values'")
 
 
 class FileDefinition(IODefinition):
@@ -1612,32 +1632,27 @@ class FileDefinition(IODefinition):
         notify: Notifies project administrators that a file was uploaded.
 
     """
-    SYSTEM_TAG_PREFIXES = ['componentId:',
-                           'configurationId:',
-                           'configurationRowId:',
-                           'runId:',
-                           'branchId:']
 
-    OUTPUT_MANIFEST_KEYS = ["tags",
-                            "is_public",
-                            "is_permanent",
-                            "is_encrypted",
-                            "notify"]
+    SYSTEM_TAG_PREFIXES = ["componentId:", "configurationId:", "configurationRowId:", "runId:", "branchId:"]
 
-    def __init__(self, full_path: str,
-                 stage: Optional[str] = 'out',
-                 tags: Optional[List[str]] = None,
-                 is_public: Optional[bool] = False,
-                 is_permanent: Optional[bool] = False,
-                 is_encrypted: Optional[bool] = False,
-                 notify: Optional[bool] = False,
-                 id: Optional[str] = None,
-                 s3: Optional[dict] = None,
-                 abs: Optional[dict] = None,
-                 created: Optional[str] = None,
-                 size_bytes: Optional[int] = None,
-                 max_age_days: Optional[int] = None
-                 ):
+    OUTPUT_MANIFEST_KEYS = ["tags", "is_public", "is_permanent", "is_encrypted", "notify"]
+
+    def __init__(
+        self,
+        full_path: str,
+        stage: str | None = "out",
+        tags: list[str] | None = None,
+        is_public: bool | None = False,
+        is_permanent: bool | None = False,
+        is_encrypted: bool | None = False,
+        notify: bool | None = False,
+        id: str | None = None,
+        s3: dict | None = None,
+        abs: dict | None = None,
+        created: str | None = None,
+        size_bytes: int | None = None,
+        max_age_days: int | None = None,
+    ):
         """
 
         Args:
@@ -1670,13 +1685,15 @@ class FileDefinition(IODefinition):
         self._max_age_days = max_age_days
 
     @classmethod
-    def build_output_definition(cls,
-                                full_path: str,
-                                tags: Optional[List[str]] = None,
-                                is_public: Optional[bool] = False,
-                                is_permanent: Optional[bool] = False,
-                                is_encrypted: Optional[bool] = False,
-                                notify: Optional[bool] = False):
+    def build_output_definition(
+        cls,
+        full_path: str,
+        tags: list[str] | None = None,
+        is_public: bool | None = False,
+        is_permanent: bool | None = False,
+        is_encrypted: bool | None = False,
+        notify: bool | None = False,
+    ):
         """
         Factory method to create an instance of FileDefinition for output files.
 
@@ -1695,17 +1712,27 @@ class FileDefinition(IODefinition):
         Returns:
             An instance of FileDefinition configured for output files.
         """
-        return cls(full_path=full_path, stage="out", tags=tags, is_public=is_public, is_permanent=is_permanent,
-                   is_encrypted=is_encrypted, notify=notify)
+        return cls(
+            full_path=full_path,
+            stage="out",
+            tags=tags,
+            is_public=is_public,
+            is_permanent=is_permanent,
+            is_encrypted=is_encrypted,
+            notify=notify,
+        )
 
     @classmethod
-    def build_input_definition(cls, full_path: str,
-                               id: Optional[str] = None,
-                               s3: Optional[dict] = None,
-                               abs: Optional[dict] = None,
-                               created: Optional[str] = None,
-                               size_bytes: Optional[int] = None,
-                               max_age_days: Optional[int] = None):
+    def build_input_definition(
+        cls,
+        full_path: str,
+        id: str | None = None,
+        s3: dict | None = None,
+        abs: dict | None = None,
+        created: str | None = None,
+        size_bytes: int | None = None,
+        max_age_days: int | None = None,
+    ):
         """
         Factory method to create an instance of FileDefinition for input files.
 
@@ -1725,13 +1752,19 @@ class FileDefinition(IODefinition):
         Returns:
             An instance of FileDefinition configured for input files.
         """
-        return cls(full_path=full_path, stage="in", id=id, s3=s3, abs=abs, created=created, size_bytes=size_bytes,
-                   max_age_days=max_age_days)
+        return cls(
+            full_path=full_path,
+            stage="in",
+            id=id,
+            s3=s3,
+            abs=abs,
+            created=created,
+            size_bytes=size_bytes,
+            max_age_days=max_age_days,
+        )
 
     @classmethod
-    def build_from_manifest(cls,
-                            manifest_file_path: str
-                            ):
+    def build_from_manifest(cls, manifest_file_path: str):
         """
         Factory method for FileDefinition from the raw "manifest" path.
 
@@ -1753,31 +1786,32 @@ class FileDefinition(IODefinition):
             with open(manifest_file_path) as in_file:
                 manifest = json.load(in_file)
 
-        file_path = Path(manifest_file_path.replace('.manifest', ''))
+        file_path = Path(manifest_file_path.replace(".manifest", ""))
 
         if not file_path.exists():
-            raise ValueError(f'The corresponding file {file_path} does not exist!')
+            raise ValueError(f"The corresponding file {file_path} does not exist!")
 
         full_path = str(file_path)
 
-        if manifest.get('id'):
-            stage = 'in'
+        if manifest.get("id"):
+            stage = "in"
         else:
-            stage = 'out'
+            stage = "out"
 
-        file_def = cls(full_path=full_path,
-                       stage=stage,
-                       tags=manifest.get('tags', []),
-                       is_public=manifest.get('is_public', False),
-                       is_permanent=manifest.get('is_permanent', False),
-                       is_encrypted=manifest.get('is_encrypted', False),
-                       id=manifest.get('id', ''),
-                       s3=manifest.get('s3'),
-                       abs=manifest.get('abs'),
-                       created=manifest.get('created'),
-                       size_bytes=manifest.get('size_bytes', 0),
-                       max_age_days=manifest.get('max_age_days', 0)
-                       )
+        file_def = cls(
+            full_path=full_path,
+            stage=stage,
+            tags=manifest.get("tags", []),
+            is_public=manifest.get("is_public", False),
+            is_permanent=manifest.get("is_permanent", False),
+            is_encrypted=manifest.get("is_encrypted", False),
+            id=manifest.get("id", ""),
+            s3=manifest.get("s3"),
+            abs=manifest.get("abs"),
+            created=manifest.get("created"),
+            size_bytes=manifest.get("size_bytes", 0),
+            max_age_days=manifest.get("max_age_days", 0),
+        )
 
         return file_def
 
@@ -1788,8 +1822,9 @@ class FileDefinition(IODefinition):
                 return True
         return False
 
-    def get_manifest_dictionary(self, manifest_type: Optional[str] = None, legacy_queue: bool = False,
-                                legacy_manifest: Optional[bool] = None) -> dict:
+    def get_manifest_dictionary(
+        self, manifest_type: str | None = None, legacy_queue: bool = False, legacy_manifest: bool | None = None
+    ) -> dict:
         """
         Returns manifest dictionary in appropriate manifest_type: either 'in' or 'out'.
         By default, returns output manifest.
@@ -1820,8 +1855,9 @@ class FileDefinition(IODefinition):
 
         return filtered_dictionary
 
-    def _filter_attributes_by_manifest_type(self, manifest_type: Literal["in", "out"], legacy_queue: bool = False,
-                                            legacy_manifest: bool = False):
+    def _filter_attributes_by_manifest_type(
+        self, manifest_type: Literal["in", "out"], legacy_queue: bool = False, legacy_manifest: bool = False
+    ):
         """
         Filter manifest to contain only supported fields
         Args:
@@ -1831,28 +1867,27 @@ class FileDefinition(IODefinition):
 
         """
 
-        if manifest_type == 'in':
-
+        if manifest_type == "in":
             manifest_dictionary = {
-                'id': self.id,
-                'created': self.created.strftime('%Y-%m-%dT%H:%M:%S%z') if self.created else None,
-                'is_public': self.is_public,
-                'is_encrypted': self.is_encrypted,
-                'name': self.name,
-                'size_bytes': self.size_bytes,
-                'tags': self.tags,
-                'notify': self.notify,
-                'max_age_days': self.max_age_days,
-                'is_permanent': self.is_permanent,
+                "id": self.id,
+                "created": self.created.strftime("%Y-%m-%dT%H:%M:%S%z") if self.created else None,
+                "is_public": self.is_public,
+                "is_encrypted": self.is_encrypted,
+                "name": self.name,
+                "size_bytes": self.size_bytes,
+                "tags": self.tags,
+                "notify": self.notify,
+                "max_age_days": self.max_age_days,
+                "is_permanent": self.is_permanent,
             }
 
         else:
             manifest_dictionary = {
-                'is_public': self.is_public,
-                'is_permanent': self.is_permanent,
-                'is_encrypted': self.is_encrypted,
-                'tags': self.tags,
-                'notify': self.notify,
+                "is_public": self.is_public,
+                "is_permanent": self.is_permanent,
+                "is_encrypted": self.is_encrypted,
+                "tags": self.tags,
+                "notify": self.notify,
             }
 
         return manifest_dictionary
@@ -1865,7 +1900,7 @@ class FileDefinition(IODefinition):
         # separate id from name
         file_name = Path(self.full_path).name
         if self._id:
-            fsplit = file_name.split('_', 1)
+            fsplit = file_name.split("_", 1)
             if len(fsplit) > 1:
                 self._id = fsplit[0]
                 file_name = fsplit[1]
@@ -1885,23 +1920,23 @@ class FileDefinition(IODefinition):
     # ########### Output manifest properties - R/W
 
     @property
-    def user_tags(self) -> List[str]:
+    def user_tags(self) -> list[str]:
         """
         User defined tags excluding the system tags
         """
         # filter system tags
-        tags: List[str] = [tag for tag in self._tags if not self.is_system_tag(tag)]
+        tags: list[str] = [tag for tag in self._tags if not self.is_system_tag(tag)]
         return tags
 
     @property
-    def tags(self) -> List[str]:
+    def tags(self) -> list[str]:
         """
         All tags specified on the file
         """
         return self._tags
 
     @tags.setter
-    def tags(self, tags: List[str]):
+    def tags(self, tags: list[str]):
         if tags is None:
             tags = list()
         self._tags = tags
@@ -1944,7 +1979,7 @@ class FileDefinition(IODefinition):
         return self._id
 
     @property
-    def created(self) -> Union[datetime, None]:  # Created timestamp  in the KBC Storage (read only input attribute)
+    def created(self) -> datetime | None:  # Created timestamp  in the KBC Storage (read only input attribute)
         if self._created:
             return datetime.strptime(self._created, KBC_DEFAULT_TIME_FORMAT)
         else:
@@ -1982,15 +2017,16 @@ class TableInputMapping(SubscriptableDataclass):
     Abstraction of [input mapping definition](
     https://developers.keboola.com/extend/common-interface/config-file/#tables) in the config file
     """
-    source: str = ''
+
+    source: str = ""
     destination: str = None
     limit: int = None
-    columns: List[str] = dataclasses.field(default_factory=lambda: [])
-    where_values: List[str] = None
+    columns: list[str] = dataclasses.field(default_factory=lambda: [])
+    where_values: list[str] = None
     full_path: str = None
-    where_operator: str = ''
+    where_operator: str = ""
     days: int = 0
-    column_types: List[TableColumnTypes] = None,
+    column_types: list[TableColumnTypes] = (None,)
     file_type: str = "csv"
 
 
@@ -2000,16 +2036,17 @@ class TableOutputMapping(SubscriptableDataclass):
     Abstraction of [output mapping definition](
     https://developers.keboola.com/extend/common-interface/config-file/#tables) in the config file
     """
+
     source: str
     destination: str
     incremental: bool = False
-    columns: str = ''
-    primary_key: str = ''
-    delete_where_column: str = ''
-    delete_where_operator: str = ''
-    delete_where_values: str = ''
-    delimiter: str = ''
-    enclosure: str = ''
+    columns: str = ""
+    primary_key: str = ""
+    delete_where_column: str = ""
+    delete_where_operator: str = ""
+    delete_where_values: str = ""
+    delimiter: str = ""
+    enclosure: str = ""
 
 
 @dataclass
@@ -2018,8 +2055,9 @@ class FileInputMapping(SubscriptableDataclass):
     Abstraction of [output mapping definition](
     https://developers.keboola.com/extend/common-interface/config-file/#files) in the config file
     """
-    tags: List[str]
-    query: str = ''
+
+    tags: list[str]
+    query: str = ""
     filter_by_run_id: bool = False
 
 
@@ -2029,10 +2067,11 @@ class FileOutputMapping(SubscriptableDataclass):
     Abstraction of [output mapping definition](
     https://developers.keboola.com/extend/common-interface/config-file/#files) in the config file
     """
+
     source: str
     is_public: bool = False
     is_permanent: bool = False
-    tags: List[str] = dataclasses.field(default_factory=lambda: [])
+    tags: list[str] = dataclasses.field(default_factory=lambda: [])
 
 
 @dataclass

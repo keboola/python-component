@@ -1,7 +1,6 @@
-from typing import List, Dict
-from typing import Optional, Union
-from keboola.component.dao import SupportedDataTypes
 from dataclasses import dataclass
+
+from keboola.component.dao import SupportedDataTypes
 
 
 @dataclass
@@ -9,12 +8,13 @@ class FieldSchema:
     """
     Defines the name and type specifications of a single field in a table
     """
+
     name: str
-    base_type: Optional[Union[SupportedDataTypes, str]] = None
-    description: Optional[str] = None
+    base_type: SupportedDataTypes | str | None = None
+    description: str | None = None
     nullable: bool = False
-    length: Optional[str] = None
-    default: Optional[str] = None
+    length: str | None = None
+    default: str | None = None
 
 
 @dataclass
@@ -22,14 +22,15 @@ class TableSchema:
     """
     TableSchema class is used to define the schema and metadata of a table.
     """
+
     name: str
-    fields: List[FieldSchema]
-    primary_keys: Optional[List[str]] = None
-    parent_tables: Optional[List[str]] = None
-    description: Optional[str] = None
+    fields: list[FieldSchema]
+    primary_keys: list[str] | None = None
+    parent_tables: list[str] | None = None
+    description: str | None = None
 
     @property
-    def field_names(self) -> List[str]:
+    def field_names(self) -> list[str]:
         return [column.name for column in self.fields]
 
     @property
@@ -46,7 +47,7 @@ class TableSchema:
         self.fields.append(new_field)
 
 
-def init_table_schema_from_dict(json_table_schema: Dict) -> TableSchema:
+def init_table_schema_from_dict(json_table_schema: dict) -> TableSchema:
     """
     Function to initialize a Table Schema from a dictionary.
     Example of the json_table_schema structure:
@@ -79,10 +80,12 @@ def init_table_schema_from_dict(json_table_schema: Dict) -> TableSchema:
         json_table_schema["fields"] = [FieldSchema(**field) for field in json_table_schema["fields"]]
     except TypeError as type_error:
         raise KeyError(
-            f"When creating the table schema the definition of columns failed : {type_error}") from type_error
+            f"When creating the table schema the definition of columns failed : {type_error}"
+        ) from type_error
     try:
         ts = TableSchema(**json_table_schema)
     except TypeError as type_error:
         raise KeyError(
-            f"When creating the table schema the definition of the table failed : {type_error}") from type_error
+            f"When creating the table schema the definition of the table failed : {type_error}"
+        ) from type_error
     return ts

@@ -8,7 +8,6 @@ import json
 from abc import ABC
 from dataclasses import dataclass
 from enum import Enum
-from typing import Union, List, Optional
 
 
 @dataclass
@@ -23,15 +22,14 @@ class SyncActionResult(ABC):
         In other cases exception is thrown and printed via stderr.
 
         """
-        self.status = 'success'
+        self.status = "success"
 
     def __str__(self):
         # the None values / attributes will be ignored.
-        dict_obj = dataclasses.asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if
-                                                                    v is not None})
+        dict_obj = dataclasses.asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v is not None})
         # hack to add default status
         if self.status:
-            dict_obj['status'] = self.status
+            dict_obj["status"] = self.status
         return json.dumps(dict_obj)
 
 
@@ -56,8 +54,9 @@ class SelectElement(SyncActionResult):
     """
     For select elements. Label is optional and value will be used
     """
+
     value: str
-    label: Optional[str] = None
+    label: str | None = None
 
     def __post_init__(self):
         self.label = self.label or self.value
@@ -65,7 +64,7 @@ class SelectElement(SyncActionResult):
         self.status = None
 
 
-def process_sync_action_result(result: Union[None, List[dict], dict, SyncActionResult, List[SyncActionResult]]) -> str:
+def process_sync_action_result(result: None | list[dict] | dict | SyncActionResult | list[SyncActionResult]) -> str:
     """
     Converts Sync Action result into valid string (expected by Sync Action).
     Args:
@@ -77,13 +76,14 @@ def process_sync_action_result(result: Union[None, List[dict], dict, SyncActionR
     if isinstance(result, SyncActionResult):
         result_str = str(result)
     elif isinstance(result, list):
-        result_str = f'[{", ".join([json.dumps(r) if isinstance(r, dict) else str(r) for r in result])}]'
+        result_str = f"[{', '.join([json.dumps(r) if isinstance(r, dict) else str(r) for r in result])}]"
     elif result is None:
-        result_str = json.dumps({'status': 'success'})
+        result_str = json.dumps({"status": "success"})
     elif isinstance(result, dict):
         # for backward compatibility
         result_str = json.dumps(result)
     else:
-        raise ValueError("Result of sync action must be either None or an instance of SyncActionResult "
-                         "or a List[SyncActionResult]")
+        raise ValueError(
+            "Result of sync action must be either None or an instance of SyncActionResult or a List[SyncActionResult]"
+        )
     return result_str
