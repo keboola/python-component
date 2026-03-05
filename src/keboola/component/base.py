@@ -272,8 +272,6 @@ class ComponentBase(ABC, CommonInterface):
 
     def _execute_with_vcr_replay(self) -> None:
         """Replay HTTP interactions from data/cassettes/requests.json."""
-        import logging
-
         from keboola.vcr import VCRRecorder
 
         for name in ("vcr", "urllib3"):
