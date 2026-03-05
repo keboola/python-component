@@ -274,6 +274,9 @@ class ComponentBase(ABC, CommonInterface):
         """Replay HTTP interactions from data/cassettes/requests.json."""
         from keboola.vcr import VCRRecorder
 
+        for name in ("vcr", "urllib3"):
+            logging.getLogger(name).setLevel(logging.WARNING)
+
         data_dir = os.environ.get("KBC_DATADIR", "/data")
         recorder = VCRRecorder(cassette_dir=Path(data_dir) / "cassettes")
         recorder.replay(self._do_execute_action)
