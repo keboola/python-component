@@ -7,7 +7,7 @@ dependencies = [
     "deprecated",
     "keboola.vcr",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 
 authors = [
     { name = "Keboola KDS Team", email = "support@keboola.com" }
