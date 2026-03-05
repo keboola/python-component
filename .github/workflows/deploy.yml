@@ -3,10 +3,9 @@ name: Build & Deploy to PyPI
 on:
   workflow_dispatch:
     inputs:
-      note:
-        description: 'This workflow publishes to TestPyPI only. For production, create a GitHub Release.'
-        required: false
-        default: ""
+      version:
+        description: Package version (applies to TestPyPI only; for production, create a GitHub release)
+        required: true
 
   release:
     types: [published]
@@ -37,12 +36,12 @@ jobs:
         run: |
           uv run pytest tests
 
-      - name: Version replacement based on tag ↔️
-        if: github.ref_type == 'tag'
+      - name: Version replacement based on workflow input or release tag ↔️
+        if: inputs.version || github.ref_type == 'tag'
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/}
-          echo "Tag version: $TAG_VERSION"
-          uv version $TAG_VERSION
+          VERSION="${{ inputs.version || github.ref_name }}"
+          echo "Setting version: $VERSION"
+          uv version $VERSION
 
       - name: Build package 📦
         run: |
