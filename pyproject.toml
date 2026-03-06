@@ -1,6 +1,6 @@
 [project]
 name = "keboola.component"
-version = "1.9.0"  # replaced by the actual version based on the release tag in github actions
+version = "0.0.0"  # replaced by the actual version based on the release tag in github actions
 dependencies = [
     "pygelf",
     "deprecated",
