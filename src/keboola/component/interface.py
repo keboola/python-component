@@ -220,6 +220,7 @@ class CommonInterface:
         else:
             raise ValueError(F'Unsupported gelf transport layer: {transport_layer}. Choose TCP or UDP')
 
+        gelf._keboola_owned = True
         logging.getLogger().setLevel(log_level)
         logging.getLogger().addHandler(gelf)
 
