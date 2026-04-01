@@ -6,43 +6,41 @@ from keboola.component import CommonInterface, Configuration
 
 
 class TestCommonInterface(unittest.TestCase):
-
     def setUp(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                            'data_examples', 'data1')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data1")
         os.environ["KBC_DATADIR"] = path
-        os.environ['KBC_STACKID'] = 'connection.keboola.com'
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2'
+        os.environ["KBC_STACKID"] = "connection.keboola.com"
+        os.environ["KBC_PROJECT_FEATURE_GATES"] = "queuev2"
 
     def test_all_env_variables_initialized(self):
         # set all variables
-        os.environ['KBC_RUNID'] = 'KBC_RUNID'
-        os.environ['KBC_PROJECTID'] = 'KBC_PROJECTID'
-        os.environ['KBC_STACKID'] = 'KBC_STACKID'
-        os.environ['KBC_CONFIGID'] = 'KBC_CONFIGID'
-        os.environ['KBC_COMPONENTID'] = 'KBC_COMPONENTID'
-        os.environ['KBC_PROJECTNAME'] = 'KBC_PROJECTNAME'
-        os.environ['KBC_TOKENID'] = 'KBC_TOKENID'
-        os.environ['KBC_TOKENDESC'] = 'KBC_TOKENDESC'
-        os.environ['KBC_TOKEN'] = 'KBC_TOKEN'
-        os.environ['KBC_URL'] = 'KBC_URL'
-        os.environ['KBC_LOGGER_ADDR'] = 'KBC_LOGGER_ADDR'
-        os.environ['KBC_LOGGER_PORT'] = 'KBC_LOGGER_PORT'
+        os.environ["KBC_RUNID"] = "KBC_RUNID"
+        os.environ["KBC_PROJECTID"] = "KBC_PROJECTID"
+        os.environ["KBC_STACKID"] = "KBC_STACKID"
+        os.environ["KBC_CONFIGID"] = "KBC_CONFIGID"
+        os.environ["KBC_COMPONENTID"] = "KBC_COMPONENTID"
+        os.environ["KBC_PROJECTNAME"] = "KBC_PROJECTNAME"
+        os.environ["KBC_TOKENID"] = "KBC_TOKENID"
+        os.environ["KBC_TOKENDESC"] = "KBC_TOKENDESC"
+        os.environ["KBC_TOKEN"] = "KBC_TOKEN"
+        os.environ["KBC_URL"] = "KBC_URL"
+        os.environ["KBC_LOGGER_ADDR"] = "KBC_LOGGER_ADDR"
+        os.environ["KBC_LOGGER_PORT"] = "KBC_LOGGER_PORT"
 
         ci = CommonInterface()
         self.assertEqual(ci.environment_variables.data_dir, os.environ["KBC_DATADIR"])
-        self.assertEqual(ci.environment_variables.run_id, 'KBC_RUNID')
-        self.assertEqual(ci.environment_variables.project_id, 'KBC_PROJECTID')
-        self.assertEqual(ci.environment_variables.stack_id, 'KBC_STACKID')
-        self.assertEqual(ci.environment_variables.config_id, 'KBC_CONFIGID')
-        self.assertEqual(ci.environment_variables.component_id, 'KBC_COMPONENTID')
-        self.assertEqual(ci.environment_variables.project_name, 'KBC_PROJECTNAME')
-        self.assertEqual(ci.environment_variables.token_id, 'KBC_TOKENID')
-        self.assertEqual(ci.environment_variables.token_desc, 'KBC_TOKENDESC')
-        self.assertEqual(ci.environment_variables.token, 'KBC_TOKEN')
-        self.assertEqual(ci.environment_variables.url, 'KBC_URL')
-        self.assertEqual(ci.environment_variables.logger_addr, 'KBC_LOGGER_ADDR')
-        self.assertEqual(ci.environment_variables.logger_port, 'KBC_LOGGER_PORT')
+        self.assertEqual(ci.environment_variables.run_id, "KBC_RUNID")
+        self.assertEqual(ci.environment_variables.project_id, "KBC_PROJECTID")
+        self.assertEqual(ci.environment_variables.stack_id, "KBC_STACKID")
+        self.assertEqual(ci.environment_variables.config_id, "KBC_CONFIGID")
+        self.assertEqual(ci.environment_variables.component_id, "KBC_COMPONENTID")
+        self.assertEqual(ci.environment_variables.project_name, "KBC_PROJECTNAME")
+        self.assertEqual(ci.environment_variables.token_id, "KBC_TOKENID")
+        self.assertEqual(ci.environment_variables.token_desc, "KBC_TOKENDESC")
+        self.assertEqual(ci.environment_variables.token, "KBC_TOKEN")
+        self.assertEqual(ci.environment_variables.url, "KBC_URL")
+        self.assertEqual(ci.environment_variables.logger_addr, "KBC_LOGGER_ADDR")
+        self.assertEqual(ci.environment_variables.logger_port, "KBC_LOGGER_PORT")
 
     def test_empty_required_params_pass(self):
         return True
@@ -70,234 +68,227 @@ class TestCommonInterface(unittest.TestCase):
 
     def test_missing_dir(self):
         os.environ["KBC_DATADIR"] = "asdf"
-        with self.assertRaisesRegex(
-                ValueError,
-                "The data directory does not exist"):
+        with self.assertRaisesRegex(ValueError, "The data directory does not exist"):
             CommonInterface()
 
     # ########## PROPERTIES
 
     def test_missing_config(self):
-        os.environ["KBC_DATADIR"] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                 'data_examples')
-        with self.assertRaisesRegex(
-                ValueError,
-                "Configuration file config.json not found"):
+        os.environ["KBC_DATADIR"] = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples")
+        with self.assertRaisesRegex(ValueError, "Configuration file config.json not found"):
             ci = CommonInterface()
             ci.configuration
 
     def test_get_data_dir(self):
         ci = CommonInterface()
-        self.assertEqual(os.getenv('KBC_DATADIR', ''), ci.data_folder_path)
+        self.assertEqual(os.getenv("KBC_DATADIR", ""), ci.data_folder_path)
 
     def test_get_tables_out_dir(self):
         ci = CommonInterface()
-        tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'out', 'tables')
+        tables_out = os.path.join(os.getenv("KBC_DATADIR", ""), "out", "tables")
         self.assertEqual(tables_out, ci.tables_out_path)
 
     def test_get_tables_in_dir(self):
         ci = CommonInterface()
-        tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'in', 'files')
+        tables_out = os.path.join(os.getenv("KBC_DATADIR", ""), "in", "files")
         self.assertEqual(tables_out, ci.files_in_path)
 
     def test_get_files_out_dir(self):
         ci = CommonInterface()
-        tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'out', 'files')
+        tables_out = os.path.join(os.getenv("KBC_DATADIR", ""), "out", "files")
         self.assertEqual(tables_out, ci.files_out_path)
 
     def test_get_files_in_dir(self):
         ci = CommonInterface()
-        tables_out = os.path.join(os.getenv('KBC_DATADIR', ''), 'in', 'tables')
+        tables_out = os.path.join(os.getenv("KBC_DATADIR", ""), "in", "tables")
         self.assertEqual(tables_out, ci.tables_in_path)
 
     def test_legacy_queue(self):
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = ''
+        os.environ["KBC_PROJECT_FEATURE_GATES"] = ""
         ci = CommonInterface()
 
         # with no KBC_PROJECT_FEATURE_GATES env default to legacy queue
         self.assertEqual(True, ci.is_legacy_queue)
 
         # otherwise check for queuev2
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'queuev2;someotherfeature'
+        os.environ["KBC_PROJECT_FEATURE_GATES"] = "queuev2;someotherfeature"
         ci = CommonInterface()
         self.assertEqual(False, ci.is_legacy_queue)
 
         # If feature gates exists but doesn't contain queuev2 it's old queue
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someotherfeature'
+        os.environ["KBC_PROJECT_FEATURE_GATES"] = "feature1;someotherfeature"
         ci = CommonInterface()
         self.assertEqual(True, ci.is_legacy_queue)
 
         # when running locally default to queue v2
-        os.environ['KBC_STACKID'] = ''
+        os.environ["KBC_STACKID"] = ""
         ci = CommonInterface()
         self.assertEqual(False, ci.is_legacy_queue)
 
     def test_create_and_write_table_manifest_deprecated(self):
         ci = CommonInterface()
         # create table def
-        out_table = ci.create_out_table_definition('some-table.csv',
-                                                   columns=['foo', 'bar'],
-                                                   destination='some-destination',
-                                                   primary_key=['foo'],
-                                                   incremental=True,
-                                                   delete_where={'column': 'lilly',
-                                                                 'values': ['a', 'b'],
-                                                                 'operator': 'eq'}
-                                                   )
-        out_table.table_metadata.add_table_metadata('bar', 'kochba')
-        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        out_table = ci.create_out_table_definition(
+            "some-table.csv",
+            columns=["foo", "bar"],
+            destination="some-destination",
+            primary_key=["foo"],
+            incremental=True,
+            delete_where={"column": "lilly", "values": ["a", "b"], "operator": "eq"},
+        )
+        out_table.table_metadata.add_table_metadata("bar", "kochba")
+        out_table.table_metadata.add_column_metadata("bar", "foo", "gogo")
 
         # write
         ci.write_tabledef_manifest(out_table)
-        manifest_filename = out_table.full_path + '.manifest'
+        manifest_filename = out_table.full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
             {
-                'destination': 'some-destination',
-                'columns': ['foo', 'bar'],
-                'primary_key': ['foo'],
-                'incremental': True,
-                'delimiter': ',',
-                'enclosure': '"',
-                'metadata': [{'key': 'bar', 'value': 'kochba'}],
-                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
-                'delete_where_column': 'lilly',
-                'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq',
-                'write_always': False
+                "destination": "some-destination",
+                "columns": ["foo", "bar"],
+                "primary_key": ["foo"],
+                "incremental": True,
+                "delimiter": ",",
+                "enclosure": '"',
+                "metadata": [{"key": "bar", "value": "kochba"}],
+                "column_metadata": {"bar": [{"key": "foo", "value": "gogo"}]},
+                "delete_where_column": "lilly",
+                "delete_where_values": ["a", "b"],
+                "delete_where_operator": "eq",
+                "write_always": False,
             },
-            config
+            config,
         )
         os.remove(manifest_filename)
 
     def test_create_and_write_table_manifest(self):
         ci = CommonInterface()
         # create table def
-        out_table = ci.create_out_table_definition('some-table.csv',
-                                                   columns=['foo', 'bar'],
-                                                   destination='some-destination',
-                                                   primary_key=['foo'],
-                                                   incremental=True,
-                                                   delete_where={'column': 'lilly',
-                                                                 'values': ['a', 'b'],
-                                                                 'operator': 'eq'},
-                                                   write_always=True,
-                                                   description='some-description'
-                                                   )
-        out_table.table_metadata.add_table_metadata('bar', 'kochba')
-        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        out_table = ci.create_out_table_definition(
+            "some-table.csv",
+            columns=["foo", "bar"],
+            destination="some-destination",
+            primary_key=["foo"],
+            incremental=True,
+            delete_where={"column": "lilly", "values": ["a", "b"], "operator": "eq"},
+            write_always=True,
+            description="some-description",
+        )
+        out_table.table_metadata.add_table_metadata("bar", "kochba")
+        out_table.table_metadata.add_column_metadata("bar", "foo", "gogo")
 
         # write
         ci.write_manifest(out_table, legacy_manifest=True)
-        manifest_filename = out_table.full_path + '.manifest'
+        manifest_filename = out_table.full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
             {
-                'destination': 'some-destination',
-                'columns': ['foo', 'bar'],
-                'primary_key': ['foo'],
-                'incremental': True,
-                'write_always': True,
-                'delimiter': ',',
-                'enclosure': '"',
-                'metadata': [{'key': 'KBC.description', 'value': 'some-description'},
-                             {'key': 'bar', 'value': 'kochba'}],
-                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
-                'delete_where_column': 'lilly',
-                'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
+                "destination": "some-destination",
+                "columns": ["foo", "bar"],
+                "primary_key": ["foo"],
+                "incremental": True,
+                "write_always": True,
+                "delimiter": ",",
+                "enclosure": '"',
+                "metadata": [
+                    {"key": "KBC.description", "value": "some-description"},
+                    {"key": "bar", "value": "kochba"},
+                ],
+                "column_metadata": {"bar": [{"key": "foo", "value": "gogo"}]},
+                "delete_where_column": "lilly",
+                "delete_where_values": ["a", "b"],
+                "delete_where_operator": "eq",
             },
-            config
+            config,
         )
         os.remove(manifest_filename)
 
     def test_create_and_write_table_manifest_old_queue(self):
         # If feature gates exists but doesn't contain queuev2 it's old queue
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someotherfeature'
+        os.environ["KBC_PROJECT_FEATURE_GATES"] = "feature1;someotherfeature"
 
         ci = CommonInterface()
         # create table def
-        out_table = ci.create_out_table_definition('some-table.csv',
-                                                   columns=['foo', 'bar'],
-                                                   destination='some-destination',
-                                                   primary_key=['foo'],
-                                                   incremental=True,
-                                                   # the write_always will then not be present
-                                                   # in the manifest even if set
-                                                   write_always=True,
-                                                   delete_where={'column': 'lilly',
-                                                                 'values': ['a', 'b'],
-                                                                 'operator': 'eq'}
-                                                   )
-        out_table.table_metadata.add_table_metadata('bar', 'kochba')
-        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        out_table = ci.create_out_table_definition(
+            "some-table.csv",
+            columns=["foo", "bar"],
+            destination="some-destination",
+            primary_key=["foo"],
+            incremental=True,
+            # the write_always will then not be present
+            # in the manifest even if set
+            write_always=True,
+            delete_where={"column": "lilly", "values": ["a", "b"], "operator": "eq"},
+        )
+        out_table.table_metadata.add_table_metadata("bar", "kochba")
+        out_table.table_metadata.add_column_metadata("bar", "foo", "gogo")
 
         # write
         ci.write_manifest(out_table, legacy_manifest=True)
-        manifest_filename = out_table.full_path + '.manifest'
+        manifest_filename = out_table.full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
             {
-                'destination': 'some-destination',
-                'columns': ['foo', 'bar'],
-                'primary_key': ['foo'],
-                'incremental': True,
-                'delimiter': ',',
-                'enclosure': '"',
-                'metadata': [{'key': 'bar', 'value': 'kochba'}],
-                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
-                'delete_where_column': 'lilly',
-                'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
+                "destination": "some-destination",
+                "columns": ["foo", "bar"],
+                "primary_key": ["foo"],
+                "incremental": True,
+                "delimiter": ",",
+                "enclosure": '"',
+                "metadata": [{"key": "bar", "value": "kochba"}],
+                "column_metadata": {"bar": [{"key": "foo", "value": "gogo"}]},
+                "delete_where_column": "lilly",
+                "delete_where_values": ["a", "b"],
+                "delete_where_operator": "eq",
             },
-            config
+            config,
         )
         os.remove(manifest_filename)
 
     def test_legacy_manifest_without_columns_with_header(self):
         # If feature gates exists but doesn't contain queuev2 it's old queue
-        os.environ['KBC_PROJECT_FEATURE_GATES'] = 'feature1;someotherfeature'
+        os.environ["KBC_PROJECT_FEATURE_GATES"] = "feature1;someotherfeature"
 
         ci = CommonInterface()
         # create table def
-        out_table = ci.create_out_table_definition('some-table.csv',
-                                                   columns=['foo', 'bar'],
-                                                   destination='some-destination',
-                                                   primary_key=['foo'],
-                                                   incremental=True,
-                                                   # the write_always will then not be present
-                                                   # in the manifest even if set
-                                                   write_always=True,
-                                                   has_header=True,
-                                                   delete_where={'column': 'lilly',
-                                                                 'values': ['a', 'b'],
-                                                                 'operator': 'eq'}
-                                                   )
-        out_table.table_metadata.add_table_metadata('bar', 'kochba')
-        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        out_table = ci.create_out_table_definition(
+            "some-table.csv",
+            columns=["foo", "bar"],
+            destination="some-destination",
+            primary_key=["foo"],
+            incremental=True,
+            # the write_always will then not be present
+            # in the manifest even if set
+            write_always=True,
+            has_header=True,
+            delete_where={"column": "lilly", "values": ["a", "b"], "operator": "eq"},
+        )
+        out_table.table_metadata.add_table_metadata("bar", "kochba")
+        out_table.table_metadata.add_column_metadata("bar", "foo", "gogo")
 
         # write
         ci.write_manifest(out_table, legacy_manifest=True)
-        manifest_filename = out_table.full_path + '.manifest'
+        manifest_filename = out_table.full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
             {
-                'destination': 'some-destination',
-                'primary_key': ['foo'],
-                'incremental': True,
-                'delimiter': ',',
-                'enclosure': '"',
-                'metadata': [{'key': 'bar', 'value': 'kochba'}],
-                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
-                'delete_where_column': 'lilly',
-                'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq'
+                "destination": "some-destination",
+                "primary_key": ["foo"],
+                "incremental": True,
+                "delimiter": ",",
+                "enclosure": '"',
+                "metadata": [{"key": "bar", "value": "kochba"}],
+                "column_metadata": {"bar": [{"key": "foo", "value": "gogo"}]},
+                "delete_where_column": "lilly",
+                "delete_where_values": ["a", "b"],
+                "delete_where_operator": "eq",
             },
-            config
+            config,
         )
         os.remove(manifest_filename)
 
@@ -305,172 +296,172 @@ class TestCommonInterface(unittest.TestCase):
     def test_create_and_write_table_manifest_multi_deprecated(self):
         ci = CommonInterface()
         # create table def
-        out_table = ci.create_out_table_definition('some-table.csv',
-                                                   columns=['foo', 'bar'],
-                                                   destination='some-destination',
-                                                   primary_key=['foo'],
-                                                   incremental=True,
-                                                   delete_where={'column': 'lilly',
-                                                                 'values': ['a', 'b'],
-                                                                 'operator': 'eq'}
-                                                   )
-        out_table.table_metadata.add_table_metadata('bar', 'kochba')
-        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        out_table = ci.create_out_table_definition(
+            "some-table.csv",
+            columns=["foo", "bar"],
+            destination="some-destination",
+            primary_key=["foo"],
+            incremental=True,
+            delete_where={"column": "lilly", "values": ["a", "b"], "operator": "eq"},
+        )
+        out_table.table_metadata.add_table_metadata("bar", "kochba")
+        out_table.table_metadata.add_column_metadata("bar", "foo", "gogo")
 
         # write
         ci.write_tabledef_manifests([out_table])
-        manifest_filename = out_table.full_path + '.manifest'
+        manifest_filename = out_table.full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
             {
-                'destination': 'some-destination',
-                'columns': ['foo', 'bar'],
-                'primary_key': ['foo'],
-                'incremental': True,
-                'metadata': [{'key': 'bar', 'value': 'kochba'}],
-                'delimiter': ',',
-                'enclosure': '"',
-                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
-                'delete_where_column': 'lilly',
-                'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq',
-                'write_always': False
+                "destination": "some-destination",
+                "columns": ["foo", "bar"],
+                "primary_key": ["foo"],
+                "incremental": True,
+                "metadata": [{"key": "bar", "value": "kochba"}],
+                "delimiter": ",",
+                "enclosure": '"',
+                "column_metadata": {"bar": [{"key": "foo", "value": "gogo"}]},
+                "delete_where_column": "lilly",
+                "delete_where_values": ["a", "b"],
+                "delete_where_operator": "eq",
+                "write_always": False,
             },
-            config
+            config,
         )
         os.remove(manifest_filename)
 
     def test_create_and_write_table_manifest_multi(self):
         ci = CommonInterface()
         # create table def
-        out_table = ci.create_out_table_definition('some-table.csv',
-                                                   columns=['foo', 'bar'],
-                                                   destination='some-destination',
-                                                   primary_key=['foo'],
-                                                   incremental=True,
-                                                   delete_where={'column': 'lilly',
-                                                                 'values': ['a', 'b'],
-                                                                 'operator': 'eq'}
-                                                   )
-        out_table.table_metadata.add_table_metadata('bar', 'kochba')
-        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        out_table = ci.create_out_table_definition(
+            "some-table.csv",
+            columns=["foo", "bar"],
+            destination="some-destination",
+            primary_key=["foo"],
+            incremental=True,
+            delete_where={"column": "lilly", "values": ["a", "b"], "operator": "eq"},
+        )
+        out_table.table_metadata.add_table_metadata("bar", "kochba")
+        out_table.table_metadata.add_column_metadata("bar", "foo", "gogo")
 
         # write
         ci.write_manifests([out_table], legacy_manifest=True)
-        manifest_filename = out_table.full_path + '.manifest'
+        manifest_filename = out_table.full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
             {
-                'destination': 'some-destination',
-                'columns': ['foo', 'bar'],
-                'primary_key': ['foo'],
-                'incremental': True,
-                'metadata': [{'key': 'bar', 'value': 'kochba'}],
-                'delimiter': ',',
-                'enclosure': '"',
-                'column_metadata': {'bar': [{'key': 'foo', 'value': 'gogo'}]},
-                'delete_where_column': 'lilly',
-                'delete_where_values': ['a', 'b'],
-                'delete_where_operator': 'eq',
-                'write_always': False
+                "destination": "some-destination",
+                "columns": ["foo", "bar"],
+                "primary_key": ["foo"],
+                "incremental": True,
+                "metadata": [{"key": "bar", "value": "kochba"}],
+                "delimiter": ",",
+                "enclosure": '"',
+                "column_metadata": {"bar": [{"key": "foo", "value": "gogo"}]},
+                "delete_where_column": "lilly",
+                "delete_where_values": ["a", "b"],
+                "delete_where_operator": "eq",
+                "write_always": False,
             },
-            config
+            config,
         )
         os.remove(manifest_filename)
 
     def test_create_and_write_table_manifest_new(self):
-        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+        os.environ["KBC_DATA_TYPE_SUPPORT"] = "authoritative"
         ci = CommonInterface()
-        del os.environ['KBC_DATA_TYPE_SUPPORT']
+        del os.environ["KBC_DATA_TYPE_SUPPORT"]
 
         # create table def
-        out_table = ci.create_out_table_definition('some-table.csv',
-                                                   schema=['foo', 'bar'],
-                                                   has_header=True,
-                                                   destination='some-destination',
-                                                   description='some-description',
-                                                   primary_key=['foo'],
-                                                   incremental=True,
-                                                   delete_where={'column': 'lilly',
-                                                                 'values': ['a', 'b'],
-                                                                 'operator': 'eq'}
-                                                   )
-        out_table.table_metadata.add_table_metadata('bar', 'kochba')
-        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        out_table = ci.create_out_table_definition(
+            "some-table.csv",
+            schema=["foo", "bar"],
+            has_header=True,
+            destination="some-destination",
+            description="some-description",
+            primary_key=["foo"],
+            incremental=True,
+            delete_where={"column": "lilly", "values": ["a", "b"], "operator": "eq"},
+        )
+        out_table.table_metadata.add_table_metadata("bar", "kochba")
+        out_table.table_metadata.add_column_metadata("bar", "foo", "gogo")
 
         # write
         ci.write_manifests([out_table])
 
-        manifest_filename = out_table.full_path + '.manifest'
+        manifest_filename = out_table.full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
-            {'delete_where_column': 'lilly',
-             'delete_where_operator': 'eq',
-             'delete_where_values': ['a', 'b'],
-             'delimiter': ',',
-             'destination': 'some-destination',
-             'enclosure': '"',
-             'has_header': True,
-             'incremental': True,
-             'manifest_type': 'out',
-             'schema': [{'data_type': {'base': {'type': 'STRING'}},
-                         'name': 'foo',
-                         'nullable': True,
-                         'primary_key': True},
-                        {'data_type': {'base': {'type': 'STRING'}},
-                         'name': 'bar',
-                         'nullable': True}],
-             'table_metadata': {'KBC.description': 'some-description', 'bar': 'kochba'},
-             'write_always': False},
-            config
+            {
+                "delete_where_column": "lilly",
+                "delete_where_operator": "eq",
+                "delete_where_values": ["a", "b"],
+                "delimiter": ",",
+                "destination": "some-destination",
+                "enclosure": '"',
+                "has_header": True,
+                "incremental": True,
+                "manifest_type": "out",
+                "schema": [
+                    {"data_type": {"base": {"type": "STRING"}}, "name": "foo", "nullable": True, "primary_key": True},
+                    {"data_type": {"base": {"type": "STRING"}}, "name": "bar", "nullable": True},
+                ],
+                "table_metadata": {"KBC.description": "some-description", "bar": "kochba"},
+                "write_always": False,
+            },
+            config,
         )
         os.remove(manifest_filename)
 
     def test_legacy_column_metadata_ignored_on_new_schema(self):
         # TODO: this is not implemented on purpose
-        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+        os.environ["KBC_DATA_TYPE_SUPPORT"] = "authoritative"
         ci = CommonInterface()
         # create table def
-        out_table = ci.create_out_table_definition('some-table.csv',
-                                                   columns=['foo', 'bar'],
-                                                   destination='some-destination',
-                                                   primary_key=['foo'],
-                                                   incremental=True,
-                                                   delete_where={'column': 'lilly',
-                                                                 'values': ['a', 'b'],
-                                                                 'operator': 'eq'}
-                                                   )
+        out_table = ci.create_out_table_definition(
+            "some-table.csv",
+            columns=["foo", "bar"],
+            destination="some-destination",
+            primary_key=["foo"],
+            incremental=True,
+            delete_where={"column": "lilly", "values": ["a", "b"], "operator": "eq"},
+        )
         # this will be ignored
-        out_table.table_metadata.add_table_metadata('bar', 'kochba')
+        out_table.table_metadata.add_table_metadata("bar", "kochba")
         # this will be ignored
-        out_table.table_metadata.add_column_metadata('bar', 'foo', 'gogo')
+        out_table.table_metadata.add_column_metadata("bar", "foo", "gogo")
         # this will be ignored
-        out_table.table_metadata.add_column_data_type('bar', 'NUMERIC')
+        out_table.table_metadata.add_column_data_type("bar", "NUMERIC")
 
         # write
         ci.write_manifest(out_table)
 
-        del os.environ['KBC_DATA_TYPE_SUPPORT']
-        manifest_filename = out_table.full_path + '.manifest'
+        del os.environ["KBC_DATA_TYPE_SUPPORT"]
+        manifest_filename = out_table.full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
-            {'destination': 'some-destination',
-             'incremental': True,
-             'manifest_type': 'out',
-             'write_always': False,
-             'delimiter': ',',
-             'enclosure': '"',
-             'table_metadata': {'bar': 'kochba'},
-             'has_header': False,
-             'delete_where_column': 'lilly', 'delete_where_values': ['a', 'b'], 'delete_where_operator': 'eq',
-             'schema': [
-                 {'name': 'foo', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
-                 {'name': 'bar', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]},
-            config
+            {
+                "destination": "some-destination",
+                "incremental": True,
+                "manifest_type": "out",
+                "write_always": False,
+                "delimiter": ",",
+                "enclosure": '"',
+                "table_metadata": {"bar": "kochba"},
+                "has_header": False,
+                "delete_where_column": "lilly",
+                "delete_where_values": ["a", "b"],
+                "delete_where_operator": "eq",
+                "schema": [
+                    {"name": "foo", "data_type": {"base": {"type": "STRING"}}, "nullable": True, "primary_key": True},
+                    {"name": "bar", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                ],
+            },
+            config,
         )
 
     def test_get_input_tables_definition(self):
@@ -480,28 +471,31 @@ class TestCommonInterface(unittest.TestCase):
 
         self.assertEqual(6, len(tables))
         for table in tables:
-            if table.name == 'sample.csv':
-                self.assertEqual(table.columns, [
-                    "x",
-                    "Sales",
-                    "CompPrice",
-                    "Income",
-                    "Advertising",
-                    "Population",
-                    "Price",
-                    "ShelveLoc",
-                    "Age",
-                    "Education",
-                    "Urban",
-                    "US",
-                    "High"
-                ])
+            if table.name == "sample.csv":
+                self.assertEqual(
+                    table.columns,
+                    [
+                        "x",
+                        "Sales",
+                        "CompPrice",
+                        "Income",
+                        "Advertising",
+                        "Population",
+                        "Price",
+                        "ShelveLoc",
+                        "Age",
+                        "Education",
+                        "Urban",
+                        "US",
+                        "High",
+                    ],
+                )
                 self.assertEqual(table.rows_count, 400)
                 self.assertEqual(table.data_size_bytes, 81920)
-            elif table.name == 'fooBar':
-                self.assertEqual(table.id, 'in.c-main.test2')
-                self.assertEqual(table.full_path, os.path.join(ci.tables_in_path, 'fooBar'))
-                self.assertEqual(table.name, 'fooBar')
+            elif table.name == "fooBar":
+                self.assertEqual(table.id, "in.c-main.test2")
+                self.assertEqual(table.full_path, os.path.join(ci.tables_in_path, "fooBar"))
+                self.assertEqual(table.name, "fooBar")
 
     def test_get_input_tables_definition_orphaned_manifest(self):
         ci = CommonInterface()
@@ -510,33 +504,36 @@ class TestCommonInterface(unittest.TestCase):
 
         self.assertEqual(7, len(tables))
         for table in tables:
-            if table.name == 'sample.csv':
-                self.assertEqual(table.columns, [
-                    "x",
-                    "Sales",
-                    "CompPrice",
-                    "Income",
-                    "Advertising",
-                    "Population",
-                    "Price",
-                    "ShelveLoc",
-                    "Age",
-                    "Education",
-                    "Urban",
-                    "US",
-                    "High"
-                ])
+            if table.name == "sample.csv":
+                self.assertEqual(
+                    table.columns,
+                    [
+                        "x",
+                        "Sales",
+                        "CompPrice",
+                        "Income",
+                        "Advertising",
+                        "Population",
+                        "Price",
+                        "ShelveLoc",
+                        "Age",
+                        "Education",
+                        "Urban",
+                        "US",
+                        "High",
+                    ],
+                )
                 self.assertEqual(table.rows_count, 400)
                 self.assertEqual(table.data_size_bytes, 81920)
-            elif table.name == 'fooBar':
-                self.assertEqual(table.id, 'in.c-main.test2')
-                self.assertEqual(table.full_path, os.path.join(ci.tables_in_path, 'fooBar'))
-                self.assertEqual(table.name, 'fooBar')
+            elif table.name == "fooBar":
+                self.assertEqual(table.id, "in.c-main.test2")
+                self.assertEqual(table.full_path, os.path.join(ci.tables_in_path, "fooBar"))
+                self.assertEqual(table.name, "fooBar")
 
     def test_state_file_initialized(self):
         ci = CommonInterface()
         state = ci.get_state_file()
-        self.assertEqual(state['test_state'], 1234)
+        self.assertEqual(state["test_state"], 1234)
 
     def test_state_file_created(self):
         ci = CommonInterface()
@@ -544,14 +541,11 @@ class TestCommonInterface(unittest.TestCase):
         ci.write_state_file({"some_state": 1234})
 
         # load
-        state_filename = os.path.join(ci.data_folder_path, 'out', 'state.json')
+        state_filename = os.path.join(ci.data_folder_path, "out", "state.json")
         with open(state_filename) as state_file:
             state = json.load(state_file)
 
-        self.assertEqual(
-            {"some_state": 1234},
-            state
-        )
+        self.assertEqual({"some_state": 1234}, state)
 
         # cleanup
         os.remove(state_filename)
@@ -559,67 +553,51 @@ class TestCommonInterface(unittest.TestCase):
     def test_get_input_table_by_name_fails_on_nonexistent(self):
         ci = CommonInterface()
         with self.assertRaises(ValueError):
-            ci.get_input_table_definition_by_name('nonexistent.csv')
+            ci.get_input_table_definition_by_name("nonexistent.csv")
 
     def test_get_input_table_by_name_existing_passes(self):
         ci = CommonInterface()
-        in_table = ci.get_input_table_definition_by_name('fooBar')
-        self.assertEqual(in_table.id, 'in.c-main.test2')
-        self.assertEqual(in_table.full_path, os.path.join(ci.tables_in_path, 'fooBar'))
-        self.assertEqual(in_table.name, 'fooBar')
+        in_table = ci.get_input_table_definition_by_name("fooBar")
+        self.assertEqual(in_table.id, "in.c-main.test2")
+        self.assertEqual(in_table.full_path, os.path.join(ci.tables_in_path, "fooBar"))
+        self.assertEqual(in_table.name, "fooBar")
 
     # Files
 
     def test_create_and_write_file_manifest_deprecated(self):
         ci = CommonInterface()
         # create table def
-        out_file = ci.create_out_file_definition('some-file.jpg',
-                                                 is_permanent=True,
-                                                 is_encrypted=True,
-                                                 is_public=True,
-                                                 tags=['foo', 'bar'],
-                                                 notify=True
-                                                 )
+        out_file = ci.create_out_file_definition(
+            "some-file.jpg", is_permanent=True, is_encrypted=True, is_public=True, tags=["foo", "bar"], notify=True
+        )
 
         # write
         ci.write_filedef_manifest(out_file)
-        manifest_filename = out_file.full_path + '.manifest'
+        manifest_filename = out_file.full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
-            {'tags': ['foo', 'bar'],
-             'is_public': True,
-             'is_permanent': True,
-             'is_encrypted': True,
-             'notify': True},
-            config
+            {"tags": ["foo", "bar"], "is_public": True, "is_permanent": True, "is_encrypted": True, "notify": True},
+            config,
         )
         os.remove(manifest_filename)
 
     def test_create_and_write_file_manifest(self):
         ci = CommonInterface()
         # create table def
-        out_file = ci.create_out_file_definition('some-file.jpg',
-                                                 is_permanent=True,
-                                                 is_encrypted=True,
-                                                 is_public=True,
-                                                 tags=['foo', 'bar'],
-                                                 notify=True
-                                                 )
+        out_file = ci.create_out_file_definition(
+            "some-file.jpg", is_permanent=True, is_encrypted=True, is_public=True, tags=["foo", "bar"], notify=True
+        )
 
         # write
         ci.write_manifest(out_file)
 
-        manifest_filename = out_file.full_path + '.manifest'
+        manifest_filename = out_file.full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             config = json.load(manifest_file)
         self.assertEqual(
-            {'tags': ['foo', 'bar'],
-             'is_public': True,
-             'is_permanent': True,
-             'is_encrypted': True,
-             'notify': True},
-            config
+            {"tags": ["foo", "bar"], "is_public": True, "is_permanent": True, "is_encrypted": True, "notify": True},
+            config,
         )
         os.remove(manifest_filename)
 
@@ -630,62 +608,68 @@ class TestCommonInterface(unittest.TestCase):
 
         self.assertEqual(len(files), 5)
         for file in files:
-            if file.name == 'duty_calls.png':
-                self.assertEqual(file.id, '151971455')
+            if file.name == "duty_calls.png":
+                self.assertEqual(file.id, "151971455")
 
     def test_get_input_files_definition_by_tag(self):
         ci = CommonInterface()
 
-        files = ci.get_input_files_definitions(tags=['dilbert'])
+        files = ci.get_input_files_definitions(tags=["dilbert"])
 
         self.assertEqual(len(files), 3)
         for file in files:
-            if file.name == '21702.strip.print.gif':
-                self.assertEqual(file.tags, [
-                    "dilbert"
-                ])
+            if file.name == "21702.strip.print.gif":
+                self.assertEqual(file.tags, ["dilbert"])
                 self.assertEqual(file.max_age_days, 180)
                 self.assertEqual(file.size_bytes, 4931)
 
     def test_get_input_files_definition_by_tag_w_system(self):
-        ci = CommonInterface(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                          'data_examples', 'data_system_tags'))
+        ci = CommonInterface(
+            os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data_system_tags")
+        )
 
-        files = ci.get_input_files_definitions(tags=['dilbert'])
+        files = ci.get_input_files_definitions(tags=["dilbert"])
 
         self.assertEqual(len(files), 3)
         for file in files:
-            if file.name == '21702.strip.print.gif':
-                self.assertEqual(file.tags, [
-                    "dilbert",
-                    "componentId: 1234",
-                    "configurationId: 12345",
-                    "configurationRowId: 12345",
-                    "runId: 22123",
-                    "branchId: 312321"
-                ])
+            if file.name == "21702.strip.print.gif":
+                self.assertEqual(
+                    file.tags,
+                    [
+                        "dilbert",
+                        "componentId: 1234",
+                        "configurationId: 12345",
+                        "configurationRowId: 12345",
+                        "runId: 22123",
+                        "branchId: 312321",
+                    ],
+                )
                 self.assertEqual(file.max_age_days, 180)
                 self.assertEqual(file.size_bytes, 4931)
 
     def test_get_input_files_definition_tag_group_w_system(self):
-        ci = CommonInterface(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                          'data_examples', 'data_system_tags'))
+        ci = CommonInterface(
+            os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data_system_tags")
+        )
 
         files = ci.get_input_file_definitions_grouped_by_tag_group(only_latest_files=False)
 
         self.assertEqual(len(files), 2)
         self.assertEqual(len(files["bar;foo"]), 3)
         for file in files["bar;foo"]:
-            if file.name == 'compiler_complaint.png':
-                self.assertEqual(file.tags, [
-                    "foo",
-                    "bar",
-                    "componentId: 1234",
-                    "configurationId: 12345",
-                    "configurationRowId: 12345",
-                    "runId: 22123",
-                    "branchId: 312321"
-                ])
+            if file.name == "compiler_complaint.png":
+                self.assertEqual(
+                    file.tags,
+                    [
+                        "foo",
+                        "bar",
+                        "componentId: 1234",
+                        "configurationId: 12345",
+                        "configurationRowId: 12345",
+                        "runId: 22123",
+                        "branchId: 312321",
+                    ],
+                )
 
     def test_get_input_files_definition_nofilter(self):
         ci = CommonInterface()
@@ -694,16 +678,13 @@ class TestCommonInterface(unittest.TestCase):
 
         self.assertEqual(len(files), 6)
         for file in files:
-            if file.name == 'duty_calls':
-                self.assertEqual(file.tags, [
-                    "xkcd"
-                ])
+            if file.name == "duty_calls":
+                self.assertEqual(file.tags, ["xkcd"])
                 self.assertEqual(file.max_age_days, 180)
                 self.assertEqual(file.size_bytes, 30027)
 
     def test_get_input_files_definition_no_manifest_passes(self):
-        ci = CommonInterface(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                          'data_examples', 'data2'))
+        ci = CommonInterface(os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data2"))
 
         files = ci.get_input_files_definitions(only_latest_files=True)
 
@@ -714,251 +695,324 @@ class TestCommonInterface(unittest.TestCase):
             self.assertEqual(file.created, None)
 
     def test_convert_old_to_new_manifest(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data4')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data4")
         os.environ["KBC_DATADIR"] = path
 
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
-        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+        os.environ["KBC_DATA_TYPE_SUPPORT"] = "authoritative"
 
-        new_manifest = tables[0].get_manifest_dictionary('out')
+        new_manifest = tables[0].get_manifest_dictionary("out")
 
-        self.assertEqual({
-            'write_always': False,
-            'delimiter': ',',
-            'enclosure': '"',
-            'manifest_type': 'out',
-            'has_header': True,
-            'schema': [
-                {'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'metadata': {'foo': 'gogo'}},
-                {'name': 'Sales', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'CompPrice', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Income', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Advertising', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Population', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Price', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'ShelveLoc', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Age', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Education', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Urban', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'US', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}]
-        }, new_manifest)
+        self.assertEqual(
+            {
+                "write_always": False,
+                "delimiter": ",",
+                "enclosure": '"',
+                "manifest_type": "out",
+                "has_header": True,
+                "schema": [
+                    {
+                        "name": "x",
+                        "data_type": {"base": {"type": "STRING"}},
+                        "nullable": True,
+                        "metadata": {"foo": "gogo"},
+                    },
+                    {"name": "Sales", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "CompPrice", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Income", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Advertising", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Population", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Price", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "ShelveLoc", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Age", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Education", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Urban", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "US", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "High", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                ],
+            },
+            new_manifest,
+        )
 
-        del os.environ['KBC_DATA_TYPE_SUPPORT']
+        del os.environ["KBC_DATA_TYPE_SUPPORT"]
 
     def test_convert_new_to_old_manifest_has_header_false(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data_new_manifest')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data_new_manifest")
         os.environ["KBC_DATADIR"] = path
 
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
-        old_manifest = tables[0].get_manifest_dictionary('out', legacy_manifest=True)
+        old_manifest = tables[0].get_manifest_dictionary("out", legacy_manifest=True)
 
-        self.assertEqual({
-            'columns': ['x', 'Sales', 'CompPrice', 'Income', 'Advertising', 'Population', 'Price', 'ShelveLoc', 'Age',
-                        'Education', 'Urban', 'US', 'High'],
-            'delimiter': ',',
-            'enclosure': '"',
-            'incremental': False,
-            'write_always': False
-        }, old_manifest)
+        self.assertEqual(
+            {
+                "columns": [
+                    "x",
+                    "Sales",
+                    "CompPrice",
+                    "Income",
+                    "Advertising",
+                    "Population",
+                    "Price",
+                    "ShelveLoc",
+                    "Age",
+                    "Education",
+                    "Urban",
+                    "US",
+                    "High",
+                ],
+                "delimiter": ",",
+                "enclosure": '"',
+                "incremental": False,
+                "write_always": False,
+            },
+            old_manifest,
+        )
 
     def test_convert_new_to_old_manifest_storage_param(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples',
-                            'data_storage_parameter_data_types')
+        path = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "data_examples", "data_storage_parameter_data_types"
+        )
         os.environ["KBC_DATADIR"] = path
-        os.environ['KBC_DATA_TYPE_SUPPORT'] = 'authoritative'
+        os.environ["KBC_DATA_TYPE_SUPPORT"] = "authoritative"
 
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
         ci.write_manifests([tables[0]])
-        manifest_filename = tables[0].full_path + '.manifest'
+        manifest_filename = tables[0].full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             old_manifest = json.load(manifest_file)
 
-        self.assertEqual({
-            'columns': ['x', 'Sales', 'CompPrice', 'Income', 'Advertising', 'Population', 'Price', 'ShelveLoc', 'Age',
-                        'Education', 'Urban', 'US', 'High'],
-            'delimiter': ',',
-            'enclosure': '"',
-            'incremental': False,
-            'write_always': False
-        }, old_manifest)
+        self.assertEqual(
+            {
+                "columns": [
+                    "x",
+                    "Sales",
+                    "CompPrice",
+                    "Income",
+                    "Advertising",
+                    "Population",
+                    "Price",
+                    "ShelveLoc",
+                    "Age",
+                    "Education",
+                    "Urban",
+                    "US",
+                    "High",
+                ],
+                "delimiter": ",",
+                "enclosure": '"',
+                "incremental": False,
+                "write_always": False,
+            },
+            old_manifest,
+        )
 
     def test_full_input_manifest(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data_full_input_manifest')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data_full_input_manifest")
         os.environ["KBC_DATADIR"] = path
 
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
         ci.write_manifests([tables[0]])
-        manifest_filename = tables[0].full_path + '.manifest'
+        manifest_filename = tables[0].full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             old_manifest = json.load(manifest_file)
 
-        self.assertEqual({
-            'id': 'in.c-main.test',
-            'uri': 'https://connection.keboola.com//v2/storage/tables/in.c-main.test',
-            'name': 'sample.csv',
-            'created': '2015-11-02T09:11:37+0100',
-            'last_change_date': '2015-11-02T09:11:37+0100',
-            'last_import_date': '2015-11-02T09:11:37+0100',
-            'rows_count': 400,
-            'data_size_bytes': 81920,
-            'is_alias': False,
-            'indexed_columns': ['x'],
-            'primary_key': ['x'],
-            'column_metadata': {'x': [{'key': 'foo', 'value': 'gogo'}]},
-            'columns': ['x', 'Sales', 'CompPrice', 'Income', 'Advertising', 'Population', 'Price', 'ShelveLoc', 'Age',
-                        'Education', 'Urban', 'US', 'High']
-        }, old_manifest)
+        self.assertEqual(
+            {
+                "id": "in.c-main.test",
+                "uri": "https://connection.keboola.com//v2/storage/tables/in.c-main.test",
+                "name": "sample.csv",
+                "created": "2015-11-02T09:11:37+0100",
+                "last_change_date": "2015-11-02T09:11:37+0100",
+                "last_import_date": "2015-11-02T09:11:37+0100",
+                "rows_count": 400,
+                "data_size_bytes": 81920,
+                "is_alias": False,
+                "indexed_columns": ["x"],
+                "primary_key": ["x"],
+                "column_metadata": {"x": [{"key": "foo", "value": "gogo"}]},
+                "columns": [
+                    "x",
+                    "Sales",
+                    "CompPrice",
+                    "Income",
+                    "Advertising",
+                    "Population",
+                    "Price",
+                    "ShelveLoc",
+                    "Age",
+                    "Education",
+                    "Urban",
+                    "US",
+                    "High",
+                ],
+            },
+            old_manifest,
+        )
 
     def test_full_input_manifest_dtypes_support(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data_full_input_manifest')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data_full_input_manifest")
         os.environ["KBC_DATADIR"] = path
-        os.environ['KBC_DATA_TYPE_SUPPORT'] = 'authoritative'
+        os.environ["KBC_DATA_TYPE_SUPPORT"] = "authoritative"
 
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
         ci.write_manifests([tables[0]])
-        manifest_filename = tables[0].full_path + '.manifest'
+        manifest_filename = tables[0].full_path + ".manifest"
         with open(manifest_filename) as manifest_file:
             old_manifest = json.load(manifest_file)
 
         self.maxDiff = None
 
-        self.assertEqual({
-            'id': 'in.c-main.test',
-            'uri': 'https://connection.keboola.com//v2/storage/tables/in.c-main.test',
-            'name': 'sample.csv',
-            'created': '2015-11-02T09:11:37+0100',
-            'last_change_date': '2015-11-02T09:11:37+0100',
-            'last_import_date': '2015-11-02T09:11:37+0100',
-            'rows_count': 400,
-            'data_size_bytes': 81920,
-            'is_alias': False,
-            'indexed_columns': ['x'],
-            'primary_key': ['x'],
-            'column_metadata': {'x': [{'key': 'foo', 'value': 'gogo'}]},
-            'columns': ['x', 'Sales', 'CompPrice', 'Income', 'Advertising', 'Population', 'Price', 'ShelveLoc', 'Age',
-                        'Education', 'Urban', 'US', 'High']
-        }, old_manifest)
+        self.assertEqual(
+            {
+                "id": "in.c-main.test",
+                "uri": "https://connection.keboola.com//v2/storage/tables/in.c-main.test",
+                "name": "sample.csv",
+                "created": "2015-11-02T09:11:37+0100",
+                "last_change_date": "2015-11-02T09:11:37+0100",
+                "last_import_date": "2015-11-02T09:11:37+0100",
+                "rows_count": 400,
+                "data_size_bytes": 81920,
+                "is_alias": False,
+                "indexed_columns": ["x"],
+                "primary_key": ["x"],
+                "column_metadata": {"x": [{"key": "foo", "value": "gogo"}]},
+                "columns": [
+                    "x",
+                    "Sales",
+                    "CompPrice",
+                    "Income",
+                    "Advertising",
+                    "Population",
+                    "Price",
+                    "ShelveLoc",
+                    "Age",
+                    "Education",
+                    "Urban",
+                    "US",
+                    "High",
+                ],
+            },
+            old_manifest,
+        )
 
     def test_separator_delimiter(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data5')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data5")
         os.environ["KBC_DATADIR"] = path
 
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
-        old_manifest = tables[0].get_manifest_dictionary('out', legacy_manifest=True)
+        old_manifest = tables[0].get_manifest_dictionary("out", legacy_manifest=True)
 
-        self.assertEqual({
-            'columns': [
-                'x',
-                'Sales',
-                'CompPrice',
-                'Income',
-                'Advertising',
-                'Population',
-                'Price',
-                'ShelveLoc',
-                'Age',
-                'Education',
-                'Urban',
-                'US',
-                'High'
-            ],
-            'delimiter': '\t',
-            'enclosure': "'",
-            'incremental': True,
-            'primary_key': [
-                'x'
-            ],
-            'write_always': False,
-            'delete_where_column': 'Advertising',
-            'delete_where_values': ['Video', 'Search'],
-            'delete_where_operator': 'eq',
-            'destination': 'out.c-main.Leads'
-        }, old_manifest)
+        self.assertEqual(
+            {
+                "columns": [
+                    "x",
+                    "Sales",
+                    "CompPrice",
+                    "Income",
+                    "Advertising",
+                    "Population",
+                    "Price",
+                    "ShelveLoc",
+                    "Age",
+                    "Education",
+                    "Urban",
+                    "US",
+                    "High",
+                ],
+                "delimiter": "\t",
+                "enclosure": "'",
+                "incremental": True,
+                "primary_key": ["x"],
+                "write_always": False,
+                "delete_where_column": "Advertising",
+                "delete_where_values": ["Video", "Search"],
+                "delete_where_operator": "eq",
+                "destination": "out.c-main.Leads",
+            },
+            old_manifest,
+        )
 
     def test_separator_delimiter_dtypes(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data_examples', 'data5')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data5")
         os.environ["KBC_DATADIR"] = path
 
         ci = CommonInterface()
         tables = ci.get_input_tables_definitions()
 
-        os.environ['KBC_DATA_TYPE_SUPPORT'] = "authoritative"
+        os.environ["KBC_DATA_TYPE_SUPPORT"] = "authoritative"
 
-        new_manifest = tables[0].get_manifest_dictionary('out')
+        new_manifest = tables[0].get_manifest_dictionary("out")
 
-        self.assertEqual({
-            'write_always': False,
-            'delimiter': '\t',
-            'enclosure': '\'',
-            'manifest_type': 'out',
-            'has_header': False,
-            'incremental': True,
-            'schema': [
-                {'name': 'x', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True, 'primary_key': True},
-                {'name': 'Sales', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'CompPrice', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Income', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Advertising', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Population', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Price', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'ShelveLoc', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Age', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Education', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'Urban', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'US', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True},
-                {'name': 'High', 'data_type': {'base': {'type': 'STRING'}}, 'nullable': True}],
-            'delete_where_column': 'Advertising',
-            'delete_where_values': ['Video', 'Search'],
-            'delete_where_operator': 'eq',
-            'destination': 'out.c-main.Leads'
-        }, new_manifest)
+        self.assertEqual(
+            {
+                "write_always": False,
+                "delimiter": "\t",
+                "enclosure": "'",
+                "manifest_type": "out",
+                "has_header": False,
+                "incremental": True,
+                "schema": [
+                    {"name": "x", "data_type": {"base": {"type": "STRING"}}, "nullable": True, "primary_key": True},
+                    {"name": "Sales", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "CompPrice", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Income", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Advertising", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Population", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Price", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "ShelveLoc", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Age", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Education", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "Urban", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "US", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "High", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                ],
+                "delete_where_column": "Advertising",
+                "delete_where_values": ["Video", "Search"],
+                "delete_where_operator": "eq",
+                "destination": "out.c-main.Leads",
+            },
+            new_manifest,
+        )
 
-        del os.environ['KBC_DATA_TYPE_SUPPORT']
+        del os.environ["KBC_DATA_TYPE_SUPPORT"]
 
 
 class TestConfiguration(unittest.TestCase):
-
     def setUp(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                            'data_examples', 'data1')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data1")
         os.environ["KBC_DATADIR"] = path
 
     def test_missing_config(self):
-        with self.assertRaisesRegex(
-                ValueError,
-                "Configuration file config.json not found"):
-            Configuration('/non-existent/')
+        with self.assertRaisesRegex(ValueError, "Configuration file config.json not found"):
+            Configuration("/non-existent/")
 
     def test_get_parameters(self):
         cfg = Configuration(os.environ["KBC_DATADIR"])
         params = cfg.parameters
-        self.assertEqual({'fooBar': {'bar': 24, 'foo': 42}, 'baz': 'bazBar'},
-                         params)
-        self.assertEqual(params['fooBar']['foo'], 42)
-        self.assertEqual(params['fooBar']['bar'], 24)
+        self.assertEqual({"fooBar": {"bar": 24, "foo": 42}, "baz": "bazBar"}, params)
+        self.assertEqual(params["fooBar"]["foo"], 42)
+        self.assertEqual(params["fooBar"]["bar"], 24)
 
     def test_get_action(self):
         cfg = Configuration(os.environ["KBC_DATADIR"])
 
-        self.assertEqual(cfg.action, 'run')
+        self.assertEqual(cfg.action, "run")
 
     def test_get_action_empty_config(self):
-        cfg = Configuration(os.path.join(os.getenv('KBC_DATADIR', ''), '..',
-                                         'data2'))
-        self.assertEqual(cfg.action, '')
+        cfg = Configuration(os.path.join(os.getenv("KBC_DATADIR", ""), "..", "data2"))
+        self.assertEqual(cfg.action, "")
 
     def test_get_input_mappings(self):
         cfg = Configuration(os.environ["KBC_DATADIR"])
@@ -966,14 +1020,13 @@ class TestConfiguration(unittest.TestCase):
 
         self.assertEqual(len(tables), 2)
         for table in tables:
-            if table['destination'] == 'sample.csv':
-                self.assertEqual(table['source'], 'in.c-main.test')
+            if table["destination"] == "sample.csv":
+                self.assertEqual(table["source"], "in.c-main.test")
             else:
-                self.assertEqual('in.c-main.test2', table['source'])
+                self.assertEqual("in.c-main.test2", table["source"])
 
     def test_get_input_mappings_with_column_types(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                            'data_examples', 'data4')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data_examples", "data4")
         cfg = Configuration(path)
         tables = cfg.tables_input_mapping
         coltypes = tables[0].column_types[0]
@@ -994,12 +1047,11 @@ class TestConfiguration(unittest.TestCase):
         cfg = Configuration(os.environ["KBC_DATADIR"])
         tables = cfg.tables_output_mapping
         self.assertEqual(len(tables), 2)
-        self.assertEqual(tables[0]['source'], 'results.csv')
-        self.assertEqual(tables[1]['source'], 'results-new.csv')
+        self.assertEqual(tables[0]["source"], "results.csv")
+        self.assertEqual(tables[1]["source"], "results-new.csv")
 
     def test_empty_storage(self):
-        cfg = Configuration(os.path.join(os.getenv('KBC_DATADIR', ''), '..',
-                                         'data2'))
+        cfg = Configuration(os.path.join(os.getenv("KBC_DATADIR", ""), "..", "data2"))
         self.assertEqual(cfg.tables_output_mapping, [])
         self.assertEqual(cfg.files_output_mapping, [])
         self.assertEqual(cfg.tables_input_mapping, [])
@@ -1007,8 +1059,7 @@ class TestConfiguration(unittest.TestCase):
         self.assertEqual(cfg.parameters, {})
 
     def test_empty_params(self):
-        cfg = Configuration(os.path.join(os.getenv('KBC_DATADIR', ''), '..',
-                                         'data3'))
+        cfg = Configuration(os.path.join(os.getenv("KBC_DATADIR", ""), "..", "data3"))
         self.assertEqual([], cfg.tables_output_mapping)
         self.assertEqual([], cfg.files_output_mapping)
         self.assertEqual({}, cfg.parameters)
@@ -1048,5 +1099,5 @@ class TestConfiguration(unittest.TestCase):
     #     os.remove(manifest_filename)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
