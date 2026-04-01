@@ -165,18 +165,22 @@ class CommonInterface:
 
         hd1 = logging.StreamHandler(sys.stdout)
         hd1.addFilter(InfoFilter())
+        hd1._keboola_owned = True
         hd2 = logging.StreamHandler(sys.stderr)
         hd2.setLevel(logging.WARNING)
+        hd2._keboola_owned = True
 
-        logging.getLogger().setLevel(log_level)
-        # remove default handler
-        for h in logging.getLogger().handlers:
-            logging.getLogger().removeHandler(h)
-        logging.getLogger().addHandler(hd1)
-        logging.getLogger().addHandler(hd2)
+        root = logging.getLogger()
+        root.setLevel(log_level)
+        # Remove only handlers previously installed by keboola.component, leaving
+        # any external handlers (e.g. test infrastructure) untouched.
+        for h in list(root.handlers):
+            if getattr(h, '_keboola_owned', False):
+                root.removeHandler(h)
+        root.addHandler(hd1)
+        root.addHandler(hd2)
 
-        logger = logging.getLogger()
-        return logger
+        return root
 
     @staticmethod
     def set_gelf_logger(log_level: int = logging.INFO, transport_layer='TCP',
@@ -196,9 +200,11 @@ class CommonInterface:
 
         Returns: Logger object
         """
-        # remove existing handlers
-        for h in logging.getLogger().handlers:
-            logging.getLogger().removeHandler(h)
+        # Remove only handlers previously installed by keboola.component.
+        root = logging.getLogger()
+        for h in list(root.handlers):
+            if getattr(h, '_keboola_owned', False):
+                root.removeHandler(h)
         if stdout:
             CommonInterface.set_default_logger(log_level)
 
