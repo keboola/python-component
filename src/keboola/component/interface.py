@@ -170,7 +170,7 @@ class CommonInterface:
         # Remove only handlers previously installed by keboola.component, leaving
         # any external handlers (e.g. test infrastructure) untouched.
         for h in list(root.handlers):
-            if getattr(h, '_keboola_owned', False):
+            if getattr(h, "_keboola_owned", False):
                 root.removeHandler(h)
         root.addHandler(hd1)
         root.addHandler(hd2)
@@ -199,7 +199,7 @@ class CommonInterface:
         # Remove only handlers previously installed by keboola.component.
         root = logging.getLogger()
         for h in list(root.handlers):
-            if getattr(h, '_keboola_owned', False):
+            if getattr(h, "_keboola_owned", False):
                 root.removeHandler(h)
         if stdout:
             CommonInterface.set_default_logger(log_level)
