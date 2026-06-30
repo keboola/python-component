@@ -162,11 +162,6 @@ class TableMetadata:
 
         """
 
-        if manifest.get("schema") and (
-            manifest.get("metadata") or manifest.get("column_metadata") or manifest.get("columns")
-        ):  # noqa
-            raise UserException("Manifest can't contain new 'schema' and old 'metadata'/'column_metadata'/'columns'")
-
         if not manifest.get("schema"):
             # column metadata
             for column, metadata_list in manifest.get("column_metadata", {}).items():
