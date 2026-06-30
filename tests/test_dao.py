@@ -122,6 +122,29 @@ class TestTableMetadata(unittest.TestCase):
         self.assertEqual(table_metadata.column_metadata, expected_tmetadata.column_metadata)
         self.assertEqual(table_metadata.table_metadata, expected_tmetadata.table_metadata)
 
+    def test_build_from_manifest_with_schema_and_legacy_keys_valid(self):
+        # Input manifests produced by the platform carry the new `schema` node alongside the legacy
+        # `columns`/`metadata`/`column_metadata` keys for backward compatibility. The library must accept this:
+        # `schema` is the source of truth for columns, while legacy table `metadata` is still loaded.
+        raw_manifest = {
+            "id": "in.c-bucket.table",
+            "columns": ["foo", "bar"],
+            "primary_key": ["foo"],
+            "metadata": [{"key": "bar", "value": "kochba"}],
+            "column_metadata": {"bar": [{"key": "foo", "value": "gogo"}]},
+            "schema": [
+                {"name": "foo", "data_type": {"base": {"type": "STRING"}}, "nullable": False, "primary_key": True},
+                {"name": "bar", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+            ],
+        }
+
+        table_metadata = TableMetadata(raw_manifest)
+
+        # column metadata comes from `schema`, not the legacy `column_metadata` block
+        self.assertEqual(table_metadata.column_metadata, {})
+        # table-level legacy metadata is still loaded
+        self.assertEqual(table_metadata.table_metadata, {"bar": "kochba"})
+
     def test_build_manifest_legacy_none_metadata_skipped(self):
         table_def = TableDefinition(
             "testDef",
