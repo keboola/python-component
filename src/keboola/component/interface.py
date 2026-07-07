@@ -58,6 +58,20 @@ def init_environment_variables() -> dao.EnvironmentVariables:
     )
 
 
+class StructuredLoggingFilter(logging.Filter):
+    """
+    A logging filter that preserves the raw message template and arguments
+    as separate attributes on the LogRecord. These are then included as
+    extra GELF fields (``log_template`` and ``log_args``) so that
+    downstream systems like Datadog can filter and aggregate by pattern.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.log_template = record.msg
+        record.log_args = list(record.args) if isinstance(record.args, tuple) else record.args
+        return True
+
+
 class CommonInterface:
     """
     A class handling standard tasks related to the
@@ -180,7 +194,7 @@ class CommonInterface:
     @staticmethod
     def set_gelf_logger(
         log_level: int = logging.INFO, transport_layer="TCP", stdout=False, include_extra_fields=True, **gelf_kwargs
-    ):  # noqa: E301
+    ):
         """
         Sets gelf console logger. Handler for console output is not included by default,
         for testing in non-gelf environments use stdout=True.
@@ -215,6 +229,10 @@ class CommonInterface:
             gelf = GelfUdpHandler(host=host, port=port, **gelf_kwargs)
         else:
             raise ValueError(f"Unsupported gelf transport layer: {transport_layer}. Choose TCP or UDP")
+
+        # Add structured logging filter to preserve template and args
+        structured_filter = StructuredLoggingFilter()
+        gelf.addFilter(structured_filter)
 
         gelf._keboola_owned = True
         logging.getLogger().setLevel(log_level)
