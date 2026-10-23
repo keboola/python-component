@@ -808,6 +808,144 @@ class TestTableDefinition(unittest.TestCase):
         self.assertEqual(table_def.delete_where_values, ["Video", "Search"])
         self.assertEqual(table_def.delete_where_operator, "eq")
 
+    def _build_input_manifest(self, manifest: dict) -> TableDefinition:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            table_path = os.path.join(temp_dir, "sample.csv")
+            with open(table_path, "w+") as table_file:
+                table_file.write("name,value\na,1\n")
+            manifest_path = table_path + ".manifest"
+            with open(manifest_path, "w+") as manifest_file:
+                json.dump(manifest, manifest_file)
+            return TableDefinition.build_from_manifest(manifest_path)
+
+    def test_build_from_manifest_input_legacy_primary_key_not_loaded_is_dropped(self):
+        # The input mapping reports the full primary key of the source table also when the user selects
+        # only some of the columns. The key is then not applicable, so it must be dropped, not raise.
+        table_def = self._build_input_manifest(
+            {
+                "id": "in.c-main.test",
+                "uri": "https://connection.keboola.com//v2/storage/tables/in.c-main.test",
+                "primary_key": ["id"],
+                "columns": ["name", "value"],
+            }
+        )
+
+        self.assertEqual(table_def.primary_key, [])
+        self.assertEqual(table_def.column_names, ["name", "value"])
+
+    def test_build_from_manifest_input_new_schema_primary_key_not_loaded_is_dropped(self):
+        # Same case for manifests that carry the new `schema` node next to the legacy keys.
+        table_def = self._build_input_manifest(
+            {
+                "id": "in.c-main.test",
+                "uri": "https://connection.keboola.com//v2/storage/tables/in.c-main.test",
+                "primary_key": ["id"],
+                "columns": ["name", "value"],
+                "schema": [
+                    {"name": "name", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "value", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                ],
+            }
+        )
+
+        self.assertEqual(table_def.primary_key, [])
+        self.assertEqual(table_def.column_names, ["name", "value"])
+
+    def test_build_from_manifest_input_partial_composite_primary_key_is_dropped(self):
+        # A part of a composite key is not a key. The full key is dropped.
+        table_def = self._build_input_manifest(
+            {
+                "id": "in.c-main.test",
+                "uri": "https://connection.keboola.com//v2/storage/tables/in.c-main.test",
+                "primary_key": ["name", "id"],
+                "columns": ["name", "value"],
+            }
+        )
+
+        self.assertEqual(table_def.primary_key, [])
+
+    def test_build_from_manifest_input_primary_key_loaded_is_kept(self):
+        table_def = self._build_input_manifest(
+            {
+                "id": "in.c-main.test",
+                "uri": "https://connection.keboola.com//v2/storage/tables/in.c-main.test",
+                "primary_key": ["name"],
+                "columns": ["name", "value"],
+            }
+        )
+
+        self.assertEqual(table_def.primary_key, ["name"])
+        self.assertEqual(table_def.column_names, ["name", "value"])
+
+    def test_build_from_manifest_input_primary_key_flag_in_schema_is_cleared(self):
+        # The `schema` node can mark a loaded column as a key column. When another column of the key is
+        # not loaded, the flag must be cleared too, otherwise a part of the composite key survives.
+        table_def = self._build_input_manifest(
+            {
+                "id": "in.c-main.test",
+                "uri": "https://connection.keboola.com//v2/storage/tables/in.c-main.test",
+                "primary_key": ["id", "name"],
+                "columns": ["name", "value"],
+                "schema": [
+                    {
+                        "name": "name",
+                        "data_type": {"base": {"type": "STRING"}},
+                        "nullable": False,
+                        "primary_key": True,
+                    },
+                    {"name": "value", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                ],
+            }
+        )
+
+        self.assertEqual(table_def.primary_key, [])
+
+    def test_build_from_manifest_input_dropped_primary_key_is_logged(self):
+        with self.assertLogs(level="WARNING") as logs:
+            self._build_input_manifest(
+                {
+                    "id": "in.c-main.test",
+                    "uri": "https://connection.keboola.com//v2/storage/tables/in.c-main.test",
+                    "primary_key": ["id"],
+                    "columns": ["name", "value"],
+                }
+            )
+
+        self.assertIn("['id']", logs.output[0])
+
+    def test_build_from_manifest_input_legacy_mode_primary_key_is_kept(self):
+        # A manifest with no `columns` key forces legacy mode. Legacy mode never validated the key
+        # against the schema, so the key must stay as it was.
+        table_def = self._build_input_manifest(
+            {
+                "id": "in.c-main.test",
+                "uri": "https://connection.keboola.com//v2/storage/tables/in.c-main.test",
+                "primary_key": ["id"],
+                "schema": [
+                    {"name": "name", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                    {"name": "value", "data_type": {"base": {"type": "STRING"}}, "nullable": True},
+                ],
+            }
+        )
+
+        self.assertEqual(table_def.primary_key, ["id"])
+
+    def test_input_definition_columns_take_precedence_over_schema(self):
+        # TableDefinition builds its schema from `columns` when both are passed, so the key is
+        # checked against `columns` too.
+        table_def = TableDefinition.build_input_definition(
+            name="t", schema=["a", "b"], columns=["c", "d"], primary_key=["c"]
+        )
+
+        self.assertEqual(table_def.column_names, ["c", "d"])
+        self.assertEqual(table_def.primary_key, ["c"])
+
+    def test_output_primary_key_not_in_schema_still_fails(self):
+        # For output tables the user declares the primary key, so a column that is not in the schema
+        # stays an error.
+        with self.assertRaises(UserException):
+            TableDefinition.build_output_definition(name="out.csv", schema=["name", "value"], primary_key=["id"])
+
 
 class TestFileDefinition(unittest.TestCase):
     def setUp(self):
