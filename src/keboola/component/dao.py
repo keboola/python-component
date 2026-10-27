@@ -1042,6 +1042,9 @@ class TableDefinition(IODefinition):
         Returns:
             TableDefinition: An instance of TableDefinition configured for input tables.
         """
+        if not kwargs.get("force_legacy_mode"):
+            # legacy mode never validated the key against the schema, so it is left untouched
+            primary_key = cls._drop_primary_key_if_not_loaded(name, primary_key, columns or schema)
         return cls(
             name=name,
             full_path=full_path,
@@ -1069,6 +1072,52 @@ class TableDefinition(IODefinition):
             abs=abs,
             **kwargs,
         )
+
+    @classmethod
+    def _drop_primary_key_if_not_loaded(
+        cls, name: str, primary_key: list[str] | None, loaded_columns: SCHEMA_TYPE | None
+    ) -> list[str] | None:
+        """
+        Removes the primary key of an INPUT table when the table is loaded without all of its key columns.
+
+        The input mapping always reports the full primary key of the source table in the manifest, also when
+        the user selects only some of the columns. The selected columns do not have to contain the key columns.
+        The key is then not applicable to the loaded data, so it is dropped and a warning is logged.
+
+        The full key is dropped, not only the missing columns. A part of a composite key is not a key, and
+        components that copy the input key to their output would write an incorrect key.
+
+        This applies to input tables only. For output tables a primary key that is not in the schema stays
+        an error, because there the user declares it.
+
+        Args:
+            name: Table name, used in the warning message.
+            primary_key: Primary key columns reported by the manifest.
+            loaded_columns: The columns of the loaded table - the `columns` list if the caller passes one,
+                otherwise the schema. This order matches how TableDefinition builds its schema.
+
+        Returns:
+            The primary key, or an empty list if not all of its columns are loaded.
+        """
+        if not primary_key or not loaded_columns:
+            return primary_key
+
+        available_columns = set(loaded_columns)
+        missing = [column for column in primary_key if column not in available_columns]
+        if not missing:
+            return primary_key
+
+        # the schema can already carry the key flags, clear them too
+        if isinstance(loaded_columns, dict):
+            for column_definition in loaded_columns.values():
+                if isinstance(column_definition, ColumnDefinition):
+                    column_definition.primary_key = False
+
+        logging.warning(
+            f"Input table {name} is loaded without the primary key columns {missing}. "
+            f"The primary key {primary_key} is not applicable to the loaded columns and is ignored."
+        )
+        return []
 
     @classmethod
     def convert_to_column_definition(cls, column_name, column_metadata, primary_key=False):
