@@ -22,6 +22,8 @@ jobs:
 
       - name: Install and run ruff 🐶
         uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.15.2"  # same as uv.lock; unpinned it installs the newest ruff, whose new rules fail main
 
       - name: Set up Python 🐍
         uses: actions/setup-python@v4
